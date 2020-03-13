@@ -14,17 +14,17 @@
 [![MIT License][license_shield]][license_url]
 
 <!-- PROJECT LOGO -->
-  <br />
-  <p align="center">
-    <h1 align="center">Statifier</h1>
+<br />
+<p align="center">
+  <h1 align="center">Statifier</h1>
 
-    <p align="center">
-      A Statecharts spec and implementation.
-      <br />
-      <br />
-      <a href="https://github.com/riddler/statifier/issues">Report Bug / Request Feature</a>
-    </p>
+  <p align="center">
+    A Statecharts spec and implementation.
+    <br />
+    <br />
+    <a href="https://github.com/riddler/statifier/issues">Report Bug / Request Feature</a>
   </p>
+</p>
 
 
 
@@ -134,7 +134,7 @@
 [issues_shield]: https://img.shields.io/github/issues/riddler/statifier.svg?style=flat-square
 [issues_url]: https://github.com/riddler/statifier/issues
 [license_shield]: https://img.shields.io/github/license/riddler/statifier.svg?style=flat-square
-[license_url]: https://github.com/riddler/statifier/blob/master/LICENSE.txt
+[license_url]: https://github.com/riddler/statifier/blob/master/LICENSE
 
 [statecharts_url]: https://statecharts.github.io/
 
