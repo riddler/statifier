@@ -1,0 +1,12 @@
+{
+    "initialConfiguration" : ["a1"],
+    "events" : [
+        {
+            "event" : { "name" : "e-hier1" },
+            "nextConfiguration" : ["a2"]
+        }
+    ]
+}
+
+
+
