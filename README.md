@@ -92,7 +92,7 @@
   4. Push to the Branch (`git push origin feature/AmazingFeature`)
   5. Open a Pull Request
 
-  _TODO: [#5](/../../issues/5) Add better Contribution Guidelines_
+  See the [Contribution Guidelines][contribution_guidelines] for more information
 
 
 
@@ -135,6 +135,8 @@
 [issues_url]: https://github.com/riddler/statifier/issues
 [license_shield]: https://img.shields.io/github/license/riddler/statifier.svg?style=flat-square
 [license_url]: https://github.com/riddler/statifier/blob/master/LICENSE
+
+[contribution_guidelines]: https://github.com/riddler/.github/blob/master/CONTRIBUTING.md
 
 [statecharts_url]: https://statecharts.github.io/
 
