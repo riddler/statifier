@@ -1,0 +1,13 @@
+
+<?xmlencoding="UTF-8" version="1.0"?>
+<!--
+# Test YAML
+tests:
+- name: Simple Single State
+  verify:
+    configuration:
+    - greeting
+-->
+<scxml version="1.0" xmlns="http://www.w3.org/2005/07/scxml">
+    <state id="greeting"/>
+</scxml>
