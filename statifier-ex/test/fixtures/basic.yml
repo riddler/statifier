@@ -1,0 +1,9 @@
+---
+statechart:
+  states:
+  - id: greeting
+tests:
+- name: Simple Single State
+  verify:
+    configuration:
+    - greeting

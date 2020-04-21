@@ -15,7 +15,6 @@ defmodule Statifier.MixProject do
     ]
   end
 
-
   def description, do: "Statecharts for Elixir"
 
   def package do
@@ -31,7 +30,7 @@ defmodule Statifier.MixProject do
   # Run "mix help compile.app" to learn about applications.
   def application do
     [
-      extra_applications: [:logger]
+      extra_applications: [:logger, :yamerl]
     ]
   end
 
@@ -40,7 +39,8 @@ defmodule Statifier.MixProject do
     [
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:poison, ">= 0.0.0"},
-      {:sweet_xml, ">= 0.0.0"}
+      {:sweet_xml, ">= 0.0.0"},
+      {:yaml_elixir, ">= 2.3.0"}
     ]
   end
 end
