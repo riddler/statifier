@@ -1,10 +1,13 @@
 defmodule Statifier.Machine do
   @moduledoc """
-  A running statechart. SCXML calls this the interpreter.
+  A reactive system.
+
+  This corresponds to the SCXML Interpreter (also called SCXML Processor)
   """
 
   alias Statifier.{Statechart}
 
+  # This allows code to use the name of the module instead of __MODULE__
   alias __MODULE__
 
   # ID of a State
@@ -14,7 +17,7 @@ defmodule Statifier.Machine do
   # If not specified, the first child state in document order is used.
   @type configuration :: [state_id]
 
-  @type t :: %__MODULE__{
+  @type t :: %Machine{
           statechart: Statechart.t(),
           configuration: configuration
         }

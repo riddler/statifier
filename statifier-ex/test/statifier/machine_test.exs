@@ -8,10 +8,7 @@ defmodule Statifier.MachineTest do
 
     {:ok, test_config} = YamlElixir.read_from_file(test_path)
 
-    sc = %Statechart{
-      name: test_config["statechart"]["name"],
-      initial: test_config["statechart"]["initial"]
-    }
+    sc = Statechart.build(test_config["statechart"])
 
     machine =
       %Machine{statechart: sc}
