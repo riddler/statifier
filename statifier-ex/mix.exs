@@ -37,6 +37,7 @@ defmodule Statifier.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, ">= 0.0.0", only: :dev},
       {:poison, ">= 0.0.0"},
       {:sweet_xml, ">= 0.0.0"},
