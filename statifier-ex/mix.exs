@@ -37,8 +37,12 @@ defmodule Statifier.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
+      # Development / Test
       {:credo, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:ex_doc, ">= 0.0.0", only: :dev}
+      {:ex_doc, ">= 0.0.0", only: :dev},
+
+      # Runtime
+      {:yaml_elixir, "~> 2.4"}
     ]
   end
 end
