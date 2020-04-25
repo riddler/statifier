@@ -15,7 +15,6 @@ defmodule Statifier.MixProject do
     ]
   end
 
-
   def description, do: "Statecharts for Elixir"
 
   def package do
@@ -38,9 +37,7 @@ defmodule Statifier.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_doc, ">= 0.0.0", only: :dev},
-      {:poison, ">= 0.0.0"},
-      {:sweet_xml, ">= 0.0.0"}
+      {:ex_doc, ">= 0.0.0", only: :dev}
     ]
   end
 end
