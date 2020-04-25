@@ -1,9 +1,13 @@
 ---
 statechart:
+  name: Valid Single State
   states:
   - id: greeting
 tests:
-- name: Simple Single State
-  verify:
-    configuration:
-    - greeting
+  conformance:
+  - conformant: true
+  configuration:
+  - name: Simple Single State
+    verify:
+      configuration:
+      - greeting

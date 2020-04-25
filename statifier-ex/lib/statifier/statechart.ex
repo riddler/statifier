@@ -26,11 +26,13 @@ defmodule Statifier.Statechart do
 
   @type t :: %__MODULE__{
           name: name() | nil,
+          conformant: boolean,
           initial: initial_string | nil,
           states: states
         }
 
   defstruct name: nil,
+            conformant: false,
             initial: nil,
             states: []
 
@@ -39,6 +41,14 @@ defmodule Statifier.Statechart do
     |> put_name(input)
     |> put_initial(input)
     |> put_states(input)
+  end
+
+  def validate(%Statechart{states: [_required_state | _rest]} = statechart) do
+    %Statechart{statechart | conformant: true}
+  end
+
+  def validate(%Statechart{} = statechart) do
+    %Statechart{statechart | conformant: false}
   end
 
   # Incoming values will be keyed by strings not atoms
