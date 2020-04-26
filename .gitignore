@@ -45,19 +45,19 @@ Thumbs.db
 # Elixir
 
 # The directory Mix will write compiled artifacts to.
-*-ex/_build/
+*/_build/
 
 # If you run "mix test --cover", coverage assets end up here.
-*-ex/cover/
+*/cover/
 
 # The directory Mix downloads your dependencies sources to.
-*-ex/deps/
+*/deps/
 
 # Where 3rd-party dependencies like ExDoc output generated docs.
-*-ex/doc/
+*/doc/
 
 # Ignore .fetch files in case you like to edit your project deps locally.
-*-ex/.fetch
+*/.fetch
 
 # If the VM crashes, it generates a dump, let's ignore it too.
 erl_crash.dump
@@ -69,12 +69,12 @@ erl_crash.dump
 npm-debug.log
 
 # The directory NPM downloads your dependencies sources to.
-*-ex/assets/node_modules/
+*/assets/node_modules/
 
 # Since we are building assets from assets/,
 # we ignore priv/static. You may want to comment
 # this depending on your deployment strategy.
-*-ex/priv/static/
+*/priv/static/
 
 # Files matching config/*.secret.exs pattern contain sensitive
 # data and you should not commit them into version control.
@@ -82,4 +82,4 @@ npm-debug.log
 # Alternatively, you may comment the line below and commit the
 # secrets files as long as you replace their contents by environment
 # variables.
-*-ex/config/*.secret.exs
+*/config/*.secret.exs
