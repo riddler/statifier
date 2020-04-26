@@ -3,6 +3,7 @@
 # Downloaded/installed as part of setup - OS specific
 bin/utils/oq
 
+spec/generated
 
 # Compiled source
 *.com
