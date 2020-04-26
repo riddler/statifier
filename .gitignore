@@ -1,3 +1,9 @@
+# Custom Statifier files
+
+# Downloaded/installed as part of setup - OS specific
+bin/utils/oq
+
+
 # Compiled source
 *.com
 *.class
