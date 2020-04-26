@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+
+set -u # raise an error on use of uninitialized variable
+set -e # exit after the first error
+
+# Wrapper around using the spec/Makefile using make v4
+
+trap "popd 1>/dev/null" EXIT
+pushd "spec" 1> /dev/null
+
+gmake "$@"
