@@ -60,7 +60,7 @@
   To get a local copy up and running follow these simple steps.
 
   ### Installation
-   
+
   1. Clone and cd into the repo
   ```sh
   git clone https://github.com/riddler/statifier.git
@@ -70,8 +70,7 @@
   ```sh
   ./bin/setup
   ```
-  _TODO: [#6](/../../issues/6) Add bin/setup_
-  
+
 
 
 <!-- ROADMAP -->
