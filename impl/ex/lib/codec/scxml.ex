@@ -15,13 +15,29 @@ defmodule Statifier.Codec.SCXML do
 
   @impl Statifier.Codec
   @doc """
-  Parses SCXML into a `Statifier.Schema`
+  Parses SCXML from a file path into a `Statifier.Schema`
   """
-  def parse(scxml_document) do
+  def from_file(scxml_document) do
     scxml_document
     # There really isn't a meaningful `event_state` we can put here
     # until we encounter the scxml element
     |> :xmerl_sax_parser.file(event_fun: &process_event/3, event_state: nil)
+    |> case do
+      {:ok, schema, ""} ->
+        {:ok, schema}
+
+      other ->
+        other
+    end
+  end
+
+  @impl Statifier.Codec
+  @doc """
+  Parses SCXML from a string into a `Statifier.Schema`
+  """
+  def parse(scxml) do
+    scxml
+    |> :xmerl_sax_parser.stream(event_fun: &process_event/3, event_state: nil)
     |> case do
       {:ok, schema, ""} ->
         {:ok, schema}
