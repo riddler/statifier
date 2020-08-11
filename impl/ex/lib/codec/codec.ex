@@ -8,5 +8,6 @@ defmodule Statifier.Codec do
   """
   alias Statifier.Schema
 
-  @callback parse(Path.t()) :: {:ok, Schema.t()} | {:error, any()}
+  @callback from_file(Path.t()) :: {:ok, Schema.t()} | {:error, any()}
+  @callback parse(String.t()) :: {:ok, Schema.t()} | {:error, any()}
 end
