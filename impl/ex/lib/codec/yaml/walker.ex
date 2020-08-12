@@ -35,7 +35,7 @@ defmodule Statifier.Codec.YAML.Walker do
     initial_state = Keyword.get(opts, :event_state, nil)
     processor = Keyword.get(opts, :event_fun)
 
-    do_walk(yaml, {processor, initial_state})
+    {:ok, do_walk(yaml, {processor, initial_state})}
   end
 
   defp do_walk(yaml, {processor, state}) when is_map(yaml) do
