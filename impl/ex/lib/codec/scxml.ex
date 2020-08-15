@@ -75,7 +75,9 @@ defmodule Statifier.Codec.SCXML do
          _location,
          schema
        ) do
-    attributes = extract_attributes(attributes, ~w(initial id))
+    attributes =
+      extract_attributes(attributes, ~w(initial id))
+      |> Map.put(:type, :state)
 
     state = State.new(attributes)
 
@@ -94,6 +96,34 @@ defmodule Statifier.Codec.SCXML do
   end
 
   ###############################################
+  # final Element processing
+  ###############################################
+
+  defp process_event(
+         {:startElement, _uri, 'final', _qualified_name, attributes},
+         _location,
+         schema
+       ) do
+    attributes =
+      extract_attributes(attributes, ~w(id))
+      |> Map.put(:type, :final)
+
+    state = State.new(attributes)
+
+    Schema.add_substate(schema, state)
+  end
+
+  # Since final has no children we should immediately hit this end clause
+  # TODO: Add check to make sure that final has no children.
+  defp process_event(
+         {:endElement, _uri, 'final', _qualified_name},
+         _location,
+         schema
+       ) do
+    Schema.rparent_state(schema)
+  end
+
+  ###############################################
   # parallel Element processing
   ###############################################
 
@@ -104,7 +134,7 @@ defmodule Statifier.Codec.SCXML do
        ) do
     attributes =
       extract_attributes(attributes, ~w(id))
-      |> Map.put(:parallel, true)
+      |> Map.put(:type, :parallel)
 
     parallel = State.new(attributes)
 
