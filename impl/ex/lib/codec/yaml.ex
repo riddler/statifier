@@ -55,8 +55,17 @@ defmodule Statifier.Codec.YAML do
       |> extract_attributes(%{
         "name" => :id,
         "transitions" => :transitions,
-        "initial" => :initial
+        "initial" => :initial,
+        "final" => :final
       })
+
+    # Set type of :final or :state
+    params =
+      if Map.get(params, :final) == true do
+        Map.put(params, :type, :final)
+      else
+        Map.put(params, :type, :state)
+      end
 
     transitions =
       Map.get(params, :transitions, [])
@@ -86,7 +95,7 @@ defmodule Statifier.Codec.YAML do
     parallel =
       parallel
       |> extract_attributes(%{"name" => :id, "initial" => :initial})
-      |> Map.put(:parallel, true)
+      |> Map.put(:type, :parallel)
       |> State.new()
 
     Schema.add_substate(schema, parallel)
