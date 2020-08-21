@@ -1,12 +1,12 @@
 defmodule Statifier do
-  def parse() do
+  def from_file() do
     :statifier
     |> :code.priv_dir()
     |> Path.join("scxml/microwave.scxml")
-    |> Statifier.Codec.SCXML.parse()
+    |> Statifier.Codec.SCXML.from_file()
   end
 
-  def parse(file) do
+  def from_file(file) do
     codec =
       if String.ends_with?(file, ".yaml") do
         Statifier.Codec.YAML
@@ -17,6 +17,6 @@ defmodule Statifier do
     :statifier
     |> :code.priv_dir()
     |> Path.join(file)
-    |> codec.parse()
+    |> codec.from_file()
   end
 end

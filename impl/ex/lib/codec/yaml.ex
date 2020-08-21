@@ -13,13 +13,24 @@ defmodule Statifier.Codec.YAML do
   @behaviour Statifier.Codec
 
   @impl Statifier.Codec
-  def parse(yaml_document) do
-    case Walker.walk(yaml_document, event_state: nil, event_fun: &process_event/2) do
-      {:error, _reason} = error ->
-        error
+  def from_file(yaml_path) do
+    case YamlElixir.read_from_file(yaml_path) do
+      {:ok, yaml} ->
+        Walker.walk(yaml, event_state: nil, event_fun: &process_event/2)
 
-      schema ->
-        {:ok, schema}
+      error ->
+        error
+    end
+  end
+
+  @impl Statifier.Codec
+  def parse(yaml_string) do
+    case YamlElixir.read_from_string(yaml_string) do
+      {:ok, yaml} ->
+        Walker.walk(yaml, event_state: nil, event_fun: &process_event/2)
+
+      error ->
+        error
     end
   end
 
@@ -44,8 +55,17 @@ defmodule Statifier.Codec.YAML do
       |> extract_attributes(%{
         "name" => :id,
         "transitions" => :transitions,
-        "initial" => :initial
+        "initial" => :initial,
+        "final" => :final
       })
+
+    # Set type of :final or :state
+    params =
+      if Map.get(params, :final) == true do
+        Map.put(params, :type, :final)
+      else
+        Map.put(params, :type, :state)
+      end
 
     transitions =
       Map.get(params, :transitions, [])
@@ -75,7 +95,7 @@ defmodule Statifier.Codec.YAML do
     parallel =
       parallel
       |> extract_attributes(%{"name" => :id, "initial" => :initial})
-      |> Map.put(:parallel, true)
+      |> Map.put(:type, :parallel)
       |> State.new()
 
     Schema.add_substate(schema, parallel)

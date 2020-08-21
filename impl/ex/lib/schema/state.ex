@@ -6,7 +6,7 @@ defmodule Statifier.Schema.State do
   They optionally form a hierarchy where a state is a parent to other state
   node(s). This hierarchy forms a lineage where when in a child state you are 
   also in the parent state. The rules and behavior surrounding how child
-  states are entered is dependent on the `class` of the state node - see
+  states are entered is dependent on the `type` of the state node - see
   "Classifications" section below.
 
   ## The Statifier.Schema.State struct:
@@ -14,21 +14,23 @@ defmodule Statifier.Schema.State do
   The public fields are:
 
   * `id` - name by which state can be identified and transitioned to
-  * `parallel` - whether this node is a regular state or a parallel state
+  * `type` - whether this is a :final, :parallel, or :state node
   * `transitions` - all of the `Statifier.Schema.Transition`s of the state
   * `on_enter` function to run when leaving state
   * `on_exit` - function to run when leaving state
 
   ## Classifictions
 
-  State nodes fall into one of two classification. They are either `parallel`
-  nodes or regular state nodes. A `parallel` node has two or more child states
-  and they all become activated when entering the parent state. Regular state
-  nodes can have 0 or more children. If they have more than one child only one
-  can be active at any one time.
+  State nodes fall into one of three classifications. They are: `:parallel`,
+  `:final`, or `:state` nodes. A `:parallel` node has two or more child states
+  and they all become activated when entering the parent state. A `:final`
+  state node must be an atomic state and signifies that the state has reached
+  its final state. Once a state enters final it can no longer transition. A
+  `:state` node can have 0 or more children. If they have more than one child
+  than only one can be active at any one time.
 
-  Non parallel state nodes can be `atomic` or `compound`. An `atomic` stat is
-  one that does not have any child states. A compound state has one or more
+  Non `:parallel` state nodes can be `atomic` or `compound`. An `atomic` state
+  is one that does not have any child states. A compound state has one or more
   child states. A `parallel` state by definition will always be a `compound`
   state.
 
@@ -42,7 +44,7 @@ defmodule Statifier.Schema.State do
       - idle state
       - cooking state
 
-  The above example does not contain any `parallel` state nodes. It does
+  The above example does not contain any `:parallel` state nodes. It does
   contain two `compound` states. The top level machine which can be off or on,
   and the on state which is either idle or cooking. Lastly, it contains three
   `atomic` states: off, idle, and cooking.
@@ -60,7 +62,7 @@ defmodule Statifier.Schema.State do
         - closed state
         - open state
 
-  This example does contain a `parallel` which maintains the state of the door
+  This example does contain a `:parallel` which maintains the state of the door
   and the state of the engine of the microwave. When in the oven state you are
   also in the door state and the engine state. Here there are four `compound`
   states: oven, engine, on, and door. For `atomic` states there are five: off,
@@ -78,13 +80,13 @@ defmodule Statifier.Schema.State do
   # TODO: figure out how we want to represent on_enter/exit
   @type t :: %__MODULE__{
           id: state_identifier(),
-          parallel: boolean(),
+          type: :state | :parallel | :final,
           transitions: [Transition.t()],
           on_exit: String.t() | nil,
           on_entry: String.t() | nil
         }
 
-  defstruct id: nil, parallel: false, transitions: [], on_entry: nil, on_exit: nil
+  defstruct id: nil, type: nil, transitions: [], on_entry: nil, on_exit: nil
 
   @spec new(Map.t()) :: t()
   @doc """
@@ -96,7 +98,7 @@ defmodule Statifier.Schema.State do
 
   * `id` - state identifier
   * `initial` - initial state (only for compound states)
-  * `parallel` - is this a parallel state node
+  * `type` - is this a :parallel, :state, or :final node
   # TODO: These are not implemented yet
   * `on_enter` - function to execute when entering state
   * `on_exit` - function to execute when exiting state

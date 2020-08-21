@@ -26,22 +26,16 @@ defmodule Statifier.Codec.YAML.Walker do
 
   @type walker_opts :: [event_state: event_state(), event_fun: function()]
 
-  @spec walk(Path.t(), walker_opts()) :: {:ok, any()} | {:error, any()}
+  @spec walk(String.t(), walker_opts()) :: {:ok, any()} | {:error, any()}
   @doc """
-  Takes in a file and starts processing it by calling `event_fun` defined
+  Takes yaml string and starts processing it by calling `event_fun` defined
   in `opts` with each start and end of processing maps or lists.
   """
-  def walk(file, opts) do
+  def walk(yaml, opts) do
     initial_state = Keyword.get(opts, :event_state, nil)
     processor = Keyword.get(opts, :event_fun)
 
-    case YamlElixir.read_from_file(file) do
-      {:ok, yaml} ->
-        do_walk(yaml, {processor, initial_state})
-
-      error ->
-        error
-    end
+    {:ok, do_walk(yaml, {processor, initial_state})}
   end
 
   defp do_walk(yaml, {processor, state}) when is_map(yaml) do
