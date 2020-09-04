@@ -23,7 +23,7 @@ defmodule Statifier.Codec.SCXML do
     # until we encounter the scxml element
     |> :xmerl_sax_parser.file(event_fun: &process_event/3, event_state: nil)
     |> case do
-      {:ok, schema, ""} ->
+      {:ok, schema, _remainder} ->
         {:ok, schema}
 
       other ->
@@ -39,7 +39,7 @@ defmodule Statifier.Codec.SCXML do
     scxml
     |> :xmerl_sax_parser.stream(event_fun: &process_event/3, event_state: nil)
     |> case do
-      {:ok, schema, ""} ->
+      {:ok, schema, _remainder} ->
         {:ok, schema}
 
       other ->
