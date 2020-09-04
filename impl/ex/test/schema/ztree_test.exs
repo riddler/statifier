@@ -95,5 +95,52 @@ defmodule Statifier.Schema.ZTreeTest do
       refute ZTree.parent?(ztree)
       assert ZTree.insert_child(ztree, 1) |> ZTree.children!() |> ZTree.parent?()
     end
+
+    test "can move up to parent without resetting siblings" do
+      ztree =
+        ZTree.root(0)
+        |> ZTree.insert_child(2)
+        |> ZTree.insert_child(1)
+
+      # move down and to second child
+      ztree =
+        ztree
+        |> ZTree.children!()
+        |> ZTree.right!()
+
+      assert ZTree.focus(ztree) == 2
+
+      # now back up to parent
+      ztree = ZTree.parent!(ztree)
+
+      # back to children
+      ztree = ZTree.children!(ztree)
+
+      assert ZTree.focus(ztree) == 2
+    end
+
+    test "can move up to parent and reset the siblings" do
+      ztree =
+        ZTree.root(0)
+        |> ZTree.insert_child(2)
+        |> ZTree.insert_child(1)
+
+      # move down and to second child
+      ztree =
+        ztree
+        |> ZTree.children!()
+        |> ZTree.right!()
+
+      assert ZTree.focus(ztree) == 2
+
+      # now back up to parent
+      ztree = ZTree.rparent!(ztree)
+
+      # back to children
+      ztree = ZTree.children!(ztree)
+
+      # since the siblings were reset we should see the first
+      assert ZTree.focus(ztree) == 1
+    end
   end
 end
