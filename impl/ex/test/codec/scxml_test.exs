@@ -6,7 +6,12 @@ defmodule Statifier.Codec.SCXMLTest do
 
   @microwave Path.join(:code.priv_dir(:statifier), "scxml/microwave.scxml")
 
-  test "can produce valid schemas" do
-    assert {:ok, %Schema{valid?: true}} = SCXML.parse(@microwave)
+  test "can parse from a file" do
+    assert {:ok, %Schema{valid?: true}} = SCXML.from_file(@microwave)
+  end
+
+  test "can parse from a string" do
+    scxml = File.read!(@microwave)
+    assert {:ok, %Schema{valid?: true}} = SCXML.parse(scxml)
   end
 end
