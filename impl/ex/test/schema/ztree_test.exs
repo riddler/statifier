@@ -139,8 +139,63 @@ defmodule Statifier.Schema.ZTreeTest do
       # back to children
       ztree = ZTree.children!(ztree)
 
-      # since the siblings were reset we should see the first
       assert ZTree.focus(ztree) == 1
+    end
+  end
+
+  describe "finding elements in tree" do
+    setup do
+      # setup tree
+      #           0
+      #       1       2
+      #     3   4   5   6
+      #   7
+
+      ztree =
+        ZTree.root(0)
+        |> ZTree.insert_child(1)
+        |> ZTree.children!()
+        |> ZTree.insert_child(3)
+        |> ZTree.children!()
+        |> ZTree.insert_child(7)
+        |> ZTree.insert_right(4)
+        # done 1 branch
+        |> ZTree.parent!()
+        |> ZTree.insert_right(2)
+        |> ZTree.right!()
+        |> ZTree.insert_child(5)
+        |> ZTree.children!()
+        |> ZTree.insert_right(6)
+        # done 2 branch
+        # get to root and reset
+        |> ZTree.rparent!()
+        |> ZTree.rparent!()
+
+      {:ok, ztree: ztree}
+    end
+
+    test "can find elements that are in the tree", %{ztree: ztree} do
+      for element <- 0..7 do
+        assert {:ok, ^element} =
+                 ZTree.find(ztree, fn
+                   _cursor, ^element ->
+                     true
+
+                   _cursor, _not_value ->
+                     false
+                 end)
+      end
+    end
+
+    test "error when element is not in tree", %{ztree: ztree} do
+      assert {:error, nil} =
+               ZTree.find(ztree, fn
+                 _cursor, :no_in_tree ->
+                   true
+
+                 _cursor, _not_seven ->
+                   false
+               end)
     end
   end
 end

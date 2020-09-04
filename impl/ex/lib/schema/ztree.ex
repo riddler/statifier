@@ -53,6 +53,8 @@ defmodule Statifier.Schema.ZTree do
   """
   @type move_error :: :cannot_make_move
 
+  @type find_predicate :: (t(), any() -> boolean())
+
   @spec root(term()) :: t()
   @doc """
   Creates a new tree with `value` placed as root.
@@ -321,4 +323,86 @@ defmodule Statifier.Schema.ZTree do
     ztree
   end
 
+  @spec find(t(), find_predicate()) :: {:ok, any()} :: {:error, nil}
+  @doc """
+  Finds a value in tree by calling `predicate` on each element
+
+  `predicate` will be passed both the current ztree and the focus of the ztree.
+  The ztree can be used to look at siblings or do any other tranversal to make
+  the decision of if the value has found.
+  """
+  def find(ztree, pred) do
+    current = focus(ztree)
+
+    if pred.(ztree, current) do
+      {:ok, current}
+    else
+      case next(ztree) do
+        {:ok, :done, _ztree} ->
+          {:error, nil}
+
+        {:ok, ztree, traversal} ->
+          do_find(ztree, traversal, pred)
+      end
+    end
+  end
+
+  def do_find(ztree, traversal, pred) do
+    current = focus(ztree)
+
+    if pred.(ztree, current) do
+      {:ok, current}
+    else
+      case next(ztree, traversal) do
+        {:ok, :done, _ztree} ->
+          {:error, nil}
+
+        {:ok, ztree, traversal} ->
+          do_find(ztree, traversal, pred)
+      end
+    end
+  end
+
+  # Iterates over a zipper stepping to next node in a depth first search
+  # Once entire tree has been visited `{:ok, :complete, tree}` is returned
+  @spec next(t()) :: {:ok, t()} | {:ok, :complete, t()}
+  def next(ztree) do
+    cond do
+      children?(ztree) ->
+        {:ok, children!(ztree), focus(ztree)}
+
+      parent?(ztree) ->
+        {:ok, parent!(ztree), focus(ztree)}
+    end
+  end
+
+  def next(ztree, traversal_state) do
+    has_children? = children?(ztree)
+    has_right_children? = has_children? && children!(ztree) |> right?()
+    child_is_last_seen? = has_children? && children!(ztree) |> focus() == traversal_state
+    has_parent? = parent?(ztree)
+
+    cond do
+      # do we have unexplored childen
+      child_is_last_seen? && has_right_children? ->
+        new_ztree =
+          ztree
+          |> children!()
+          |> right!()
+
+        {:ok, new_ztree, focus(ztree)}
+
+      child_is_last_seen? && has_parent? ->
+        next(parent!(ztree), focus(ztree))
+
+      child_is_last_seen? && root?(ztree) ->
+        {:ok, :done, ztree}
+
+      has_children? ->
+        {:ok, children!(ztree), focus(ztree)}
+
+      parent?(ztree) ->
+        next(parent!(ztree), focus(ztree))
+    end
+  end
 end
