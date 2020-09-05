@@ -1,0 +1,37 @@
+name: Elixir - CI
+
+defaults:
+  run:
+    working-directory: ./impl/ex
+
+on:
+  push:
+    branches:
+    - master
+    paths:
+    - 'impl/ex/**'
+    - '.github/**'
+  pull_request:
+    branches:
+      - master
+    paths:
+    - 'impl/ex/**'
+    - '.github/**'
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-elixir@v1
+      with:
+        otp-version: '22.3'
+        elixir-version: '1.10.0'
+
+    - name: Get Dependencies
+      run: mix deps.get
+
+    - name: Run Tests
+      run: mix test
+      env:
+        MIX_ENV: test
