@@ -56,6 +56,12 @@ defmodule Statifier.Schema.ZTree do
   @spec root(term()) :: t()
   @doc """
   Creates a new tree with `value` placed as root.
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ZTree.focus(ztree)
+    0
   """
   def root(value) do
     {
@@ -74,6 +80,18 @@ defmodule Statifier.Schema.ZTree do
   @spec root?(t()) :: boolean()
   @doc """
   Returns whether current focus is the root node
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ZTree.root?(ztree)
+    true
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ZTree.root?(ztree)
+    false
   """
   def root?({[], _}), do: true
   def root?({_thread, _znode}), do: false
@@ -81,6 +99,18 @@ defmodule Statifier.Schema.ZTree do
   @spec focus(t()) :: term()
   @doc """
   Returns the currently focused element of the tree.
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ZTree.focus(ztree)
+    0
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ZTree.focus(ztree)
+    1 
   """
   def focus({_thread, {_left, [{value, _children} | _right]}}), do: value
 
@@ -89,6 +119,26 @@ defmodule Statifier.Schema.ZTree do
   Replaces the value currently at focus with `value`.
 
   The new value at node will keep the children present in the old node.
+
+  ## Examples
+
+  Replace the current focus.
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.replace(ztree, 0.5)
+    iex> ZTree.focus(ztree)
+    0.5
+
+  Children of the replaced node do not change.
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.replace(ztree, 0.5)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ZTree.focus(ztree)
+    1
+    
   """
   def replace({thread, {left, [{_old_val, children} | right]}}, value) do
     {thread, {left, [{value, children} | right]}}
@@ -97,6 +147,27 @@ defmodule Statifier.Schema.ZTree do
   @spec insert(t(), term()) :: t()
   @doc """
   Adds a new node at the current focus with `value`.
+
+  ## Examples
+
+  Inserted value becomes focus
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ztree = ZTree.insert(ztree, 2)
+    iex> ZTree.focus(ztree)
+    2
+
+  Old focus is now the right sibling
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ztree = ZTree.insert(ztree, 2)
+    iex> ztree = ZTree.right!(ztree)
+    iex> ZTree.focus(ztree)
+    1
   """
   def insert({thread, {left, right}}, value) do
     {
@@ -113,6 +184,25 @@ defmodule Statifier.Schema.ZTree do
   Adds a new node to the right of current focus with `value`.
 
   Does not shift focus to new node.
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ztree = ZTree.insert_right(ztree, 2)
+    iex> ZTree.focus(ztree)
+    1
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ztree = ZTree.insert_right(ztree, 2)
+    iex> ztree = ZTree.right!(ztree)
+    iex> ZTree.focus(ztree)
+    2
+
+  ## Examples
   """
   def insert_right({thread, {left, [focus | right]}}, value) do
     {
@@ -130,6 +220,36 @@ defmodule Statifier.Schema.ZTree do
 
   If the parent were to then move into the child collection they would be
   focused on the new child.
+
+  ## Examples
+    
+  Focus stays at parent.
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ZTree.focus(ztree)
+    0
+
+  Child is inserted.
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ZTree.focus(ztree)
+    1
+
+  Child goes to the head of the right sibling list.
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 2)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ztree = ZTree.right!(ztree) # Now 2 is in left siblings
+    iex> ztree = ZTree.parent!(ztree)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ztree = ZTree.left!(ztree)
+    iex> ZTree.focus(ztree)
+    2
   """
   def insert_child({thread, {left, [{focus, nil} | right]}}, value) do
     {
@@ -156,6 +276,16 @@ defmodule Statifier.Schema.ZTree do
   Deletes the current focus along with its children.
 
   Sibling to the right becomes the new focus.
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 2)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ztree = ZTree.delete(ztree)
+    iex> ZTree.focus(ztree)
+    2
   """
   def delete({thread, {left, [_old_node | right]}}) do
     {thread, {left, right}}
@@ -164,6 +294,17 @@ defmodule Statifier.Schema.ZTree do
   @spec left(t()) :: {:ok, t()} | {:error, move_error()}
   @doc """
   Moves focus to the left of the current level
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 2)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ztree = ZTree.right!(ztree)
+    iex> {:ok, ztree} = ZTree.left(ztree)
+    iex> ZTree.focus(ztree)
+    1
   """
   def left({thread, {[new_focus | rest_left], right}}) do
     {:ok, {thread, {rest_left, [new_focus | right]}}}
@@ -182,6 +323,22 @@ defmodule Statifier.Schema.ZTree do
   @spec left?(t()) :: boolean()
   @doc """
   Returns whether a left siblings exists
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ZTree.left?(ztree)
+    false
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 2)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ztree = ZTree.right!(ztree)
+    iex> ZTree.left?(ztree)
+    true
   """
   def left?(ztree) do
     case left(ztree) do
@@ -196,6 +353,16 @@ defmodule Statifier.Schema.ZTree do
   @spec right(t()) :: {:ok, t()} | {:error, move_error()}
   @doc """
   Moves focus to the right of the current level
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 2)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> {:ok, ztree} = ZTree.right(ztree)
+    iex> ZTree.focus(ztree)
+    2
   """
   def right({_thread, {_left, [_current | []]}}), do: {:error, :cannot_make_move}
 
@@ -214,6 +381,21 @@ defmodule Statifier.Schema.ZTree do
   @spec right?(t()) :: boolean()
   @doc """
   Returns whether a right sibling exists.
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ZTree.right?(ztree)
+    false
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 2)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ZTree.right?(ztree)
+    true
   """
   def right?(ztree) do
     case right(ztree) do
@@ -228,6 +410,14 @@ defmodule Statifier.Schema.ZTree do
   @spec children(t()) :: {:ok, t()} | {:error, move_error()}
   @doc """
   Goes down one level to the children of current focus.
+
+  ## Exmaples
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> {:ok, ztree} = ZTree.children(ztree)
+    iex> ZTree.focus(ztree)
+    1
   """
   def children({_thread, {_left, [{_value, nil} | _right]}}), do: {:error, :cannot_make_move}
 
@@ -254,6 +444,17 @@ defmodule Statifier.Schema.ZTree do
   @spec children?(t()) :: boolean()
   @doc """
   Returns whether current focus has any children
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ZTree.children?(ztree)
+    false
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ZTree.children?(ztree)
+    true
   """
   def children?(ztree) do
     case children(ztree) do
@@ -273,6 +474,27 @@ defmodule Statifier.Schema.ZTree do
   example if you were on the second sibling of the current level moving up with
   parent/1 and then calling children/1 would move you back down to the second
   sibling again.
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> {:ok, ztree} = ZTree.parent(ztree)
+    iex> ZTree.focus(ztree)
+    0
+
+  Moving to parent doesn't reset left and right sibling list.
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 2)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ztree = ZTree.right!(ztree) # 1 is now in left sibling list
+    iex> {:ok, ztree} = ZTree.parent(ztree)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ZTree.focus(ztree)
+    2
   """
   def parent({[{left, [value | right]} | thread], children}) do
     {:ok, {thread, {left, [{value, children} | right]}}}
@@ -305,6 +527,27 @@ defmodule Statifier.Schema.ZTree do
   If for example you were on the second sibling of the current level moivng up
   with rparent/1 and then calling children/1 would move you back down to
   first sibling instead of the second.
+
+  ## Examples
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> {:ok, ztree} = ZTree.parent(ztree)
+    iex> ZTree.focus(ztree)
+    0
+
+  Unlike `parent/1` the left and right sibling list is reset
+
+    iex> ztree = ZTree.root(0)
+    iex> ztree = ZTree.insert_child(ztree, 2)
+    iex> ztree = ZTree.insert_child(ztree, 1)
+    iex> ztree = ZTree.children!(ztree)
+    iex> ztree = ZTree.right!(ztree) # 1 is now in left sibling list
+    iex> {:ok, ztree} = ZTree.rparent(ztree) # This resets sibling list
+    iex> ztree = ZTree.children!(ztree)
+    iex> ZTree.focus(ztree)
+    1
   """
   def rparent({[{parent_left, [value | parent_right]} | thread], {left, right}}) do
     {:ok, {thread, {parent_left, [{value, {[], Enum.reverse(left) ++ right}} | parent_right]}}}
