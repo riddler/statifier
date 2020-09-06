@@ -1,6 +1,7 @@
 defmodule Statifier.Schema.ZTreeTest do
   use ExUnit.Case, async: true
   alias Statifier.Schema.ZTree
+  doctest Statifier.Schema.ZTree
 
   describe "creating new elements" do
     test "can create a new tree given a root" do
