@@ -5,7 +5,12 @@ defmodule Statifier.Codec.YAMLTest do
 
   @microwave Path.join(:code.priv_dir(:statifier), "yaml/microwave.yaml")
 
-  test "can produce valid schemas" do
-    assert {:ok, %Schema{valid?: true}} = YAML.parse(@microwave)
+  test "can parse from a file" do
+    assert {:ok, %Schema{valid?: true}} = YAML.from_file(@microwave)
+  end
+
+  test "can parse from a string" do
+    yaml = File.read!(@microwave)
+    assert {:ok, %Schema{valid?: true}} = YAML.parse(yaml)
   end
 end
