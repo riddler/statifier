@@ -1,6 +1,6 @@
-defmodule Schema.ZListTest do
+defmodule Statifier.Zipper.ListTest do
   use ExUnit.Case, async: true
-  alias Statifier.Schema.ZList
+  alias Statifier.Zipper.List, as: ZList
 
   setup do
     zipper = ZList.from_list([1, 2, 3, 4, 5, 6])

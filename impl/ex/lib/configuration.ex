@@ -8,8 +8,8 @@ defmodule Statifier.Configuration do
   also active.
   """
 
-  import Statifier.Schema.ZTree
-  @type t :: ZTree.t()
+  import Statifier.Zipper.Tree
+  @type t :: Tree.t()
   @spec compound?(t()) :: boolean()
   @doc """
   Returns whether focused state of configuration is `compound`

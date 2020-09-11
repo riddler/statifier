@@ -12,11 +12,11 @@ defmodule Statifier.Schema do
   * `valid?` - Whether the parsed definition led to a valid schema
   * `transitions` - All the states that transitions move to
   """
-  alias Statifier.Schema
-  alias Statifier.Schema.{Root, State, Transition, ZTree}
+  alias Statifier.Schema.{Root, State, Transition, Tree}
+  alias Statifier.Zipper.Tree
 
   @type t :: %__MODULE__{
-          initial_configuration: Schema.ZTree.t(),
+          initial_configuration: Tree.t(),
           state_identifiers: MapSet.t(State.state_identifier()),
           valid?: boolean(),
           transitions: MapSet.t(State.state_identifier())
@@ -32,12 +32,12 @@ defmodule Statifier.Schema do
   """
   def new(%Root{} = root) do
     %__MODULE__{
-      initial_configuration: ZTree.root(root)
+      initial_configuration: Tree.root(root)
     }
   end
 
   def current_state(%__MODULE__{initial_configuration: initial_configuration}) do
-    ZTree.focus(initial_configuration)
+    Tree.focus(initial_configuration)
   end
 
   @doc """
@@ -48,7 +48,7 @@ defmodule Statifier.Schema do
   """
   def rparent_state(%__MODULE__{initial_configuration: configuration} = schema) do
     configuration =
-      case ZTree.rparent(configuration) do
+      case Tree.rparent(configuration) do
         {:ok, configuration} -> configuration
         _ -> configuration
       end
@@ -77,14 +77,14 @@ defmodule Statifier.Schema do
       end)
 
     configuration =
-      case ZTree.children(configuration) do
+      case Tree.children(configuration) do
         {:ok, configuration} ->
-          ZTree.insert_right(configuration, state)
-          |> ZTree.right!()
+          Tree.insert_right(configuration, state)
+          |> Tree.right!()
 
         {:error, :cannot_make_move} ->
-          ZTree.insert_child(configuration, state)
-          |> ZTree.children!()
+          Tree.insert_child(configuration, state)
+          |> Tree.children!()
       end
 
     %__MODULE__{
@@ -101,13 +101,13 @@ defmodule Statifier.Schema do
         %Transition{target: target} = transition
       )
       when not is_nil(target) do
-    state = ZTree.focus(configuration)
+    state = Tree.focus(configuration)
 
     %__MODULE__{
       schema
       | transitions: MapSet.put(transitions, target),
         initial_configuration:
-          ZTree.replace(configuration, State.add_transition(state, transition)),
+          Tree.replace(configuration, State.add_transition(state, transition)),
         valid?: check_validity(schema)
     }
   end
@@ -116,12 +116,12 @@ defmodule Statifier.Schema do
         %__MODULE__{initial_configuration: configuration} = schema,
         %Transition{} = transition_without_target
       ) do
-    state = ZTree.focus(configuration)
+    state = Tree.focus(configuration)
 
     %__MODULE__{
       schema
       | initial_configuration:
-          ZTree.replace(configuration, State.add_transition(state, transition_without_target)),
+          Tree.replace(configuration, State.add_transition(state, transition_without_target)),
         valid?: check_validity(schema)
     }
   end
@@ -134,7 +134,7 @@ defmodule Statifier.Schema do
     # all the checks we have to do for validity
     [
       # Are we at the root of our tree
-      ZTree.focus(configuration),
+      Tree.focus(configuration),
       # Do all transitions move to known discovered states
       MapSet.subset?(transitions, states)
     ]
