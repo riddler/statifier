@@ -9,13 +9,13 @@ defmodule Statifier.Zipper.TreeTest do
     end
 
     test "inserting new elements creates new focus and pushes old focus to right" do
-      ztree =
+      tree =
         0
         |> Tree.root()
         |> Tree.insert(1)
 
-      assert Tree.focus(ztree) == 1
-      assert Tree.right!(ztree) |> Tree.focus() == 0
+      assert Tree.focus(tree) == 1
+      assert Tree.right!(tree) |> Tree.focus() == 0
     end
 
     test "can insert children" do
@@ -29,16 +29,16 @@ defmodule Statifier.Zipper.TreeTest do
     end
 
     test "can move into children if they exist" do
-      ztree = Tree.root(0) |> Tree.insert_child(1)
+      tree = Tree.root(0) |> Tree.insert_child(1)
 
-      assert Tree.children!(ztree) |> Tree.focus() == 1
+      assert Tree.children!(tree) |> Tree.focus() == 1
     end
 
     test "can check if children exists" do
-      ztree = Tree.root(1)
-      refute Tree.children?(ztree)
+      tree = Tree.root(1)
+      refute Tree.children?(tree)
 
-      assert Tree.insert_child(ztree, 1) |> Tree.children?()
+      assert Tree.insert_child(tree, 1) |> Tree.children?()
     end
 
     test "cannot move to the right if no sibling exists" do
@@ -50,11 +50,11 @@ defmodule Statifier.Zipper.TreeTest do
     end
 
     test "can check if right sibling exists" do
-      ztree = Tree.root(1)
-      refute Tree.right?(ztree)
+      tree = Tree.root(1)
+      refute Tree.right?(tree)
 
       # inserting pushes olf focus to the right
-      assert Tree.insert(ztree, 2) |> Tree.right?()
+      assert Tree.insert(tree, 2) |> Tree.right?()
     end
 
     test "cannot move left if no left sibling exists" do
@@ -71,11 +71,11 @@ defmodule Statifier.Zipper.TreeTest do
     end
 
     test "can check if left sibling exists" do
-      ztree = Tree.root(1)
-      refute Tree.right?(ztree)
+      tree = Tree.root(1)
+      refute Tree.right?(tree)
 
       # inserting pushes olf focus to the right
-      assert Tree.insert(ztree, 2) |> Tree.right!() |> Tree.left?()
+      assert Tree.insert(tree, 2) |> Tree.right!() |> Tree.left?()
     end
 
     test "cannot move to parent if none exists" do
@@ -141,6 +141,62 @@ defmodule Statifier.Zipper.TreeTest do
       tree = Tree.children!(tree)
 
       assert Tree.focus(tree) == 1
+    end
+  end
+
+  describe "finding elements in tree" do
+    setup do
+      # setup tree
+      #           0
+      #       1       2
+      #     3   4   5   6
+      #   7
+
+      tree =
+        Tree.root(0)
+        |> Tree.insert_child(1)
+        |> Tree.children!()
+        |> Tree.insert_child(3)
+        |> Tree.children!()
+        |> Tree.insert_child(7)
+        |> Tree.insert_right(4)
+        # done 1 branch
+        |> Tree.parent!()
+        |> Tree.insert_right(2)
+        |> Tree.right!()
+        |> Tree.insert_child(5)
+        |> Tree.children!()
+        |> Tree.insert_right(6)
+        # done 2 branch
+        # get to root and reset
+        |> Tree.rparent!()
+        |> Tree.rparent!()
+
+      {:ok, tree: tree}
+    end
+
+    test "can find elements that are in the tree", %{tree: tree} do
+      for element <- 0..7 do
+        assert {:ok, ^element} =
+                 Tree.find(tree, fn
+                   _cursor, ^element ->
+                     true
+
+                   _cursor, _not_value ->
+                     false
+                 end)
+      end
+    end
+
+    test "error when element is not in tree", %{tree: tree} do
+      assert {:error, nil} =
+               Tree.find(tree, fn
+                 _cursor, :no_in_tree ->
+                   true
+
+                 _cursor, _not_seven ->
+                   false
+               end)
     end
   end
 end

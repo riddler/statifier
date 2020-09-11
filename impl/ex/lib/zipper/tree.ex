@@ -6,6 +6,7 @@ defmodule Statifier.Zipper.Tree do
   """
 
   alias Statifier.Zipper.List, as: ZList
+  alias Statifier.Zipper.TreeTraversal
 
   @typedoc """
   Znodes represent levels of the tree as a Zipper List.
@@ -52,6 +53,7 @@ defmodule Statifier.Zipper.Tree do
   sibling exists
   """
   @type move_error :: :cannot_make_move
+  @type find_predicate :: (t(), any() -> boolean())
 
   @spec root(term()) :: t()
   @doc """
@@ -562,5 +564,34 @@ defmodule Statifier.Zipper.Tree do
   def rparent!(ztree) do
     {:ok, ztree} = rparent(ztree)
     ztree
+  end
+
+  @spec find(t(), find_predicate()) :: {:ok, any()} | {:error, nil}
+  @doc """
+  Finds a value in tree by calling `predicate` on each element
+  `predicate` will be passed both the current ztree and the focus of the ztree.
+  The ztree can be used to look at siblings or do any other tranversal to make
+  the decision of if the value has found.
+  """
+  def find({_thread, _focus} = tree, predicate) do
+    current = focus(tree)
+
+    if predicate.(tree, current) do
+      {:ok, current}
+    else
+      find(TreeTraversal.new(tree), predicate)
+    end
+  end
+
+  def find(%TreeTraversal{complete?: true}, _pred), do: {:error, nil}
+
+  def find(%TreeTraversal{tree: tree} = traversal, pred) do
+    current = focus(tree)
+
+    if pred.(tree, current) do
+      {:ok, current}
+    else
+      find(TreeTraversal.next(traversal), pred)
+    end
   end
 end
