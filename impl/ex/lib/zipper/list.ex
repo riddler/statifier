@@ -1,4 +1,4 @@
-defmodule Statifier.Schema.ZList do
+defmodule Statifier.Zipper.List do
   @moduledoc """
   An implementation of a Zipper over a list
 
