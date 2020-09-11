@@ -554,4 +554,13 @@ defmodule Statifier.Zipper.Tree do
   end
 
   def rparent({[], _}), do: {:error, :cannot_make_move}
+
+  @spec rparent!(t()) :: t()
+  @doc """
+  Same as rparent/1 but will throw if not able to make move
+  """
+  def rparent!(ztree) do
+    {:ok, ztree} = rparent(ztree)
+    ztree
+  end
 end

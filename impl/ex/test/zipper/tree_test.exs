@@ -96,5 +96,51 @@ defmodule Statifier.Zipper.TreeTest do
       refute Tree.parent?(ztree)
       assert Tree.insert_child(ztree, 1) |> Tree.children!() |> Tree.parent?()
     end
+
+    test "can move up to parent without resetting siblings" do
+      tree =
+        Tree.root(0)
+        |> Tree.insert_child(2)
+        |> Tree.insert_child(1)
+
+      # move down and to second child
+      tree =
+        tree
+        |> Tree.children!()
+        |> Tree.right!()
+
+      assert Tree.focus(tree) == 2
+
+      # now back up to parent
+      tree = Tree.parent!(tree)
+
+      # back to children
+      tree = Tree.children!(tree)
+
+      assert Tree.focus(tree) == 2
+    end
+
+    test "can move up to parent and reset the siblings" do
+      tree =
+        Tree.root(0)
+        |> Tree.insert_child(2)
+        |> Tree.insert_child(1)
+
+      # move down and to second child
+      tree =
+        tree
+        |> Tree.children!()
+        |> Tree.right!()
+
+      assert Tree.focus(tree) == 2
+
+      # now back up to parent
+      tree = Tree.rparent!(tree)
+
+      # back to children
+      tree = Tree.children!(tree)
+
+      assert Tree.focus(tree) == 1
+    end
   end
 end
