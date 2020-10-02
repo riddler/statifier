@@ -563,4 +563,47 @@ defmodule Statifier.Zipper.Tree do
     {:ok, ztree} = rparent(ztree)
     ztree
   end
+
+  @spec next(t()) :: {:ok, any(), t()} | {:complete, any(), t()}
+  @doc """
+  Creates an iterator over a tree walking over all of the elements until
+  completion.
+
+  Each iteration will return `{:ok, item, new_tree}` until the tree has been
+  fully visited. At which point `{:complete, last_item, new_tree}` will be
+  returned
+  """
+  def next(tree) do
+    case {children?(tree), right?(tree)} do
+      {true, _} ->
+        new_tree = children!(tree)
+        {:ok, focus(new_tree), new_tree}
+
+      {false, false} ->
+        next_backtrack(tree)
+
+      {false, true} ->
+        new_tree = right!(tree)
+        {:ok, focus(new_tree), new_tree}
+    end
+  end
+
+  # Called when a leaf node has been hit
+  # the next option is above us and to the right
+  # or the root has been reached and traversal is complete
+  defp next_backtrack(tree) do
+    case parent(tree) do
+      {:error, :cannot_make_move} ->
+        {:complete, focus(tree), tree}
+
+      {:ok, tree} ->
+        case right(tree) do
+          {:ok, tree} ->
+            {:ok, focus(tree), tree}
+
+          {:error, :cannot_make_move} ->
+            next_backtrack(tree)
+        end
+    end
+  end
 end

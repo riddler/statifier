@@ -142,5 +142,30 @@ defmodule Statifier.Zipper.TreeTest do
 
       assert Tree.focus(tree) == 1
     end
+
+    test "can iterate over all the elements of a tree" do
+      # Tree
+      #              0
+      #          1       2
+      #               3
+      #             4
+      tree =
+        Tree.root(0)
+        |> Tree.insert_child(2)
+        |> Tree.insert_child(1)
+        |> Tree.children!()
+        |> Tree.right!()
+        |> Tree.insert_child(3)
+        |> Tree.children!()
+        |> Tree.insert_child(4)
+        |> Tree.rparent!()
+        |> Tree.rparent!()
+
+      assert {:ok, 1, tree} = Tree.next(tree)
+      assert {:ok, 2, tree} = Tree.next(tree)
+      assert {:ok, 3, tree} = Tree.next(tree)
+      assert {:ok, 4, tree} = Tree.next(tree)
+      assert {:complete, 0, _tree} = Tree.next(tree)
+    end
   end
 end
