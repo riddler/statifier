@@ -168,4 +168,35 @@ defmodule Statifier.Zipper.TreeTest do
       assert {:complete, 0, _tree} = Tree.next(tree)
     end
   end
+
+  describe "finding elements in tree" do
+    test "returns element when found" do
+      tree =
+        Tree.root(0)
+        |> Tree.insert_child(1)
+        |> Tree.children!()
+        |> Tree.insert_child(2)
+        |> Tree.parent!()
+
+      tree_at_element = Tree.find_subtree(tree, fn _tree, focus -> focus == 0 end)
+      assert Tree.focus(tree_at_element) == 0
+
+      tree_at_element = Tree.find_subtree(tree, fn _tree, focus -> focus == 1 end)
+      assert Tree.focus(tree_at_element) == 1
+
+      tree_at_element = Tree.find_subtree(tree, fn _tree, focus -> focus == 2 end)
+      assert Tree.focus(tree_at_element) == 2
+    end
+
+    test "returns nil when not found" do
+      tree =
+        Tree.root(0)
+        |> Tree.insert_child(1)
+        |> Tree.children!()
+        |> Tree.insert_child(2)
+        |> Tree.parent!()
+
+      assert nil == Tree.find_subtree(tree, fn _tree, focus -> focus == :not_in_tree end)
+    end
+  end
 end

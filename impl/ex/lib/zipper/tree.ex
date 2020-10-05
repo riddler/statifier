@@ -564,6 +564,39 @@ defmodule Statifier.Zipper.Tree do
     ztree
   end
 
+  @spec find_subtree(t(), (t(), focus :: any() -> boolean())) :: t() | nil
+  @doc """
+  Returns tree rooted at element based on `predicate` function - returning nil
+  when no element returns true for predicate.
+
+  The `predicate` function will be invoked with the tree at the position of the
+  current element and the current element. The tree argument can be used if
+  there is a need to look at surrounding elements of the current focus in order
+  for the `predicate` to make a decision.
+  """
+  def find_subtree(tree, pred) do
+    predicate_result = pred.(tree, focus(tree))
+    next_iteration = next(tree)
+
+    case {predicate_result, next_iteration} do
+      # element found
+      {true, _} ->
+        tree
+
+      # there is a next element to step to
+      {_false, {:ok, _value, new_tree}} ->
+        find_subtree(new_tree, pred)
+
+      # last element reached - do final check
+      {_false, {:complete, next_focus, next_tree}} ->
+        if pred.(next_tree, next_focus) do
+          next_tree
+        else
+          nil
+        end
+    end
+  end
+
   @spec next(t()) :: {:ok, any(), t()} | {:complete, any(), t()}
   @doc """
   Creates an iterator over a tree walking over all of the elements until
