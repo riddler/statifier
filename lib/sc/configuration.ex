@@ -65,13 +65,15 @@ defmodule SC.Configuration do
     config.active_states
     |> Enum.reduce(MapSet.new(), fn state_id, acc ->
       ancestors = get_state_ancestors(state_id, document)
-      MapSet.union(acc, MapSet.new([state_id | ancestors]))
+      # More efficient: add each state individually instead of creating new MapSet
+      [state_id | ancestors]
+      |> Enum.reduce(acc, &MapSet.put(&2, &1))
     end)
   end
 
-  # Fast O(d) ancestor lookup using parent pointers
+  # Fast O(d) ancestor lookup using parent pointers and O(1) state lookup
   defp get_state_ancestors(state_id, document) do
-    case find_state_by_id(state_id, document) do
+    case SC.Document.find_state(document, state_id) do
       nil -> []
       state -> collect_ancestors(state, document, [])
     end
@@ -81,32 +83,11 @@ defmodule SC.Configuration do
   defp collect_ancestors(%SC.State{parent: nil}, _document, ancestors), do: ancestors
 
   defp collect_ancestors(%SC.State{parent: parent_id}, document, ancestors) do
-    case find_state_by_id(parent_id, document) do
+    case SC.Document.find_state(document, parent_id) do
       nil -> ancestors
       parent_state -> collect_ancestors(parent_state, document, [parent_id | ancestors])
     end
   end
 
-  # Find state by ID using simple traversal (TODO: optimize with lookup map)
-  defp find_state_by_id(target_id, document) do
-    find_state_in_list(target_id, document.states)
-  end
-
-  defp find_state_in_list(_target_id, []), do: nil
-
-  defp find_state_in_list(target_id, [state | rest]) do
-    cond do
-      state.id == target_id ->
-        state
-
-      length(state.states) > 0 ->
-        case find_state_in_list(target_id, state.states) do
-          nil -> find_state_in_list(target_id, rest)
-          found -> found
-        end
-
-      true ->
-        find_state_in_list(target_id, rest)
-    end
-  end
+  # Linear search functions removed - now using O(1) Document.find_state/2 lookup
 end

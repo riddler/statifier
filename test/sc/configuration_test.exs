@@ -87,12 +87,14 @@ defmodule SC.ConfigurationTest do
 
   describe "active_ancestors/2" do
     test "returns leaf states when no parent relationships" do
-      document = %Document{
-        states: [
-          %State{id: "state_a", parent: nil, depth: 0},
-          %State{id: "state_b", parent: nil, depth: 0}
-        ]
-      }
+      document =
+        %Document{
+          states: [
+            %State{id: "state_a", parent: nil, depth: 0},
+            %State{id: "state_b", parent: nil, depth: 0}
+          ]
+        }
+        |> Document.build_lookup_maps()
 
       config = Configuration.new(["state_a"])
 
@@ -103,13 +105,15 @@ defmodule SC.ConfigurationTest do
 
     test "returns states and their ancestors" do
       # Create a hierarchy: parent -> child -> grandchild
-      document = %Document{
-        states: [
-          %State{id: "parent", parent: nil, depth: 0},
-          %State{id: "child", parent: "parent", depth: 1},
-          %State{id: "grandchild", parent: "child", depth: 2}
-        ]
-      }
+      document =
+        %Document{
+          states: [
+            %State{id: "parent", parent: nil, depth: 0},
+            %State{id: "child", parent: "parent", depth: 1},
+            %State{id: "grandchild", parent: "child", depth: 2}
+          ]
+        }
+        |> Document.build_lookup_maps()
 
       config = Configuration.new(["grandchild"])
 
@@ -121,14 +125,16 @@ defmodule SC.ConfigurationTest do
     end
 
     test "returns multiple hierarchies correctly" do
-      document = %Document{
-        states: [
-          %State{id: "parent1", parent: nil, depth: 0},
-          %State{id: "child1", parent: "parent1", depth: 1},
-          %State{id: "parent2", parent: nil, depth: 0},
-          %State{id: "child2", parent: "parent2", depth: 1}
-        ]
-      }
+      document =
+        %Document{
+          states: [
+            %State{id: "parent1", parent: nil, depth: 0},
+            %State{id: "child1", parent: "parent1", depth: 1},
+            %State{id: "parent2", parent: nil, depth: 0},
+            %State{id: "child2", parent: "parent2", depth: 1}
+          ]
+        }
+        |> Document.build_lookup_maps()
 
       config = Configuration.new(["child1", "child2"])
 
@@ -140,11 +146,13 @@ defmodule SC.ConfigurationTest do
     end
 
     test "handles orphaned states gracefully" do
-      document = %Document{
-        states: [
-          %State{id: "state_a", parent: nil, depth: 0}
-        ]
-      }
+      document =
+        %Document{
+          states: [
+            %State{id: "state_a", parent: nil, depth: 0}
+          ]
+        }
+        |> Document.build_lookup_maps()
 
       # Reference a state that doesn't exist in the document
       config = Configuration.new(["state_a", "missing_state"])

@@ -21,7 +21,7 @@ defmodule SC.Parser.SCXML do
     }
 
     case Saxy.parse_string(xml_string, Handler, initial_state) do
-      {:ok, result} -> {:ok, result}
+      {:ok, document} -> {:ok, document}
       {:error, error} -> {:error, error}
     end
   end

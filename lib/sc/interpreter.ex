@@ -16,8 +16,10 @@ defmodule SC.Interpreter do
   @spec initialize(Document.t()) :: {:ok, StateChart.t()} | {:error, [String.t()], [String.t()]}
   def initialize(%Document{} = document) do
     case Document.Validator.validate(document) do
-      {:ok, warnings} ->
-        state_chart = StateChart.new(document, get_initial_configuration(document))
+      {:ok, optimized_document, warnings} ->
+        state_chart =
+          StateChart.new(optimized_document, get_initial_configuration(optimized_document))
+
         # Log warnings if any (TODO: Use proper logging)
         if warnings != [], do: :ok
         {:ok, state_chart}
@@ -96,7 +98,7 @@ defmodule SC.Interpreter do
   end
 
   defp get_initial_configuration(%Document{initial: initial_id} = document) do
-    case find_state_by_id(initial_id, document) do
+    case Document.find_state(document, initial_id) do
       # Invalid initial state
       nil ->
         %Configuration{}
@@ -143,14 +145,11 @@ defmodule SC.Interpreter do
     # Find transitions from these active states that match the event
     active_leaf_states
     |> Enum.flat_map(fn state_id ->
-      case find_state_by_id(state_id, state_chart.document) do
-        nil ->
-          []
+      # Use O(1) lookup for transitions from this state
+      transitions = Document.get_transitions_from_state(state_chart.document, state_id)
 
-        state ->
-          state.transitions
-          |> Enum.filter(&Event.matches?(event, &1.event))
-      end
+      transitions
+      |> Enum.filter(&Event.matches?(event, &1.event))
     end)
     # Process in document order
     |> Enum.sort_by(& &1.document_order)
@@ -168,10 +167,10 @@ defmodule SC.Interpreter do
 
       target_id ->
         # Proper compound state transition:
-        # 1. Find target state in document
+        # 1. Find target state in document using O(1) lookup
         # 2. If compound, enter its initial children
         # 3. Return new configuration with leaf states only
-        case find_state_by_id(target_id, document) do
+        case Document.find_state(document, target_id) do
           nil ->
             # Invalid target - stay in current state
             config
@@ -185,18 +184,6 @@ defmodule SC.Interpreter do
     end
   end
 
-  defp find_state_by_id(state_id, %Document{} = document) do
-    collect_all_states(document)
-    |> Enum.find(&(&1.id == state_id))
-  end
-
-  defp collect_all_states(%Document{states: states}) do
-    collect_states_recursive(states)
-  end
-
-  defp collect_states_recursive(states) do
-    Enum.flat_map(states, fn state ->
-      [state | collect_states_recursive(state.states)]
-    end)
-  end
+  # These functions are no longer needed - we use Document.find_state/2
+  # and Document.get_transitions_from_state/2 for O(1) lookups
 end

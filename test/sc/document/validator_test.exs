@@ -17,7 +17,7 @@ defmodule SC.Document.ValidatorTest do
       """
 
       {:ok, document} = SCXML.parse(xml)
-      assert {:ok, []} = Validator.validate(document)
+      assert {:ok, _document, []} = Validator.validate(document)
     end
 
     test "detects invalid initial state" do
@@ -61,7 +61,7 @@ defmodule SC.Document.ValidatorTest do
       """
 
       {:ok, document} = SCXML.parse(xml)
-      assert {:ok, warnings} = Validator.validate(document)
+      assert {:ok, _document, warnings} = Validator.validate(document)
       assert "State 'unreachable' is unreachable from initial state" in warnings
     end
 
@@ -79,7 +79,7 @@ defmodule SC.Document.ValidatorTest do
       """
 
       {:ok, document} = SCXML.parse(xml)
-      assert {:ok, []} = Validator.validate(document)
+      assert {:ok, _document, []} = Validator.validate(document)
     end
 
     test "detects invalid nested transition target" do
@@ -111,7 +111,7 @@ defmodule SC.Document.ValidatorTest do
 
       {:ok, document} = SCXML.parse(xml)
       # Should be valid - first state becomes initial by default
-      assert {:ok, _warnings} = Validator.validate(document)
+      assert {:ok, _document, _warnings} = Validator.validate(document)
     end
 
     test "handles empty document" do
@@ -121,7 +121,7 @@ defmodule SC.Document.ValidatorTest do
       """
 
       {:ok, document} = SCXML.parse(xml)
-      assert {:ok, []} = Validator.validate(document)
+      assert {:ok, _document, []} = Validator.validate(document)
     end
   end
 
@@ -155,7 +155,7 @@ defmodule SC.Document.ValidatorTest do
       """
 
       {:ok, document} = SCXML.parse(xml)
-      assert {:ok, []} = Validator.validate(document)
+      assert {:ok, _document, []} = Validator.validate(document)
     end
 
     test "warns when document initial state is nested" do
@@ -170,7 +170,7 @@ defmodule SC.Document.ValidatorTest do
       """
 
       {:ok, document} = SCXML.parse(xml)
-      assert {:ok, warnings} = Validator.validate(document)
+      assert {:ok, _document, warnings} = Validator.validate(document)
       assert "Document initial state 'child1' is not a top-level state" in warnings
     end
   end

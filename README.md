@@ -8,11 +8,13 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 ## Features
 
 - ✅ **Complete SCXML Parser** - Converts XML documents to structured data with precise location tracking
-- ✅ **State Chart Interpreter** - Runtime engine for executing SCXML state charts
+- ✅ **State Chart Interpreter** - Runtime engine for executing SCXML state charts  
 - ✅ **Comprehensive Validation** - Document validation with detailed error reporting
-- ✅ **Hierarchical States** - Support for nested states with optimized ancestor computation (O(d) vs O(n×d))
+- ✅ **Compound States** - Support for hierarchical states with automatic initial child entry
+- ✅ **O(1) Performance** - Optimized state and transition lookups via Maps
 - ✅ **Event Processing** - Internal and external event queues per SCXML specification
-- ✅ **Performance Optimized** - Parent pointers and depth tracking for fast hierarchy navigation
+- ✅ **Parse → Validate → Optimize Architecture** - Clean separation of concerns
+- ✅ **Pre-push Hook** - Automated local validation workflow to catch issues early
 - ✅ **Test Infrastructure** - Compatible with SCION and W3C test suites
 
 ## Current Status
@@ -85,9 +87,10 @@ active_states = SC.Interpreter.active_states(new_state_chart)
 {:ok, document} = SC.Parser.SCXML.parse(xml)
 
 case SC.Document.Validator.validate(document) do
-  {:ok, warnings} -> 
-    # Document is valid, warnings are non-fatal
+  {:ok, optimized_document, warnings} -> 
+    # Document is valid and optimized, warnings are non-fatal
     IO.puts("Valid document with #{length(warnings)} warnings")
+    # optimized_document now has O(1) lookup maps built
   {:error, errors, warnings} ->
     # Document has validation errors
     IO.puts("Validation failed with #{length(errors)} errors")
@@ -113,17 +116,21 @@ mix compile
 The project maintains high code quality through automated checks:
 
 ```bash
-# 1. Format code
+# Local validation workflow (also runs via pre-push hook)
 mix format
-
-# 2. Run tests with coverage (must maintain 90%+)
-mix coveralls
-
-# 3. Static code analysis  
+mix test --cover
 mix credo --strict
-
-# 4. Type checking
 mix dialyzer
+```
+
+### Pre-push Hook
+
+A git pre-push hook automatically runs the validation workflow to catch issues before CI:
+
+```bash
+git push origin feature-branch
+# Automatically runs: format check, tests, credo, dialyzer
+# Push is blocked if any step fails
 ```
 
 ### Running Tests
@@ -146,43 +153,64 @@ mix test test/sc/parser/scxml_test.exs
 
 ### Core Components
 
-- **`SC.Parser.SCXML`** - SAX-based XML parser with location tracking
-- **`SC.Interpreter`** - Synchronous state chart interpreter 
+- **`SC.Parser.SCXML`** - SAX-based XML parser with location tracking (parse phase)
+- **`SC.Document.Validator`** - Comprehensive validation with optimization (validate + optimize phases)
+- **`SC.Interpreter`** - Synchronous state chart interpreter with compound state support
 - **`SC.StateChart`** - Runtime container with event queues
 - **`SC.Configuration`** - Active state management (leaf states only)
-- **`SC.Document.Validator`** - Comprehensive document validation
 - **`SC.Event`** - Event representation with origin tracking
 
 ### Data Structures
 
-- **`SC.Document`** - Root SCXML document with states and metadata
-- **`SC.State`** - Individual states with transitions, nesting, parent pointers, and depth tracking
+- **`SC.Document`** - Root SCXML document with states, metadata, and O(1) lookup maps
+- **`SC.State`** - Individual states with transitions and hierarchical nesting support
 - **`SC.Transition`** - State transitions with events and targets
 - **`SC.DataElement`** - Datamodel elements with expressions
+
+### Architecture Flow
+
+```elixir
+# 1. Parse: XML → Document structure
+{:ok, document} = SC.Parser.SCXML.parse(xml)
+
+# 2. Validate: Check semantics + optimize with lookup maps  
+{:ok, optimized_document, warnings} = SC.Document.Validator.validate(document)
+
+# 3. Interpret: Run state chart with optimized lookups
+{:ok, state_chart} = SC.Interpreter.initialize(optimized_document)
+```
 
 ## Performance Optimizations
 
 The implementation includes several key optimizations for production use:
 
-### **Hierarchical State Navigation**
-- **Parent Pointers**: Each state stores its parent ID for O(1) navigation
-- **Depth Tracking**: Nesting depth calculated during parsing for SCXML compliance
-- **Fast Ancestor Lookup**: O(d) performance instead of O(n×d) tree traversal
+### **O(1) State and Transition Lookups**
+- **State Lookup Map**: `%{state_id => state}` for instant state access
+- **Transition Lookup Map**: `%{state_id => [transitions]}` for fast transition queries  
+- **Built During Validation**: Lookup maps only created for valid documents
+- **Memory Efficient**: Uses existing document structure, no duplication
 
-### **Active Configuration Generation**
+### **Compound State Entry**
 ```elixir
-# Before: O(n×d×s) - expensive tree traversal for each active state
-# After: O(d×s) - direct parent pointer following
+# Automatic hierarchical entry
+{:ok, state_chart} = SC.Interpreter.initialize(document)
+active_states = SC.Interpreter.active_states(state_chart)
+# Returns only leaf states (compound states entered automatically)
 
-config = SC.Configuration.new(["deeply_nested_state"])
-ancestors = SC.Configuration.active_ancestors(config, document)
-# Returns all active states including ancestors in O(d) time per state
+# Fast ancestor computation when needed
+ancestors = SC.Interpreter.active_ancestors(state_chart) 
+# O(1) state lookups + O(d) ancestor traversal
 ```
 
+### **Parse → Validate → Optimize Flow**
+- **Separation of Concerns**: Parser focuses on structure, validator on semantics
+- **Conditional Optimization**: Only builds lookup maps for valid documents
+- **Future-Proof**: Supports additional parsers (JSON, YAML) with same validation
+
 **Performance Impact:**
-- 10-100x faster ancestor computation for typical state charts
-- Critical for frequent configuration updates during interpretation
-- Scales linearly with active states rather than total document size
+- O(1) vs O(n) state lookups during interpretation
+- O(1) vs O(n) transition queries for event processing  
+- Critical for responsive event processing in complex state charts
 
 ## Contributing
 
@@ -200,8 +228,9 @@ ancestors = SC.Configuration.active_ancestors(config, document)
 - All code is formatted with `mix format`
 - Static analysis with Credo (strict mode)
 - Type checking with Dialyzer
-- Comprehensive test coverage (90%+ required)
+- Comprehensive test coverage (95%+ maintained)
 - Detailed documentation with `@moduledoc` and `@doc`
+- Pattern matching preferred over multiple assertions in tests
 
 ## License
 

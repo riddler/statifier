@@ -13,19 +13,22 @@ defmodule SC.Parser.SCXMLTest do
       </scxml>
       """
 
-      assert {:ok, %Document{} = doc} = SCXML.parse(xml)
-      assert doc.xmlns == "http://www.w3.org/2005/07/scxml"
-      assert doc.version == "1.0"
-      assert doc.initial == "a"
-      assert doc.document_order == 1
-      assert length(doc.states) == 1
-
-      state = hd(doc.states)
-      assert state.id == "a"
-      assert state.initial == nil
-      assert state.document_order == 2
-      assert state.states == []
-      assert state.transitions == []
+      assert {:ok,
+              %Document{
+                xmlns: "http://www.w3.org/2005/07/scxml",
+                version: "1.0",
+                initial: "a",
+                document_order: 1,
+                states: [
+                  %SC.State{
+                    id: "a",
+                    initial: nil,
+                    document_order: 2,
+                    states: [],
+                    transitions: []
+                  }
+                ]
+              }} = SCXML.parse(xml)
     end
 
     test "parses SCXML with transition" do
@@ -39,18 +42,22 @@ defmodule SC.Parser.SCXMLTest do
       </scxml>
       """
 
-      assert {:ok, %Document{} = doc} = SCXML.parse(xml)
-      assert length(doc.states) == 2
-
-      [state_a, state_b] = doc.states
-      assert state_a.id == "a"
-      assert state_b.id == "b"
-
-      assert length(state_a.transitions) == 1
-      transition = hd(state_a.transitions)
-      assert transition.event == "go"
-      assert transition.target == "b"
-      assert transition.cond == nil
+      assert {:ok,
+              %Document{
+                states: [
+                  %SC.State{
+                    id: "a",
+                    transitions: [
+                      %SC.Transition{
+                        event: "go",
+                        target: "b",
+                        cond: nil
+                      }
+                    ]
+                  },
+                  %SC.State{id: "b"}
+                ]
+              }} = SCXML.parse(xml)
     end
 
     test "parses SCXML with datamodel" do
@@ -65,17 +72,21 @@ defmodule SC.Parser.SCXMLTest do
       </scxml>
       """
 
-      assert {:ok, %Document{} = doc} = SCXML.parse(xml)
-      assert doc.datamodel == "elixir"
-      assert length(doc.datamodel_elements) == 2
-
-      [counter, name] = doc.datamodel_elements
-      assert counter.id == "counter"
-      assert counter.expr == "0"
-      assert counter.src == nil
-
-      assert name.id == "name"
-      assert name.expr == nil
+      assert {:ok,
+              %Document{
+                datamodel: "elixir",
+                datamodel_elements: [
+                  %SC.DataElement{
+                    id: "counter",
+                    expr: "0",
+                    src: nil
+                  },
+                  %SC.DataElement{
+                    id: "name",
+                    expr: nil
+                  }
+                ]
+              }} = SCXML.parse(xml)
     end
 
     test "parses nested states" do
@@ -91,22 +102,27 @@ defmodule SC.Parser.SCXMLTest do
       </scxml>
       """
 
-      assert {:ok, %Document{} = doc} = SCXML.parse(xml)
-      assert length(doc.states) == 1
-
-      parent = hd(doc.states)
-      assert parent.id == "parent"
-      assert parent.initial == "child1"
-      assert length(parent.states) == 2
-
-      [child1, child2] = parent.states
-      assert child1.id == "child1"
-      assert child2.id == "child2"
-
-      assert length(child1.transitions) == 1
-      transition = hd(child1.transitions)
-      assert transition.event == "next"
-      assert transition.target == "child2"
+      assert {:ok,
+              %Document{
+                states: [
+                  %SC.State{
+                    id: "parent",
+                    initial: "child1",
+                    states: [
+                      %SC.State{
+                        id: "child1",
+                        transitions: [
+                          %SC.Transition{
+                            event: "next",
+                            target: "child2"
+                          }
+                        ]
+                      },
+                      %SC.State{id: "child2"}
+                    ]
+                  }
+                ]
+              }} = SCXML.parse(xml)
     end
 
     test "handles empty attributes as nil" do
@@ -120,16 +136,23 @@ defmodule SC.Parser.SCXMLTest do
       </scxml>
       """
 
-      assert {:ok, %Document{} = doc} = SCXML.parse(xml)
-      assert doc.initial == nil
-
-      state = hd(doc.states)
-      assert state.initial == nil
-
-      transition = hd(state.transitions)
-      assert transition.event == nil
-      assert transition.cond == nil
-      assert transition.target == "end"
+      assert {:ok,
+              %Document{
+                initial: nil,
+                states: [
+                  %SC.State{
+                    initial: nil,
+                    transitions: [
+                      %SC.Transition{
+                        event: nil,
+                        cond: nil,
+                        target: "end"
+                      }
+                    ]
+                  },
+                  %SC.State{id: "end"}
+                ]
+              }} = SCXML.parse(xml)
     end
 
     test "returns error for invalid XML" do
@@ -149,10 +172,10 @@ defmodule SC.Parser.SCXMLTest do
       </scxml>
       """
 
-      assert {:ok, %Document{} = doc} = SCXML.parse(xml)
-      assert length(doc.states) == 1
-      state = hd(doc.states)
-      assert state.id == "a"
+      assert {:ok,
+              %Document{
+                states: [%SC.State{id: "a"}]
+              }} = SCXML.parse(xml)
     end
 
     test "handles transitions with unknown parent elements" do
@@ -180,10 +203,10 @@ defmodule SC.Parser.SCXMLTest do
       </scxml>
       """
 
-      assert {:ok, %Document{} = doc} = SCXML.parse(xml)
-      assert length(doc.states) == 1
-      state = hd(doc.states)
-      assert state.id == "normal"
+      assert {:ok,
+              %Document{
+                states: [%SC.State{id: "normal"}]
+              }} = SCXML.parse(xml)
     end
 
     test "handles data elements with unknown parent" do
@@ -213,20 +236,28 @@ defmodule SC.Parser.SCXMLTest do
       </scxml>
       """
 
-      assert {:ok, %Document{} = doc} = SCXML.parse(xml)
-      assert doc.name == nil
-
-      state = hd(doc.states)
-      assert state.initial == nil
-
-      transition = hd(state.transitions)
-      assert transition.event == nil
-      assert transition.target == nil
-      assert transition.cond == nil
-
-      data = hd(doc.datamodel_elements)
-      assert data.expr == nil
-      assert data.src == nil
+      assert {:ok,
+              %Document{
+                name: nil,
+                states: [
+                  %SC.State{
+                    initial: nil,
+                    transitions: [
+                      %SC.Transition{
+                        event: nil,
+                        target: nil,
+                        cond: nil
+                      }
+                    ]
+                  }
+                ],
+                datamodel_elements: [
+                  %SC.DataElement{
+                    expr: nil,
+                    src: nil
+                  }
+                ]
+              }} = SCXML.parse(xml)
     end
   end
 
@@ -276,24 +307,25 @@ defmodule SC.Parser.SCXMLTest do
       </scxml>
       """
 
-      assert {:ok, %Document{} = doc} = SCXML.parse(xml)
-
-      # Document (scxml) should have document_order of 1
-      assert doc.document_order == 1
-
-      # Data elements should have document_order of 3 and 4
-      [data1, data2] = doc.datamodel_elements
-      assert data1.document_order == 3
-      assert data2.document_order == 4
-
-      # States should have document_order of 5 and 7
-      [state_a, state_b] = doc.states
-      assert state_a.document_order == 5
-      assert state_b.document_order == 7
-
-      # Transition should have document_order of 6
-      transition = hd(state_a.transitions)
-      assert transition.document_order == 6
+      assert {:ok,
+              %Document{
+                document_order: 1,
+                datamodel_elements: [
+                  %SC.DataElement{document_order: 3},
+                  %SC.DataElement{document_order: 4}
+                ],
+                states: [
+                  %SC.State{
+                    id: "a",
+                    document_order: 5,
+                    transitions: [%SC.Transition{document_order: 6}]
+                  },
+                  %SC.State{
+                    id: "b",
+                    document_order: 7
+                  }
+                ]
+              }} = SCXML.parse(xml)
     end
   end
 end

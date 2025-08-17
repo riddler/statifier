@@ -13,15 +13,19 @@ defmodule SC.Document.Validator do
           warnings: [String.t()]
         }
 
-  @doc """
-  Validate an SCXML document.
+  @type validation_result_with_document :: {validation_result(), SC.Document.t()}
 
-  Returns {:ok, warnings} if document is valid (warnings are non-fatal).
+  @doc """
+  Validate an SCXML document and optimize it for runtime use.
+
+  Returns {:ok, optimized_document, warnings} if document is valid.
   Returns {:error, errors, warnings} if document has validation errors.
+  The optimized document includes performance optimizations like lookup maps.
   """
-  @spec validate(SC.Document.t()) :: {:ok, [String.t()]} | {:error, [String.t()], [String.t()]}
+  @spec validate(SC.Document.t()) ::
+          {:ok, SC.Document.t(), [String.t()]} | {:error, [String.t()], [String.t()]}
   def validate(%SC.Document{} = document) do
-    result =
+    {result, final_document} =
       %__MODULE__{}
       |> validate_initial_state(document)
       |> validate_state_ids(document)
@@ -30,22 +34,37 @@ defmodule SC.Document.Validator do
       |> finalize(document)
 
     case result.errors do
-      [] -> {:ok, result.warnings}
+      [] -> {:ok, final_document, result.warnings}
       errors -> {:error, errors, result.warnings}
     end
   end
 
   @doc """
-  Finalize validation with whole-document validations.
+  Finalize validation with whole-document validations and optimization.
 
   This callback is called after all individual validations have completed,
   allowing for validations that require the entire document context.
+  If the document is valid, it will be optimized for runtime performance.
   """
-  @spec finalize(validation_result(), SC.Document.t()) :: validation_result()
+  @spec finalize(validation_result(), SC.Document.t()) :: validation_result_with_document()
   def finalize(%__MODULE__{} = result, %SC.Document{} = document) do
-    result
-    |> validate_hierarchical_consistency(document)
-    |> validate_initial_state_hierarchy(document)
+    validated_result =
+      result
+      |> validate_hierarchical_consistency(document)
+      |> validate_initial_state_hierarchy(document)
+
+    final_document =
+      case validated_result.errors do
+        [] ->
+          # Only optimize valid documents
+          SC.Document.build_lookup_maps(document)
+
+        _errors ->
+          # Don't waste time optimizing invalid documents
+          document
+      end
+
+    {validated_result, final_document}
   end
 
   # Validate that the document's initial state exists
@@ -185,7 +204,7 @@ defmodule SC.Document.Validator do
   end
 
   defp process_state_reachability(state_id, document, visited) do
-    case find_state_by_id(state_id, document) do
+    case find_state_by_id_linear(state_id, document) do
       nil -> visited
       state -> process_state_children_and_transitions(state, document, visited)
     end
@@ -209,7 +228,8 @@ defmodule SC.Document.Validator do
     end)
   end
 
-  defp find_state_by_id(state_id, %SC.Document{} = document) do
+  # Linear search for states during validation (before lookup maps are built)
+  defp find_state_by_id_linear(state_id, %SC.Document{} = document) do
     collect_all_states(document)
     |> Enum.find(&(&1.id == state_id))
   end
