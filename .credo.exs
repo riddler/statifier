@@ -163,6 +163,7 @@
 
           # Enabled controversial and experimental checks
           {Credo.Check.Consistency.UnusedVariableNames, []},
+          {Credo.Check.Design.DuplicatedCode, []},
           {Credo.Check.Readability.ImplTrue, []},
           {Credo.Check.Readability.Specs, []},
           {Credo.Check.Readability.StrictModuleLayout, []},
@@ -180,7 +181,7 @@
           #
           {Credo.Check.Consistency.MultiAliasImportRequireUse, []},
           # {Credo.Check.Consistency.UnusedVariableNames, []},
-          {Credo.Check.Design.DuplicatedCode, []},
+          # {Credo.Check.Design.DuplicatedCode, []},
           {Credo.Check.Design.SkipTestWithoutComment, []},
           {Credo.Check.Readability.AliasAs, []},
           {Credo.Check.Readability.BlockPipe, []},

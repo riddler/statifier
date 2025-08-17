@@ -51,16 +51,26 @@ defmodule SC.Interpreter do
 
       [transition | _rest] ->
         # Execute the first enabled transition
-        new_config = execute_transition(state_chart.configuration, transition)
+        new_config =
+          execute_transition(state_chart.configuration, transition, state_chart.document)
+
         {:ok, StateChart.update_configuration(state_chart, new_config)}
     end
   end
 
   @doc """
-  Get all currently active states including ancestors.
+  Get all currently active leaf states (not including ancestors).
   """
   @spec active_states(StateChart.t()) :: MapSet.t(String.t())
   def active_states(%StateChart{} = state_chart) do
+    Configuration.active_states(state_chart.configuration)
+  end
+
+  @doc """
+  Get all currently active states including ancestors.
+  """
+  @spec active_ancestors(StateChart.t()) :: MapSet.t(String.t())
+  def active_ancestors(%StateChart{} = state_chart) do
     StateChart.active_states(state_chart)
   end
 
@@ -69,7 +79,7 @@ defmodule SC.Interpreter do
   """
   @spec active?(StateChart.t(), String.t()) :: boolean()
   def active?(%StateChart{} = state_chart, state_id) do
-    active_states(state_chart)
+    active_ancestors(state_chart)
     |> MapSet.member?(state_id)
   end
 
@@ -77,14 +87,54 @@ defmodule SC.Interpreter do
 
   defp get_initial_configuration(%Document{initial: nil, states: []}), do: %Configuration{}
 
-  defp get_initial_configuration(%Document{initial: nil, states: [first_state | _rest]}) do
-    # No initial specified - use first state
-    Configuration.add_state(%Configuration{}, first_state.id)
+  defp get_initial_configuration(
+         %Document{initial: nil, states: [first_state | _rest]} = document
+       ) do
+    # No initial specified - use first state and enter it properly
+    initial_states = enter_compound_state(first_state, document)
+    Configuration.new(initial_states)
   end
 
-  defp get_initial_configuration(%Document{initial: initial_id}) do
-    Configuration.add_state(%Configuration{}, initial_id)
+  defp get_initial_configuration(%Document{initial: initial_id} = document) do
+    case find_state_by_id(initial_id, document) do
+      # Invalid initial state
+      nil ->
+        %Configuration{}
+
+      state ->
+        initial_states = enter_compound_state(state, document)
+        Configuration.new(initial_states)
+    end
   end
+
+  # Enter a compound state by recursively entering its initial child states.
+  # Returns a list of leaf state IDs that should be active.
+  defp enter_compound_state(%SC.State{states: []} = state, _document) do
+    # Atomic state - return its ID
+    [state.id]
+  end
+
+  defp enter_compound_state(%SC.State{states: child_states, initial: initial_id}, document) do
+    # Compound state - find and enter initial child (don't add compound state to active set)
+    initial_child = get_initial_child_state(initial_id, child_states)
+
+    case initial_child do
+      # No valid child - compound state with no children is not active
+      nil -> []
+      child -> enter_compound_state(child, document)
+    end
+  end
+
+  # Get the initial child state for a compound state
+  defp get_initial_child_state(nil, [first_child | _rest]), do: first_child
+
+  defp get_initial_child_state(initial_id, child_states) when is_binary(initial_id) do
+    Enum.find(child_states, &(&1.id == initial_id))
+  end
+
+  defp get_initial_child_state(_initial_id, []), do: nil
+
+  # Find a state by ID in the document (using the more efficient implementation below)
 
   defp find_enabled_transitions(%StateChart{} = state_chart, %Event{} = event) do
     # Get all currently active leaf states
@@ -106,22 +156,32 @@ defmodule SC.Interpreter do
     |> Enum.sort_by(& &1.document_order)
   end
 
-  defp execute_transition(%Configuration{} = config, %SC.Transition{} = transition) do
+  defp execute_transition(
+         %Configuration{} = config,
+         %SC.Transition{} = transition,
+         %Document{} = document
+       ) do
     case transition.target do
       # No target - stay in same state
       nil ->
         config
 
       target_id ->
-        # Simple transition: remove current state and add target state
-        # NOTE: This is overly simplified - we need to handle:
-        # - Exiting the correct source state
-        # - Entering the correct target state
-        # - Handling compound states properly
-        # - Running entry/exit actions
+        # Proper compound state transition:
+        # 1. Find target state in document
+        # 2. If compound, enter its initial children
+        # 3. Return new configuration with leaf states only
+        case find_state_by_id(target_id, document) do
+          nil ->
+            # Invalid target - stay in current state
+            config
 
-        # For now: just replace all active states with target
-        %Configuration{active_states: MapSet.new([target_id])}
+          target_state ->
+            # For now: replace all active states with target and its children
+            # Future: Implement proper SCXML exit/entry sequence with LCA computation
+            target_leaf_states = enter_compound_state(target_state, document)
+            Configuration.new(target_leaf_states)
+        end
     end
   end
 

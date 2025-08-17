@@ -160,8 +160,8 @@ defmodule SC.InterpreterTest do
     end
   end
 
-  describe "active_states/1" do
-    test "includes ancestors of active states" do
+  describe "active_states/1 and active_ancestors/1" do
+    test "active_states returns only leaf states, active_ancestors includes parents" do
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
@@ -174,12 +174,14 @@ defmodule SC.InterpreterTest do
       {:ok, document} = SCXML.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
-      active = Interpreter.active_states(state_chart)
+      active_states = Interpreter.active_states(state_chart)
+      active_ancestors = Interpreter.active_ancestors(state_chart)
 
-      # Should include both parent and child since child is active
-      assert MapSet.member?(active, "parent")
-      # Note: In this simple implementation, we only store "parent" as active
-      # The active_ancestors logic should add both parent and child
+      # active_states should only include leaf states
+      assert MapSet.equal?(active_states, MapSet.new(["child"]))
+
+      # active_ancestors should include both parent and child
+      assert MapSet.equal?(active_ancestors, MapSet.new(["child", "parent"]))
     end
   end
 end
