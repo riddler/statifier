@@ -1,0 +1,46 @@
+defmodule SCIONTest.Assign.AssignObjLiteralTest do
+  use SC.Case
+  @tag :scion
+  @tag spec: "assign"
+  test "assign_obj_literal" do
+    xml = """
+    <scxml xmlns="http://www.w3.org/2005/07/scxml"
+      version="1.0"
+      initial="s1">
+
+    <datamodel>
+      <data id="o1"/>
+    </datamodel>
+
+    <state id="uber">
+      <transition event="*" target="fail">
+        <log expr="'unhandled input ' + JSON.stringify(_event)" label="TEST"/>
+      </transition>
+
+      <state id="s1">
+        <transition event="pass" target="pass"/>
+        <onentry>
+          <log expr="'Starting session ' + _sessionid" label="TEST"/>
+          <assign location="o1" expr="{p1: 'v1', p2: 'v2'}"/>
+        </onentry>
+      </state>
+    </state>
+
+    <final id="pass">
+      <onentry>
+        <log expr="'RESULT: pass'" label="TEST"/>
+      </onentry>
+    </final>
+
+    <final id="fail">
+      <onentry>
+        <log expr="'RESULT: fail'" label="TEST"/>
+      </onentry>
+    </final>
+
+    </scxml>
+    """
+
+    test_scxml(xml, "", ["s1"], [{%{"name" => "pass"}, ["pass"]}])
+  end
+end

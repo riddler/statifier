@@ -1,0 +1,29 @@
+defmodule :"Elixir.Test.StateChart.Scion.Misc.Deep-initial" do
+  use SC.Case
+  @tag :scion
+  @tag spec: "misc"
+  test "deep-initial" do
+    xml = """
+    <scxml xmlns="http://www.w3.org/2005/07/scxml"
+    version="1.0" initial="s2">
+
+    <state id="uber">
+      <state id="s1">
+        <onentry>
+          <log expr="'onentry s1 _sessionid=' + _sessionid" label="TEST"/>
+        </onentry>
+        <transition event="ev1" target="s2"/>
+      </state>
+
+      <state id="s2">
+        <onentry>
+          <log expr="'onentry s2 _sessionid=' + _sessionid" label="TEST"/>
+        </onentry>
+        </state>
+      </state>
+    </scxml>
+    """
+
+    test_scxml(xml, "", ["s2"], [])
+  end
+end

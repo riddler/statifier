@@ -1,0 +1,48 @@
+defmodule :"Elixir.Test.StateChart.Scion.Parallel+interrupt.Test18" do
+  use SC.Case
+  @tag :scion
+  @tag spec: "parallel+interrupt"
+  test "test18" do
+    xml = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!--
+       Copyright 2011-2012 Jacob Beard, INFICON, and other SCION contributors
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -->
+    <!-- orthogonal preemption - outer and state interrupts inner or state -->
+    <scxml
+        datamodel="ecmascript"
+        xmlns="http://www.w3.org/2005/07/scxml"
+        version="1.0"
+        initial="b">
+
+        <parallel id="b">
+            <state id="c"/>
+
+            <state id="d">
+                <transition event="t" target="a2"/>
+            </state>
+
+            <transition event="t" target="a1"/>
+        </parallel>
+
+        <state id="a1"/>
+
+        <state id="a2"/>
+    </scxml>
+    """
+
+    test_scxml(xml, "", ["c", "d"], [{%{"name" => "t"}, ["a2"]}])
+  end
+end

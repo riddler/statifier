@@ -1,0 +1,72 @@
+defmodule SC.Parser.HierarchyTest do
+  use ExUnit.Case, async: true
+
+  alias SC.Parser.SCXML
+
+  describe "parent and depth fields" do
+    test "sets correct parent and depth for nested states" do
+      xml = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+        <state id="parent" initial="child1">
+          <state id="child1">
+            <state id="grandchild"/>
+          </state>
+          <state id="child2"/>
+        </state>
+        <state id="sibling"/>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+
+      # Find states in the hierarchy
+      parent = Enum.find(document.states, &(&1.id == "parent"))
+      child1 = Enum.find(parent.states, &(&1.id == "child1"))
+      child2 = Enum.find(parent.states, &(&1.id == "child2"))
+      grandchild = Enum.find(child1.states, &(&1.id == "grandchild"))
+      sibling = Enum.find(document.states, &(&1.id == "sibling"))
+
+      # Verify parent relationships
+      assert parent.parent == nil
+      assert parent.depth == 0
+
+      assert child1.parent == "parent"
+      assert child1.depth == 1
+
+      assert child2.parent == "parent"
+      assert child2.depth == 1
+
+      assert grandchild.parent == "child1"
+      assert grandchild.depth == 2
+
+      assert sibling.parent == nil
+      assert sibling.depth == 0
+    end
+
+    test "optimized ancestor lookup works correctly" do
+      xml = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+        <state id="parent" initial="child">
+          <state id="child" initial="grandchild">
+            <state id="grandchild"/>
+          </state>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+
+      # Create a configuration with the deepest state active
+      config = SC.Configuration.new(["grandchild"])
+
+      # Get all active states including ancestors
+      active_ancestors = SC.Configuration.active_ancestors(config, document)
+
+      # Should include the active state plus all its ancestors
+      expected = MapSet.new(["grandchild", "child", "parent"])
+      assert active_ancestors == expected
+    end
+  end
+end
