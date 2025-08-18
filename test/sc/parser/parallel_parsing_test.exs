@@ -1,8 +1,7 @@
 defmodule SC.Parser.ParallelParsingTest do
   use ExUnit.Case, async: true
 
-  alias SC.{Document, Parser, Validator}
-  alias SC.Parser.SCXML
+  alias SC.{Document, Parser.SCXML, Validator}
 
   describe "parallel state parsing" do
     test "parses simple parallel state" do

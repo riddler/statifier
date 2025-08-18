@@ -1,8 +1,6 @@
 defmodule SC.InitialStatesTest do
   use ExUnit.Case
-  alias SC.{Document, Parser, State, Transition, Validator}
-  alias SC.{FeatureDetector, Interpreter}
-  alias SC.Parser.SCXML
+  alias SC.{Document, FeatureDetector, Interpreter, Parser.SCXML, State, Transition, Validator}
 
   describe "initial element parsing" do
     test "parses initial element with transition" do

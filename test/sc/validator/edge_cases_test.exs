@@ -1,8 +1,7 @@
 defmodule SC.Validator.EdgeCasesTest do
   use ExUnit.Case
 
-  alias SC.Validator
-  alias SC.{Document, State, Transition}
+  alias SC.{Document, State, Transition, Validator}
 
   describe "error handling edge cases" do
     test "handles duplicate state IDs" do

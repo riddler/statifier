@@ -1,8 +1,7 @@
 defmodule SC.FeatureDetectorTest do
   use ExUnit.Case
 
-  alias SC.{Document, FeatureDetector, Parser, State}
-  alias SC.Parser.SCXML
+  alias SC.{Document, FeatureDetector, Parser.SCXML, State}
 
   describe "feature detection from XML" do
     test "detects basic states and transitions" do

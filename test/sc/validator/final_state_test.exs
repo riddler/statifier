@@ -1,8 +1,7 @@
 defmodule SC.Validator.FinalStateTest do
   use ExUnit.Case
 
-  alias SC.{Document, Parser, Validator}
-  alias SC.Parser.SCXML
+  alias SC.{Parser.SCXML, Validator}
 
   test "preserves final state type during validation" do
     xml = """

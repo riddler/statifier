@@ -1,8 +1,7 @@
 defmodule SC.Interpreter.CompoundStateTest do
   use ExUnit.Case, async: true
 
-  alias SC.{Event, Interpreter, Parser}
-  alias SC.Parser.SCXML
+  alias SC.{Event, Interpreter, Parser.SCXML}
 
   describe "compound state entry" do
     test "enters initial child state automatically" do

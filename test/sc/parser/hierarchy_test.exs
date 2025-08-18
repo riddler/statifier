@@ -1,8 +1,7 @@
 defmodule SC.Parser.HierarchyTest do
   use ExUnit.Case, async: true
 
-  alias SC.{Configuration, Document, Parser, Validator}
-  alias SC.Parser.SCXML
+  alias SC.{Configuration, Parser.SCXML, Validator}
 
   describe "parent and depth fields" do
     test "sets correct parent and depth for nested states" do

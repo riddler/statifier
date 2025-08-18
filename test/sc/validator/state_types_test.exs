@@ -1,8 +1,7 @@
 defmodule SC.Validator.StateTypesTest do
   use ExUnit.Case, async: true
 
-  alias SC.{Document, Parser, Validator}
-  alias SC.Parser.SCXML
+  alias SC.{Parser.SCXML, Validator}
 
   describe "state type determination at parse time" do
     test "atomic state type determined at parse time" do
