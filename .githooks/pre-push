@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# Git pre-push hook to run validation pipeline
+# This prevents pushing code that fails known tests or linting
+
+set -e
+
+echo "🔍 Running pre-push validation pipeline..."
+
+# Run formatting check
+echo "📝 Checking code formatting..."
+if ! mix format --check-formatted; then
+    echo "❌ Code formatting check failed. Run 'mix format' to fix."
+    exit 1
+fi
+
+# Run regression tests (critical - these should never break)
+echo "🧪 Running regression tests..."
+if ! mix test.regression; then
+    echo "❌ Regression tests failed. These tests should always pass!"
+    exit 1
+fi
+
+# Run static analysis
+echo "🔍 Running static analysis (Credo)..."
+if ! mix credo --strict; then
+    echo "❌ Credo analysis failed. Fix issues before pushing."
+    exit 1
+fi
+
+# Run type checking (optional - can be slow)
+# Uncomment if you want type checking in the pre-push hook
+# echo "🔬 Running type checking (Dialyzer)..."
+# if ! mix dialyzer; then
+#     echo "❌ Dialyzer type checking failed."
+#     exit 1
+# fi
+
+echo "✅ All validation checks passed! Ready to push."

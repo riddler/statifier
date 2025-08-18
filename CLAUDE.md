@@ -12,15 +12,25 @@ When verifying code changes, always follow this sequence (also automated via pre
 4. `mix dialyzer` - Run Dialyzer static analysis for type checking
 
 **Git Hooks:**
+- `./scripts/setup-git-hooks.sh` - Install pre-push hook for validation pipeline
 - Pre-push hook automatically runs the validation workflow to catch issues before CI
 - Located at `.git/hooks/pre-push` (executable)
 - Blocks push if any validation step fails
 
+**Regression Testing:**
+- `test/passing_tests.json` - Registry of tests that should always pass
+- Tracks internal tests, SCION tests, and W3C tests separately
+- Updated manually when new tests start passing consistently
+- Used by CI pipeline to catch regressions early
+
 **Testing:**
+- `mix test` - Run all internal tests (excludes SCION/W3C by default)
+- `mix test --include scion --include scxml_w3` - Run all tests including SCION and W3C tests
+- `mix test.regression` - Run regression tests that should always pass
+- `mix test.baseline` - Check which tests are currently passing (for updating regression suite)
 - `mix test --cover` - Run all tests with coverage reporting (maintain 95%+ coverage)
 - `mix coveralls` - Alternative coverage command
 - `mix coveralls.detail` - Run tests with detailed coverage report showing uncovered lines
-- `mix test` - Run all tests without coverage
 - `mix test test/sc/location_test.exs` - Run location tracking tests
 - `mix test test/sc/parser/scxml_test.exs` - Run specific SCXML parser tests (uses pattern matching)
 - `mix test test/sc/interpreter/compound_state_test.exs` - Run compound state tests
@@ -256,3 +266,4 @@ XML content within triple quotes uses 4-space base indentation.
 The implementation follows the W3C SCXML specification closely and includes comprehensive test coverage from both W3C and SCION test suites. The current interpreter provides a solid foundation for basic SCXML functionality with clear areas identified for future enhancement.
 
 - Always refer to state machines as state charts
+- Always run 'mix format' after writing an Elixir file.

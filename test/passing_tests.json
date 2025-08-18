@@ -1,0 +1,21 @@
+{
+  "description": "Registry of tests that should always pass - used for regression testing",
+  "last_updated": "2025-08-18",
+  "scion_tests": [
+    "test/scion_tests/basic/basic0_test.exs",
+    "test/scion_tests/basic/basic1_test.exs", 
+    "test/scion_tests/basic/basic2_test.exs",
+    "test/scion_tests/hierarchy/hier0_test.exs",
+    "test/scion_tests/hierarchy/hier1_test.exs",
+    "test/scion_tests/hierarchy/hier2_test.exs",
+    "test/scion_tests/parallel/test0_test.exs",
+    "test/scion_tests/parallel/test1_test.exs"
+  ],
+  "w3c_tests": [
+  ],
+  "internal_tests": [
+    "test/sc_test.exs",
+    "test/sc/**/*_test.exs",
+    "test/mix/**/*_test.exs"
+  ]
+}

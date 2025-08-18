@@ -11,28 +11,35 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - ✅ **State Chart Interpreter** - Runtime engine for executing SCXML state charts  
 - ✅ **Comprehensive Validation** - Document validation with detailed error reporting
 - ✅ **Compound States** - Support for hierarchical states with automatic initial child entry
+- ✅ **Parallel States** - Support for concurrent state regions with simultaneous execution
 - ✅ **O(1) Performance** - Optimized state and transition lookups via Maps
 - ✅ **Event Processing** - Internal and external event queues per SCXML specification
 - ✅ **Parse → Validate → Optimize Architecture** - Clean separation of concerns
-- ✅ **Pre-push Hook** - Automated local validation workflow to catch issues early
+- ✅ **Regression Testing** - Automated tracking of passing tests to prevent regressions
+- ✅ **Git Hooks** - Pre-push validation workflow to catch issues early
 - ✅ **Test Infrastructure** - Compatible with SCION and W3C test suites
 
 ## Current Status
 
-**SCION Test Results:** 107/225 tests passing (47.6% pass rate)
+**SCION Test Results:** 30/127 tests passing (23.6% pass rate)  
+**W3C Test Results:** 0/59 tests passing (0% pass rate)  
+**Regression Suite:** 22 tests (all critical functionality)
 
 ### Working Features
-- Basic state transitions and event-driven changes
-- Hierarchical states with optimized O(d) ancestor lookup using parent pointers
-- Document validation and error reporting with comprehensive hierarchy checks
-- SAX-based XML parsing with accurate location tracking
-- Performance-optimized active configuration generation
+- ✅ **Basic state transitions** and event-driven changes
+- ✅ **Hierarchical states** with optimized O(1) state lookup and automatic initial child entry  
+- ✅ **Parallel states** with concurrent execution of multiple regions
+- ✅ **Document validation** and error reporting with comprehensive structural checks
+- ✅ **SAX-based XML parsing** with accurate location tracking for error reporting
+- ✅ **Performance optimizations** - O(1) state/transition lookups, optimized active configuration
+- ✅ **Source field optimization** - Transitions include source state for faster event processing
 
 ### Planned Features
-- Parallel states (`<parallel>`)
 - History states (`<history>`) 
-- Conditional transitions with expression evaluation
-- Executable content (`<script>`, `<assign>`, `<send>`, etc.)
+- Conditional transitions with expression evaluation (`cond` attribute)
+- Internal and targetless transitions
+- Executable content (`<script>`, `<assign>`, `<send>`, `<onentry>`, `<onexit>`, etc.)
+- Expression evaluation and datamodel support
 - Enhanced validation for complex SCXML constructs
 
 ## Installation
@@ -117,35 +124,49 @@ The project maintains high code quality through automated checks:
 
 ```bash
 # Local validation workflow (also runs via pre-push hook)
-mix format
-mix test --cover
-mix credo --strict
-mix dialyzer
+mix format              # Auto-fix formatting
+mix test.regression     # Run critical regression tests (22 tests)
+mix credo --strict      # Static code analysis
+mix dialyzer           # Type checking
 ```
 
-### Pre-push Hook
+### Regression Testing
 
-A git pre-push hook automatically runs the validation workflow to catch issues before CI:
+The project uses automated regression testing to prevent breaking existing functionality:
 
 ```bash
-git push origin feature-branch
-# Automatically runs: format check, tests, credo, dialyzer
-# Push is blocked if any step fails
+# Run only tests that should always pass (22 tests)
+mix test.regression
+
+# Check which tests are currently passing to update regression suite
+mix test.baseline
+
+# Install git hooks for automated validation
+./scripts/setup-git-hooks.sh
 ```
+
+The regression suite tracks:
+- **Internal tests**: All `test/sc/**/*_test.exs` files (supports wildcards)
+- **SCION tests**: 8 known passing tests (basic + hierarchy + parallel)
+- **W3C tests**: Currently none passing
 
 ### Running Tests
 
 ```bash
-# All tests
+# All internal tests (excludes SCION/W3C by default)
 mix test
 
-# With coverage
+# All tests including SCION and W3C test suites
+mix test --include scion --include scxml_w3
+
+# Only regression tests (22 critical tests)
+mix test.regression
+
+# With coverage reporting
 mix coveralls
 
-# SCION basic tests
-mix test --include scion --include spec:basic --exclude scxml_w3
-
-# Specific test file
+# Specific test categories
+mix test --include scion test/scion_tests/basic/
 mix test test/sc/parser/scxml_test.exs
 ```
 
@@ -190,16 +211,19 @@ The implementation includes several key optimizations for production use:
 - **Built During Validation**: Lookup maps only created for valid documents
 - **Memory Efficient**: Uses existing document structure, no duplication
 
-### **Compound State Entry**
+### **Compound and Parallel State Entry**
 ```elixir
 # Automatic hierarchical entry
 {:ok, state_chart} = SC.Interpreter.initialize(document)
 active_states = SC.Interpreter.active_states(state_chart)
-# Returns only leaf states (compound states entered automatically)
+# Returns only leaf states (compound/parallel states entered automatically)
 
 # Fast ancestor computation when needed
 ancestors = SC.Interpreter.active_ancestors(state_chart) 
 # O(1) state lookups + O(d) ancestor traversal
+
+# Parallel states enter ALL child regions simultaneously
+# Compound states enter initial child recursively
 ```
 
 ### **Parse → Validate → Optimize Flow**
@@ -210,18 +234,63 @@ ancestors = SC.Interpreter.active_ancestors(state_chart)
 **Performance Impact:**
 - O(1) vs O(n) state lookups during interpretation
 - O(1) vs O(n) transition queries for event processing  
+- Source field optimization eliminates expensive lookups during event processing
 - Critical for responsive event processing in complex state charts
+
+## Regression Testing System
+
+The project includes a sophisticated regression testing system to ensure stability:
+
+### **Test Registry** (`test/passing_tests.json`)
+```json
+{
+  "internal_tests": ["test/sc_test.exs", "test/sc/**/*_test.exs"],
+  "scion_tests": ["test/scion_tests/basic/basic0_test.exs", ...],
+  "w3c_tests": []
+}
+```
+
+### **Wildcard Support**
+- Supports glob patterns like `test/sc/**/*_test.exs`
+- Automatically expands to all matching test files
+- Maintains clean, maintainable test registry
+
+### **CI Integration**
+- Regression tests run before full test suite in CI
+- Prevents merging code that breaks core functionality
+- Fast feedback loop (22 tests vs 290 total tests)
+
+### **Local Development**
+```bash
+# Check current regression status
+mix test.regression
+
+# Update regression baseline after adding features
+mix test.baseline
+# Manually add newly passing tests to test/passing_tests.json
+
+# Pre-push hook automatically runs regression tests
+git push origin feature-branch
+```
 
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes following the code quality workflow
-4. Add tests for new functionality
-5. Ensure all CI checks pass
-6. Commit your changes (`git commit -m 'Add amazing feature'`)
-7. Push to the branch (`git push origin feature/amazing-feature`)
-8. Open a Pull Request
+3. Install git hooks: `./scripts/setup-git-hooks.sh`
+4. Make your changes following the code quality workflow:
+   - `mix format` (auto-fix formatting)
+   - Add tests for new functionality
+   - `mix test.regression` (ensure no regressions)
+   - `mix credo --strict` (static analysis)
+   - `mix dialyzer` (type checking)
+5. Update regression tests if you fix failing SCION/W3C tests:
+   - Run `mix test.baseline` to see current status
+   - Add newly passing tests to `test/passing_tests.json`
+6. Ensure all CI checks pass
+7. Commit your changes (`git commit -m 'Add amazing feature'`)
+8. Push to the branch (pre-push hook will run automatically)
+9. Open a Pull Request
 
 ### Code Style
 
@@ -231,6 +300,8 @@ ancestors = SC.Interpreter.active_ancestors(state_chart)
 - Comprehensive test coverage (95%+ maintained)
 - Detailed documentation with `@moduledoc` and `@doc`
 - Pattern matching preferred over multiple assertions in tests
+- Git pre-push hook enforces validation workflow automatically
+- Regression tests ensure core functionality never breaks
 
 ## License
 

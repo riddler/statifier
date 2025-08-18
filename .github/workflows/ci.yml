@@ -205,11 +205,10 @@ jobs:
     - name: Run Dialyzer
       run: mix dialyzer
 
-  scion-tests:
-    name: SCION Test Suite
+  regression-tests:
+    name: Regression Test Suite
     runs-on: ubuntu-latest
     needs: test
-    continue-on-error: true
 
     steps:
     - name: Checkout code
@@ -231,13 +230,11 @@ jobs:
         restore-keys: |
           deps-${{ runner.os }}-27.3-1.18.3-
 
-    - name: Run SCION basic tests
-      run: mix test --include spec:basic
+    - name: Install dependencies
+      run: mix deps.get
 
-    - name: Upload SCION test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: scion-test-results
-        path: _build/test/lib/sc/test-results.xml
-        retention-days: 30
+    - name: Compile project
+      run: mix compile
+
+    - name: Run regression tests
+      run: mix test.regression
