@@ -7,6 +7,8 @@ defmodule SC.Transition do
     :event,
     :target,
     :cond,
+    # Source state ID - set during parsing
+    source: nil,
     # Document order for deterministic processing
     document_order: nil,
     # Location information for validation
@@ -20,6 +22,7 @@ defmodule SC.Transition do
           event: String.t() | nil,
           target: String.t() | nil,
           cond: String.t() | nil,
+          source: String.t() | nil,
           document_order: integer() | nil,
           source_location: map() | nil,
           event_location: map() | nil,

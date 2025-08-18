@@ -6,6 +6,7 @@ defmodule SC.State do
   defstruct [
     :id,
     :initial,
+    type: :atomic,
     states: [],
     transitions: [],
     # Hierarchy navigation
@@ -19,9 +20,12 @@ defmodule SC.State do
     initial_location: nil
   ]
 
+  @type state_type :: :atomic | :compound | :parallel | :history | :initial | :final
+
   @type t :: %__MODULE__{
           id: String.t(),
           initial: String.t() | nil,
+          type: state_type(),
           states: [SC.State.t()],
           transitions: [SC.Transition.t()],
           parent: String.t() | nil,

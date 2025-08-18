@@ -51,10 +51,10 @@ defmodule SC.Interpreter do
         # No matching transitions - return unchanged (silent handling)
         {:ok, state_chart}
 
-      [transition | _rest] ->
-        # Execute the first enabled transition
+      transitions ->
+        # Execute all enabled transitions (for parallel regions)
         new_config =
-          execute_transition(state_chart.configuration, transition, state_chart.document)
+          execute_transitions(state_chart.configuration, transitions, state_chart.document)
 
         {:ok, StateChart.update_configuration(state_chart, new_config)}
     end
@@ -93,7 +93,7 @@ defmodule SC.Interpreter do
          %Document{initial: nil, states: [first_state | _rest]} = document
        ) do
     # No initial specified - use first state and enter it properly
-    initial_states = enter_compound_state(first_state, document)
+    initial_states = enter_state(first_state, document)
     Configuration.new(initial_states)
   end
 
@@ -104,27 +104,36 @@ defmodule SC.Interpreter do
         %Configuration{}
 
       state ->
-        initial_states = enter_compound_state(state, document)
+        initial_states = enter_state(state, document)
         Configuration.new(initial_states)
     end
   end
 
-  # Enter a compound state by recursively entering its initial child states.
+  # Enter a state by recursively entering its initial child states based on type.
   # Returns a list of leaf state IDs that should be active.
-  defp enter_compound_state(%SC.State{states: []} = state, _document) do
+  defp enter_state(%SC.State{type: :atomic} = state, _document) do
     # Atomic state - return its ID
     [state.id]
   end
 
-  defp enter_compound_state(%SC.State{states: child_states, initial: initial_id}, document) do
+  defp enter_state(
+         %SC.State{type: :compound, states: child_states, initial: initial_id},
+         document
+       ) do
     # Compound state - find and enter initial child (don't add compound state to active set)
     initial_child = get_initial_child_state(initial_id, child_states)
 
     case initial_child do
       # No valid child - compound state with no children is not active
       nil -> []
-      child -> enter_compound_state(child, document)
+      child -> enter_state(child, document)
     end
+  end
+
+  defp enter_state(%SC.State{type: :parallel, states: child_states}, document) do
+    # Parallel state - enter ALL children simultaneously
+    child_states
+    |> Enum.flat_map(&enter_state(&1, document))
   end
 
   # Get the initial child state for a compound state
@@ -135,8 +144,6 @@ defmodule SC.Interpreter do
   end
 
   defp get_initial_child_state(_initial_id, []), do: nil
-
-  # Find a state by ID in the document (using the more efficient implementation below)
 
   defp find_enabled_transitions(%StateChart{} = state_chart, %Event{} = event) do
     # Get all currently active leaf states
@@ -155,35 +162,52 @@ defmodule SC.Interpreter do
     |> Enum.sort_by(& &1.document_order)
   end
 
-  defp execute_transition(
+  # Execute transitions with proper SCXML semantics
+  defp execute_transitions(
          %Configuration{} = config,
-         %SC.Transition{} = transition,
+         transitions,
          %Document{} = document
        ) do
-    case transition.target do
-      # No target - stay in same state
-      nil ->
-        config
+    # Group transitions by source state to handle document order correctly
+    transitions_by_source = Enum.group_by(transitions, & &1.source)
 
-      target_id ->
-        # Proper compound state transition:
-        # 1. Find target state in document using O(1) lookup
-        # 2. If compound, enter its initial children
-        # 3. Return new configuration with leaf states only
-        case Document.find_state(document, target_id) do
-          nil ->
-            # Invalid target - stay in current state
-            config
-
-          target_state ->
-            # For now: replace all active states with target and its children
-            # Future: Implement proper SCXML exit/entry sequence with LCA computation
-            target_leaf_states = enter_compound_state(target_state, document)
-            Configuration.new(target_leaf_states)
+    # For each source state, take only the first transition (document order)
+    # This handles both regular states and parallel regions correctly
+    selected_transitions =
+      transitions_by_source
+      |> Enum.flat_map(fn {_source_id, source_transitions} ->
+        # Take first transition in document order (transitions are already sorted)
+        case source_transitions do
+          [] -> []
+          # Only first transition per source state
+          [first | _rest] -> [first]
         end
+      end)
+
+    # Execute the selected transitions
+    target_leaf_states =
+      selected_transitions
+      |> Enum.flat_map(&execute_single_transition(&1, document))
+
+    case target_leaf_states do
+      # No valid transitions
+      [] -> config
+      states -> Configuration.new(states)
     end
   end
 
-  # These functions are no longer needed - we use Document.find_state/2
-  # and Document.get_transitions_from_state/2 for O(1) lookups
+  # Execute a single transition and return target leaf states
+  defp execute_single_transition(transition, document) do
+    case transition.target do
+      # No target
+      nil ->
+        []
+
+      target_id ->
+        case Document.find_state(document, target_id) do
+          nil -> []
+          target_state -> enter_state(target_state, document)
+        end
+    end
+  end
 end

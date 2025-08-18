@@ -63,6 +63,8 @@ defmodule SC.Parser.SCXML.ElementBuilder do
     %SC.State{
       id: get_attr_value(attrs_map, "id"),
       initial: get_attr_value(attrs_map, "initial"),
+      # Will be updated later based on children and structure
+      type: :atomic,
       states: [],
       transitions: [],
       document_order: document_order,
@@ -70,6 +72,34 @@ defmodule SC.Parser.SCXML.ElementBuilder do
       source_location: location,
       id_location: id_location,
       initial_location: initial_location
+    }
+  end
+
+  @doc """
+  Build an SC.State from parallel XML attributes and location info.
+  """
+  @spec build_parallel_state(list(), map(), String.t(), map()) :: SC.State.t()
+  def build_parallel_state(attributes, location, xml_string, element_counts) do
+    attrs_map = attributes_to_map(attributes)
+    document_order = LocationTracker.document_order(element_counts)
+
+    # Calculate attribute-specific locations
+    id_location = LocationTracker.attribute_location(xml_string, "id", location)
+
+    %SC.State{
+      id: get_attr_value(attrs_map, "id"),
+      # Parallel states don't have initial attributes
+      initial: nil,
+      # Set type directly during parsing
+      type: :parallel,
+      states: [],
+      transitions: [],
+      document_order: document_order,
+      # Location information
+      source_location: location,
+      id_location: id_location,
+      # Parallel states don't have initial
+      initial_location: nil
     }
   end
 
