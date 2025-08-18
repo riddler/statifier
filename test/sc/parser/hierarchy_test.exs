@@ -1,7 +1,8 @@
 defmodule SC.Parser.HierarchyTest do
   use ExUnit.Case, async: true
 
-  alias SC.{Document, Parser.SCXML}
+  alias SC.{Configuration, Document, Parser, Validator}
+  alias SC.Parser.SCXML
 
   describe "parent and depth fields" do
     test "sets correct parent and depth for nested states" do
@@ -57,13 +58,13 @@ defmodule SC.Parser.HierarchyTest do
       """
 
       {:ok, raw_document} = SCXML.parse(xml)
-      {:ok, document, _warnings} = Document.Validator.validate(raw_document)
+      {:ok, document, _warnings} = Validator.validate(raw_document)
 
       # Create a configuration with the deepest state active
-      config = SC.Configuration.new(["grandchild"])
+      config = Configuration.new(["grandchild"])
 
       # Get all active states including ancestors
-      active_ancestors = SC.Configuration.active_ancestors(config, document)
+      active_ancestors = Configuration.active_ancestors(config, document)
 
       # Should include the active state plus all its ancestors
       expected = MapSet.new(["grandchild", "child", "parent"])

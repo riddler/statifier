@@ -1,7 +1,8 @@
 defmodule SC.Parser.ParallelParsingTest do
   use ExUnit.Case, async: true
 
-  alias SC.{Document, Parser.SCXML}
+  alias SC.{Document, Parser, Validator}
+  alias SC.Parser.SCXML
 
   describe "parallel state parsing" do
     test "parses simple parallel state" do
@@ -43,7 +44,7 @@ defmodule SC.Parser.ParallelParsingTest do
       """
 
       {:ok, document} = SCXML.parse(xml)
-      {:ok, validated_document, _warnings} = Document.Validator.validate(document)
+      {:ok, validated_document, _warnings} = Validator.validate(document)
 
       [parallel_state] = validated_document.states
       assert parallel_state.type == :parallel
@@ -69,7 +70,7 @@ defmodule SC.Parser.ParallelParsingTest do
       """
 
       {:ok, document} = SCXML.parse(xml)
-      {:ok, validated_document, _warnings} = Document.Validator.validate(document)
+      {:ok, validated_document, _warnings} = Validator.validate(document)
 
       [parallel_state] = validated_document.states
       assert parallel_state.type == :parallel

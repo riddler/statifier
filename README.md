@@ -9,15 +9,18 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 
 - ✅ **Complete SCXML Parser** - Converts XML documents to structured data with precise location tracking
 - ✅ **State Chart Interpreter** - Runtime engine for executing SCXML state charts  
-- ✅ **Comprehensive Validation** - Document validation with detailed error reporting
+- ✅ **Modular Validation** - Document validation with focused sub-validators for maintainability
 - ✅ **Compound States** - Support for hierarchical states with automatic initial child entry
+- ✅ **Initial State Elements** - Full support for `<initial>` elements with transitions (W3C compliant)
 - ✅ **Parallel States** - Support for concurrent state regions with simultaneous execution
 - ✅ **O(1) Performance** - Optimized state and transition lookups via Maps
 - ✅ **Event Processing** - Internal and external event queues per SCXML specification
 - ✅ **Parse → Validate → Optimize Architecture** - Clean separation of concerns
+- ✅ **Feature Detection** - Automatic SCXML feature detection for test validation
 - ✅ **Regression Testing** - Automated tracking of passing tests to prevent regressions
 - ✅ **Git Hooks** - Pre-push validation workflow to catch issues early
 - ✅ **Test Infrastructure** - Compatible with SCION and W3C test suites
+- ✅ **Code Quality** - Full Credo compliance with proper module aliasing
 
 ## Current Status
 
@@ -26,54 +29,75 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 **Regression Suite:** 22 tests (all critical functionality)
 
 ### Working Features
+
 - ✅ **Basic state transitions** and event-driven changes
 - ✅ **Hierarchical states** with optimized O(1) state lookup and automatic initial child entry  
+- ✅ **Initial state elements** - Full `<initial>` element support with transitions and comprehensive validation
 - ✅ **Parallel states** with concurrent execution of multiple regions
-- ✅ **Document validation** and error reporting with comprehensive structural checks
+- ✅ **Modular validation** - Refactored from 386-line monolith into focused sub-validators
+- ✅ **Feature detection** - Automatic SCXML feature detection prevents false positive test results
 - ✅ **SAX-based XML parsing** with accurate location tracking for error reporting
 - ✅ **Performance optimizations** - O(1) state/transition lookups, optimized active configuration
 - ✅ **Source field optimization** - Transitions include source state for faster event processing
+- ✅ **Code quality** - Full Credo compliance with proper module aliasing throughout codebase
 
 ### Planned Features
-- History states (`<history>`) 
+
+- History states (`<history>`)
 - Conditional transitions with expression evaluation (`cond` attribute)
 - Internal and targetless transitions
 - Executable content (`<script>`, `<assign>`, `<send>`, `<onentry>`, `<onexit>`, etc.)
 - Expression evaluation and datamodel support
 - Enhanced validation for complex SCXML constructs
 
+## Recent Completions
+
+### **✅ Feature-Based Test Validation System**
+
+**COMPLETED** - Improves test accuracy by validating that tests actually exercise intended SCXML functionality:
+
+- **`SC.FeatureDetector`** - Analyzes SCXML documents to detect used features
+- **Feature validation** - Tests fail when they depend on unsupported features  
+- **False positive prevention** - No more "passing" tests that silently ignore unsupported features
+- **Capability tracking** - Clear visibility into which SCXML features are supported
+
+### **✅ Modular Validator Architecture**
+
+**COMPLETED** - Refactored monolithic validator into focused, maintainable modules:
+
+- **`SC.Validator`** - Main orchestrator (from 386-line monolith)
+- **`SC.Validator.StateValidator`** - State ID validation
+- **`SC.Validator.TransitionValidator`** - Transition target validation  
+- **`SC.Validator.InitialStateValidator`** - All initial state constraints
+- **`SC.Validator.ReachabilityAnalyzer`** - State reachability analysis
+- **`SC.Validator.Utils`** - Shared utilities
+
+### **✅ Initial State Elements**
+
+**COMPLETED** - Full W3C-compliant support for `<initial>` elements:
+
+- **Parser support** - `<initial>` elements with `<transition>` children
+- **Interpreter logic** - Proper initial state entry via initial elements
+- **Comprehensive validation** - Conflict detection, target validation, structure validation
+- **Feature detection** - Automatic detection of initial element usage
+
 ## Future Extensions
 
-### **Feature-Based Test Validation System**
-An enhancement to improve test accuracy by validating that tests actually exercise intended SCXML functionality:
+The next major areas for development focus on expanding SCXML feature support:
 
-**Goal**: Prevent false positive tests where unsupported features are silently ignored, leading to "passing" tests that don't actually validate the intended behavior.
+### **High Priority Features**
 
-**Proposed Enhancement**:
-```elixir
-# Example test with feature requirements
-defmodule SCIONTest.SendIdlocation.Test0Test do
-  use SC.Case
-  @tag :scion
-  @required_features [:datamodel, :send_elements, :onentry_actions, :conditional_transitions]
-  
-  test "test0" do
-    # Test implementation that requires these features
-  end
-end
-```
+- **Conditional Transitions** - `cond` attribute evaluation for dynamic transitions
+- **Executable Content** - `<onentry>`, `<onexit>`, `<assign>`, `<script>` elements
+- **Datamodel Support** - `<data>` elements with expression evaluation
+- **History States** - Shallow and deep history state support
 
-**Implementation Phases**:
-1. **Feature Detection Phase** - Analyze SCXML documents to identify used features
-2. **Feature Validation Phase** - Fail tests when required features are unsupported  
-3. **Test Annotation Phase** - Add `@required_features` tags to existing tests
-4. **Incremental Implementation** - Enable feature flags as capabilities are added
+### **Medium Priority Features**  
 
-**Benefits**:
-- Eliminates false positive test results
-- Provides clear roadmap of which features tests depend on
-- Enables progressive test suite expansion as features are implemented
-- Improves test reliability and developer confidence
+- **Internal Transitions** - `type="internal"` transition support
+- **Targetless Transitions** - Transitions without target for pure actions
+- **Enhanced Error Handling** - Better error messages with source locations
+- **Performance Benchmarking** - Establish performance baselines and optimize hot paths
 
 ## Installation
 
@@ -126,7 +150,7 @@ active_states = SC.Interpreter.active_states(new_state_chart)
 ```elixir
 {:ok, document} = SC.Parser.SCXML.parse(xml)
 
-case SC.Document.Validator.validate(document) do
+case SC.Validator.validate(document) do
   {:ok, optimized_document, warnings} -> 
     # Document is valid and optimized, warnings are non-fatal
     IO.puts("Valid document with #{length(warnings)} warnings")
@@ -141,7 +165,7 @@ end
 
 ### Requirements
 
-- Elixir 1.17+ 
+- Elixir 1.17+
 - Erlang/OTP 26+
 
 ### Setup
@@ -179,6 +203,7 @@ mix test.baseline
 ```
 
 The regression suite tracks:
+
 - **Internal tests**: All `test/sc/**/*_test.exs` files (supports wildcards)
 - **SCION tests**: 8 known passing tests (basic + hierarchy + parallel)
 - **W3C tests**: Currently none passing
@@ -208,7 +233,8 @@ mix test test/sc/parser/scxml_test.exs
 ### Core Components
 
 - **`SC.Parser.SCXML`** - SAX-based XML parser with location tracking (parse phase)
-- **`SC.Document.Validator`** - Comprehensive validation with optimization (validate + optimize phases)
+- **`SC.Validator`** - Modular validation orchestrator with focused sub-validators (validate + optimize phases)
+- **`SC.FeatureDetector`** - SCXML feature detection for test validation and capability tracking
 - **`SC.Interpreter`** - Synchronous state chart interpreter with compound state support
 - **`SC.StateChart`** - Runtime container with event queues
 - **`SC.Configuration`** - Active state management (leaf states only)
@@ -228,7 +254,7 @@ mix test test/sc/parser/scxml_test.exs
 {:ok, document} = SC.Parser.SCXML.parse(xml)
 
 # 2. Validate: Check semantics + optimize with lookup maps  
-{:ok, optimized_document, warnings} = SC.Document.Validator.validate(document)
+{:ok, optimized_document, warnings} = SC.Validator.validate(document)
 
 # 3. Interpret: Run state chart with optimized lookups
 {:ok, state_chart} = SC.Interpreter.initialize(optimized_document)
@@ -239,12 +265,14 @@ mix test test/sc/parser/scxml_test.exs
 The implementation includes several key optimizations for production use:
 
 ### **O(1) State and Transition Lookups**
+
 - **State Lookup Map**: `%{state_id => state}` for instant state access
 - **Transition Lookup Map**: `%{state_id => [transitions]}` for fast transition queries  
 - **Built During Validation**: Lookup maps only created for valid documents
 - **Memory Efficient**: Uses existing document structure, no duplication
 
 ### **Compound and Parallel State Entry**
+
 ```elixir
 # Automatic hierarchical entry
 {:ok, state_chart} = SC.Interpreter.initialize(document)
@@ -260,11 +288,13 @@ ancestors = SC.Interpreter.active_ancestors(state_chart)
 ```
 
 ### **Parse → Validate → Optimize Flow**
+
 - **Separation of Concerns**: Parser focuses on structure, validator on semantics
 - **Conditional Optimization**: Only builds lookup maps for valid documents
 - **Future-Proof**: Supports additional parsers (JSON, YAML) with same validation
 
 **Performance Impact:**
+
 - O(1) vs O(n) state lookups during interpretation
 - O(1) vs O(n) transition queries for event processing  
 - Source field optimization eliminates expensive lookups during event processing
@@ -275,6 +305,7 @@ ancestors = SC.Interpreter.active_ancestors(state_chart)
 The project includes a sophisticated regression testing system to ensure stability:
 
 ### **Test Registry** (`test/passing_tests.json`)
+
 ```json
 {
   "internal_tests": ["test/sc_test.exs", "test/sc/**/*_test.exs"],
@@ -284,16 +315,19 @@ The project includes a sophisticated regression testing system to ensure stabili
 ```
 
 ### **Wildcard Support**
+
 - Supports glob patterns like `test/sc/**/*_test.exs`
 - Automatically expands to all matching test files
 - Maintains clean, maintainable test registry
 
 ### **CI Integration**
+
 - Regression tests run before full test suite in CI
 - Prevents merging code that breaks core functionality
 - Fast feedback loop (22 tests vs 290 total tests)
 
 ### **Local Development**
+
 ```bash
 # Check current regression status
 mix test.regression
@@ -338,7 +372,7 @@ git push origin feature-branch
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
 
 ## Acknowledgments
 

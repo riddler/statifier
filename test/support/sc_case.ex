@@ -11,6 +11,7 @@ defmodule SC.Case do
 
   use ExUnit.CaseTemplate, async: true
 
+  alias ExUnit.Assertions
   alias SC.{Event, FeatureDetector, Interpreter, Parser.SCXML}
 
   using do
@@ -46,7 +47,7 @@ defmodule SC.Case do
         # Test uses unsupported features - fail with descriptive message
         unsupported_list = unsupported_features |> Enum.sort() |> Enum.join(", ")
 
-        ExUnit.Assertions.flunk("""
+        Assertions.flunk("""
         Test depends on unsupported SCXML features: #{unsupported_list}
 
         This test cannot pass until these features are implemented in the SC library.

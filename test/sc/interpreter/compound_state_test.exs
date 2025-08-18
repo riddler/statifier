@@ -1,7 +1,8 @@
 defmodule SC.Interpreter.CompoundStateTest do
   use ExUnit.Case, async: true
 
-  alias SC.{Interpreter, Parser.SCXML}
+  alias SC.{Event, Interpreter, Parser}
+  alias SC.Parser.SCXML
 
   describe "compound state entry" do
     test "enters initial child state automatically" do
@@ -107,7 +108,7 @@ defmodule SC.Interpreter.CompoundStateTest do
       assert MapSet.equal?(active_states, MapSet.new(["simple"]))
 
       # Transition to compound state
-      event = SC.Event.new("go")
+      event = Event.new("go")
       {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
       # Should automatically enter child1 (initial child of compound state)

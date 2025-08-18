@@ -6,7 +6,7 @@ defmodule SC.Interpreter do
   Documents are automatically validated before interpretation.
   """
 
-  alias SC.{Configuration, Document, Event, StateChart}
+  alias SC.{Configuration, Document, Event, StateChart, Validator}
 
   @doc """
   Initialize a state chart from a parsed document.
@@ -15,7 +15,7 @@ defmodule SC.Interpreter do
   """
   @spec initialize(Document.t()) :: {:ok, StateChart.t()} | {:error, [String.t()], [String.t()]}
   def initialize(%Document{} = document) do
-    case Document.Validator.validate(document) do
+    case Validator.validate(document) do
       {:ok, optimized_document, warnings} ->
         state_chart =
           StateChart.new(optimized_document, get_initial_configuration(optimized_document))

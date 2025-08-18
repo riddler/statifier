@@ -1,6 +1,8 @@
 defmodule SC.InitialStatesTest do
   use ExUnit.Case
-  alias SC.{Document, Parser, State}
+  alias SC.{Document, Parser, State, Transition, Validator}
+  alias SC.{FeatureDetector, Interpreter}
+  alias SC.Parser.SCXML
 
   describe "initial element parsing" do
     test "parses initial element with transition" do
@@ -16,7 +18,7 @@ defmodule SC.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
 
       # Check document structure and find the compound state
       assert length(document.states) > 0
@@ -46,7 +48,7 @@ defmodule SC.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
 
       # Check document structure and find the parallel state
       assert length(document.states) > 0
@@ -77,7 +79,7 @@ defmodule SC.InitialStatesTest do
       </scxml>
       """
 
-      features = SC.FeatureDetector.detect_features(xml)
+      features = FeatureDetector.detect_features(xml)
       assert MapSet.member?(features, :initial_elements)
       assert MapSet.member?(features, :basic_states)
     end
@@ -94,14 +96,14 @@ defmodule SC.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
-      features = SC.FeatureDetector.detect_features(document)
+      {:ok, document} = SCXML.parse(xml)
+      features = FeatureDetector.detect_features(document)
       assert MapSet.member?(features, :initial_elements)
     end
 
     test "validates initial elements are supported" do
       features = MapSet.new([:basic_states, :initial_elements])
-      assert {:ok, ^features} = SC.FeatureDetector.validate_features(features)
+      assert {:ok, ^features} = FeatureDetector.validate_features(features)
     end
   end
 
@@ -119,8 +121,8 @@ defmodule SC.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
-      {:ok, _document, warnings} = Document.Validator.validate(document)
+      {:ok, document} = SCXML.parse(xml)
+      {:ok, _document, warnings} = Validator.validate(document)
       assert Enum.empty?(warnings)
     end
 
@@ -137,8 +139,8 @@ defmodule SC.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
-      {:error, errors, _warnings} = Document.Validator.validate(document)
+      {:ok, document} = SCXML.parse(xml)
+      {:error, errors, _warnings} = Validator.validate(document)
 
       assert length(errors) == 1
       assert hd(errors) =~ "cannot have both initial attribute and initial element"
@@ -158,7 +160,7 @@ defmodule SC.InitialStatesTest do
       }
 
       document = %Document{states: [compound_state]}
-      {:error, errors, _warnings} = Document.Validator.validate(document)
+      {:error, errors, _warnings} = Validator.validate(document)
 
       assert length(errors) >= 1
       assert Enum.any?(errors, &String.contains?(&1, "must contain exactly one transition"))
@@ -173,14 +175,14 @@ defmodule SC.InitialStatesTest do
           %State{
             id: "__initial_1__",
             type: :initial,
-            transitions: [%SC.Transition{target: "nonexistent"}]
+            transitions: [%Transition{target: "nonexistent"}]
           },
           %State{id: "child1", type: :atomic, states: []}
         ]
       }
 
       document = %Document{states: [compound_state]}
-      {:error, errors, _warnings} = Document.Validator.validate(document)
+      {:error, errors, _warnings} = Validator.validate(document)
 
       assert length(errors) >= 1
       assert Enum.any?(errors, &String.contains?(&1, "not a valid direct child"))
@@ -198,7 +200,7 @@ defmodule SC.InitialStatesTest do
       }
 
       document = %Document{states: [compound_state]}
-      {:error, errors, _warnings} = Document.Validator.validate(document)
+      {:error, errors, _warnings} = Validator.validate(document)
 
       assert length(errors) >= 1
       assert Enum.any?(errors, &String.contains?(&1, "cannot have multiple initial elements"))
@@ -219,10 +221,10 @@ defmodule SC.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
-      {:ok, state_chart} = SC.Interpreter.initialize(document)
+      {:ok, document} = SCXML.parse(xml)
+      {:ok, state_chart} = Interpreter.initialize(document)
 
-      active_states = SC.Interpreter.active_states(state_chart) |> MapSet.to_list()
+      active_states = Interpreter.active_states(state_chart) |> MapSet.to_list()
       # Should enter child2 as specified by initial element, not child1 (first child)
       assert active_states == ["child2"]
     end
@@ -239,10 +241,10 @@ defmodule SC.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
-      {:ok, state_chart} = SC.Interpreter.initialize(document)
+      {:ok, document} = SCXML.parse(xml)
+      {:ok, state_chart} = Interpreter.initialize(document)
 
-      active_states = SC.Interpreter.active_states(state_chart) |> MapSet.to_list()
+      active_states = Interpreter.active_states(state_chart) |> MapSet.to_list()
       # Should enter first non-initial child
       assert active_states == ["child1"]
     end

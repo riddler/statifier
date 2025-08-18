@@ -1,7 +1,7 @@
-defmodule SC.Document.ValidatorEdgeCasesTest do
+defmodule SC.Validator.EdgeCasesTest do
   use ExUnit.Case
 
-  alias SC.Document.Validator
+  alias SC.Validator
   alias SC.{Document, State, Transition}
 
   describe "error handling edge cases" do

@@ -7,6 +7,8 @@ defmodule SC.Configuration do
   the full set of active states including ancestors.
   """
 
+  alias SC.Document
+
   defstruct active_states: MapSet.new()
 
   @type t :: %__MODULE__{
@@ -73,7 +75,7 @@ defmodule SC.Configuration do
 
   # Fast O(d) ancestor lookup using parent pointers and O(1) state lookup
   defp get_state_ancestors(state_id, document) do
-    case SC.Document.find_state(document, state_id) do
+    case Document.find_state(document, state_id) do
       nil -> []
       state -> collect_ancestors(state, document, [])
     end
@@ -83,7 +85,7 @@ defmodule SC.Configuration do
   defp collect_ancestors(%SC.State{parent: nil}, _document, ancestors), do: ancestors
 
   defp collect_ancestors(%SC.State{parent: parent_id}, document, ancestors) do
-    case SC.Document.find_state(document, parent_id) do
+    case Document.find_state(document, parent_id) do
       nil -> ancestors
       parent_state -> collect_ancestors(parent_state, document, [parent_id | ancestors])
     end

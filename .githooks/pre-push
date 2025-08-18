@@ -26,6 +26,31 @@ if ! mix format --check-formatted; then
     fi
 fi
 
+# Check for markdown files and lint them if markdownlint-cli2 is available
+if command -v markdownlint-cli2 >/dev/null 2>&1; then
+    # Check if any .md files are in the repository
+    if find . -name "*.md" -not -path "./deps/*" -not -path "./_build/*" | head -1 | grep -q .; then
+        echo "📋 Checking markdown formatting..."
+        # Get list of project markdown files (excluding deps and _build)
+        md_files=$(find . -name "*.md" -not -path "./deps/*" -not -path "./_build/*")
+        if ! echo "$md_files" | xargs markdownlint-cli2 --config .markdownlint.json 2>/dev/null; then
+            echo "❌ Markdown linting failed!"
+            echo "💡 Fix markdown issues manually or run:"
+            echo "   find . -name \"*.md\" -not -path \"./deps/*\" -not -path \"./_build/*\" | xargs markdownlint-cli2 --config .markdownlint.json --fix"
+            echo "💡 Install markdownlint-cli2 with: npm install -g markdownlint-cli2"
+            exit 1
+        fi
+        echo "✅ Markdown formatting looks good"
+    fi
+else
+    # Check if any .md files exist to give helpful message
+    if find . -name "*.md" -not -path "./deps/*" -not -path "./_build/*" | head -1 | grep -q .; then
+        echo "ℹ️  markdownlint-cli2 not found - skipping markdown linting"
+        echo "💡 Install with: npm install -g markdownlint-cli2"
+        echo "💡 Or run manually: find . -name \"*.md\" -not -path \"./deps/*\" -not -path \"./_build/*\" | xargs markdownlint-cli2"
+    fi
+fi
+
 # Run regression tests (critical - these should never break)
 echo "🧪 Running regression tests..."
 if ! mix test.regression; then

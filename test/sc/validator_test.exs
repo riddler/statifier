@@ -1,8 +1,8 @@
-defmodule SC.Document.ValidatorTest do
+defmodule SC.ValidatorTest do
   use ExUnit.Case, async: true
 
-  alias SC.Document.Validator
   alias SC.Parser.SCXML
+  alias SC.Validator
 
   describe "validate/1" do
     test "validates simple valid document" do

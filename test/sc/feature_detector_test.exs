@@ -2,6 +2,7 @@ defmodule SC.FeatureDetectorTest do
   use ExUnit.Case
 
   alias SC.{Document, FeatureDetector, Parser, State}
+  alias SC.Parser.SCXML
 
   describe "feature detection from XML" do
     test "detects basic states and transitions" do
@@ -246,7 +247,7 @@ defmodule SC.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -264,7 +265,7 @@ defmodule SC.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -282,7 +283,7 @@ defmodule SC.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -314,7 +315,7 @@ defmodule SC.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -329,7 +330,7 @@ defmodule SC.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -347,7 +348,7 @@ defmodule SC.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -364,7 +365,7 @@ defmodule SC.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)

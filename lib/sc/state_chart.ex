@@ -6,13 +6,15 @@ defmodule SC.StateChart do
   for internal and external events as specified by the SCXML specification.
   """
 
+  alias SC.{Configuration, Document, Event}
+
   defstruct [:document, :configuration, internal_queue: [], external_queue: []]
 
   @type t :: %__MODULE__{
-          document: SC.Document.t(),
-          configuration: SC.Configuration.t(),
-          internal_queue: [SC.Event.t()],
-          external_queue: [SC.Event.t()]
+          document: Document.t(),
+          configuration: Configuration.t(),
+          internal_queue: [Event.t()],
+          external_queue: [Event.t()]
         }
 
   @doc """
@@ -90,6 +92,6 @@ defmodule SC.StateChart do
   """
   @spec active_states(t()) :: MapSet.t(String.t())
   def active_states(%__MODULE__{} = state_chart) do
-    SC.Configuration.active_ancestors(state_chart.configuration, state_chart.document)
+    Configuration.active_ancestors(state_chart.configuration, state_chart.document)
   end
 end
