@@ -132,6 +132,33 @@ defmodule SC.Parser.SCXML.ElementBuilder do
   end
 
   @doc """
+  Build an initial state element from XML attributes and location info.
+
+  Initial states are represented as SC.State with type: :initial.
+  They contain a single transition that specifies the target initial state.
+  """
+  @spec build_initial_state(list(), map(), String.t(), map()) :: SC.State.t()
+  def build_initial_state(_attributes, location, _xml_string, element_counts) do
+    document_order = LocationTracker.document_order(element_counts)
+
+    %SC.State{
+      # Initial states generate unique IDs since they don't have explicit IDs
+      id: generate_initial_id(element_counts),
+      initial: nil,
+      type: :initial,
+      states: [],
+      transitions: [],
+      parent: nil,
+      depth: 0,
+      document_order: document_order,
+      # Location information
+      source_location: location,
+      id_location: nil,
+      initial_location: nil
+    }
+  end
+
+  @doc """
   Build an SC.Transition from XML attributes and location info.
   """
   @spec build_transition(list(), map(), String.t(), map()) :: SC.Transition.t()
@@ -194,5 +221,10 @@ defmodule SC.Parser.SCXML.ElementBuilder do
       "" -> nil
       value -> value
     end
+  end
+
+  defp generate_initial_id(element_counts) do
+    initial_count = Map.get(element_counts, "initial", 1)
+    "__initial_#{initial_count}__"
   end
 end

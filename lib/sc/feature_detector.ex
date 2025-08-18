@@ -51,6 +51,7 @@ defmodule SC.FeatureDetector do
       parallel_states: :supported,
       final_states: :supported,
       initial_attributes: :supported,
+      initial_elements: :supported,
 
       # Conditional features (unsupported)
       conditional_transitions: :unsupported,
@@ -124,6 +125,7 @@ defmodule SC.FeatureDetector do
     |> add_if_present(xml, ~r/<state(\s|>)/, :basic_states)
     |> add_if_present(xml, ~r/<parallel(\s|>)/, :parallel_states)
     |> add_if_present(xml, ~r/<final(\s|>)/, :final_states)
+    |> add_if_present(xml, ~r/<initial(\s|>)/, :initial_elements)
     |> add_if_present(xml, ~r/<history(\s|>)/, :history_states)
     |> add_if_present(xml, ~r/<transition(\s|>)/, :event_transitions)
     |> add_if_present(xml, ~r/<datamodel(\s|>)/, :datamodel)
@@ -219,6 +221,7 @@ defmodule SC.FeatureDetector do
       :compound -> MapSet.put(features, :compound_states)
       :parallel -> MapSet.put(features, :parallel_states)
       :final -> MapSet.put(features, :final_states)
+      :initial -> MapSet.put(features, :initial_elements)
       :history -> MapSet.put(features, :history_states)
       _other_type -> features
     end

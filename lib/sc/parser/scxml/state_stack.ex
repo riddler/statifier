@@ -121,6 +121,18 @@ defmodule SC.Parser.SCXML.StateStack do
 
         {:ok, %{state | stack: [{"final", updated_parent} | rest]}}
 
+      [{"initial", parent_state} | rest] ->
+        # Set the source state ID for initial elements (should use parent of initial)
+        # Initial elements contain transitions that target child states
+        transition_with_source = %{transition | source: parent_state.id}
+
+        updated_parent = %{
+          parent_state
+          | transitions: parent_state.transitions ++ [transition_with_source]
+        }
+
+        {:ok, %{state | stack: [{"initial", updated_parent} | rest]}}
+
       _other_parent ->
         {:ok, %{state | stack: parent_stack}}
     end

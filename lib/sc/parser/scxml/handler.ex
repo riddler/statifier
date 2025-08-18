@@ -39,39 +39,8 @@ defmodule SC.Parser.SCXML.Handler do
 
   @impl Saxy.Handler
   def handle_event(:start_element, {name, attributes}, state) do
-    # Update element counts first
-    updated_counts = Map.update(state.element_counts, name, 1, &(&1 + 1))
-    state = %{state | element_counts: updated_counts}
-
-    location =
-      LocationTracker.get_location_info(state.xml_string, name, state.stack, state.element_counts)
-
-    case name do
-      "scxml" ->
-        handle_scxml_start(attributes, location, state)
-
-      "state" ->
-        handle_state_start(attributes, location, state)
-
-      "parallel" ->
-        handle_parallel_start(attributes, location, state)
-
-      "final" ->
-        handle_final_start(attributes, location, state)
-
-      "transition" ->
-        handle_transition_start(attributes, location, state)
-
-      "datamodel" ->
-        handle_datamodel_start(state)
-
-      "data" ->
-        handle_data_start(attributes, location, state)
-
-      _unknown_element_name ->
-        # Skip unknown elements but track them in stack
-        {:ok, StateStack.push_element(state, name, nil)}
-    end
+    {location, updated_state} = prepare_element_handling(name, state)
+    dispatch_element_start(name, attributes, location, updated_state)
   end
 
   @impl Saxy.Handler
@@ -80,7 +49,7 @@ defmodule SC.Parser.SCXML.Handler do
       "scxml" ->
         {:ok, state}
 
-      state_type when state_type in ["state", "parallel", "final"] ->
+      state_type when state_type in ["state", "parallel", "final", "initial"] ->
         StateStack.handle_state_end(state)
 
       "transition" ->
@@ -102,6 +71,57 @@ defmodule SC.Parser.SCXML.Handler do
   def handle_event(:characters, _character_data, state) do
     # Ignore text content for now since SCXML elements don't have mixed content
     {:ok, state}
+  end
+
+  # Private helper functions for element handling
+
+  defp prepare_element_handling(name, state) do
+    # Update element counts first
+    updated_counts = Map.update(state.element_counts, name, 1, &(&1 + 1))
+    updated_state = %{state | element_counts: updated_counts}
+
+    location =
+      LocationTracker.get_location_info(
+        updated_state.xml_string,
+        name,
+        updated_state.stack,
+        updated_state.element_counts
+      )
+
+    {location, updated_state}
+  end
+
+  # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
+  defp dispatch_element_start(name, attributes, location, state) do
+    case name do
+      "scxml" ->
+        handle_scxml_start(attributes, location, state)
+
+      "state" ->
+        handle_state_start(attributes, location, state)
+
+      "parallel" ->
+        handle_parallel_start(attributes, location, state)
+
+      "final" ->
+        handle_final_start(attributes, location, state)
+
+      "initial" ->
+        handle_initial_start(attributes, location, state)
+
+      "transition" ->
+        handle_transition_start(attributes, location, state)
+
+      "datamodel" ->
+        handle_datamodel_start(state)
+
+      "data" ->
+        handle_data_start(attributes, location, state)
+
+      _unknown_element_name ->
+        # Skip unknown elements but track them in stack
+        {:ok, StateStack.push_element(state, name, nil)}
+    end
   end
 
   # Private element start handlers
@@ -184,6 +204,23 @@ defmodule SC.Parser.SCXML.Handler do
     }
 
     {:ok, StateStack.push_element(updated_state, "final", final_element)}
+  end
+
+  defp handle_initial_start(attributes, location, state) do
+    initial_element =
+      ElementBuilder.build_initial_state(
+        attributes,
+        location,
+        state.xml_string,
+        state.element_counts
+      )
+
+    updated_state = %{
+      state
+      | current_element: {:initial, initial_element}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "initial", initial_element)}
   end
 
   defp handle_data_start(attributes, location, state) do

@@ -121,6 +121,12 @@ defmodule SC.Interpreter do
     [state.id]
   end
 
+  defp enter_state(%SC.State{type: :initial}, _document) do
+    # Initial states are not directly entered - they are processing pseudo-states
+    # The interpreter should have already resolved their transition targets
+    []
+  end
+
   defp enter_state(
          %SC.State{type: :compound, states: child_states, initial: initial_id},
          document
@@ -142,13 +148,43 @@ defmodule SC.Interpreter do
   end
 
   # Get the initial child state for a compound state
-  defp get_initial_child_state(nil, [first_child | _rest]), do: first_child
+  defp get_initial_child_state(nil, child_states) do
+    # No initial attribute - check for <initial> element first
+    case find_initial_element(child_states) do
+      %SC.State{type: :initial, transitions: [transition | _rest]} ->
+        # Use the initial element's transition target
+        find_child_by_id(child_states, transition.target)
+
+      %SC.State{type: :initial, transitions: []} ->
+        # Initial element exists but no transition yet (during parsing)
+        # Use first non-initial child as fallback
+        Enum.find(child_states, &(&1.type != :initial))
+
+      nil ->
+        # No initial element - use first non-initial child
+        case child_states do
+          [] -> nil
+          [first_child | _rest] when first_child.type != :initial -> first_child
+          child_states -> Enum.find(child_states, &(&1.type != :initial))
+        end
+    end
+  end
 
   defp get_initial_child_state(initial_id, child_states) when is_binary(initial_id) do
     Enum.find(child_states, &(&1.id == initial_id))
   end
 
   defp get_initial_child_state(_initial_id, []), do: nil
+
+  # Find the initial element among child states
+  defp find_initial_element(child_states) do
+    Enum.find(child_states, &(&1.type == :initial))
+  end
+
+  # Find a child state by ID
+  defp find_child_by_id(child_states, target_id) do
+    Enum.find(child_states, &(&1.id == target_id))
+  end
 
   defp find_enabled_transitions(%StateChart{} = state_chart, %Event{} = event) do
     # Get all currently active leaf states
