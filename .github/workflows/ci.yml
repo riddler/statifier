@@ -208,7 +208,7 @@ jobs:
   regression-tests:
     name: Regression Test Suite
     runs-on: ubuntu-latest
-    needs: test
+    needs: compile
 
     steps:
     - name: Checkout code

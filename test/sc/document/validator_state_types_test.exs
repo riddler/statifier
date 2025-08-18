@@ -3,8 +3,8 @@ defmodule SC.Document.ValidatorStateTypesTest do
 
   alias SC.{Document, Parser.SCXML}
 
-  describe "state type determination in validator" do
-    test "determines atomic state type" do
+  describe "state type determination at parse time" do
+    test "atomic state type determined at parse time" do
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
@@ -13,13 +13,13 @@ defmodule SC.Document.ValidatorStateTypesTest do
       """
 
       {:ok, document} = SCXML.parse(xml)
-      {:ok, optimized_document, _warnings} = Document.Validator.validate(document)
 
-      [state] = optimized_document.states
+      # State type should be determined at parse time, no validation needed
+      [state] = document.states
       assert state.type == :atomic
     end
 
-    test "determines compound state type" do
+    test "compound state type determined at parse time" do
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
@@ -30,16 +30,16 @@ defmodule SC.Document.ValidatorStateTypesTest do
       """
 
       {:ok, document} = SCXML.parse(xml)
-      {:ok, optimized_document, _warnings} = Document.Validator.validate(document)
 
-      [parent_state] = optimized_document.states
+      # State types should be determined at parse time, no validation needed
+      [parent_state] = document.states
       assert parent_state.type == :compound
 
       [child_state] = parent_state.states
       assert child_state.type == :atomic
     end
 
-    test "state types are only determined for valid documents" do
+    test "validator only builds lookup maps for valid documents" do
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="nonexistent">
@@ -50,11 +50,10 @@ defmodule SC.Document.ValidatorStateTypesTest do
       {:ok, document} = SCXML.parse(xml)
       {:error, _errors, _warnings} = Document.Validator.validate(document)
 
-      # Invalid documents should not have state types determined or lookup maps built
+      # State types are determined at parse time regardless of validity
       [state] = document.states
-      # Still the default from parsing
       assert state.type == :atomic
-      # No lookup maps built
+      # But lookup maps should not be built for invalid documents
       assert document.state_lookup == %{}
     end
 
@@ -71,9 +70,9 @@ defmodule SC.Document.ValidatorStateTypesTest do
       """
 
       {:ok, document} = SCXML.parse(xml)
-      {:ok, optimized_document, _warnings} = Document.Validator.validate(document)
 
-      [level1] = optimized_document.states
+      # State types should be determined at parse time, no validation needed
+      [level1] = document.states
       assert level1.type == :compound
 
       [level2] = level1.states

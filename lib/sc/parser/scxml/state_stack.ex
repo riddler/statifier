@@ -40,7 +40,9 @@ defmodule SC.Parser.SCXML.StateStack do
         }
 
         updated_parent = %{parent_state | states: parent_state.states ++ [state_with_hierarchy]}
-        {:ok, %{state | stack: [{"state", updated_parent} | rest]}}
+        # Update parent state type based on its children
+        updated_parent_with_type = update_state_type(updated_parent)
+        {:ok, %{state | stack: [{"state", updated_parent_with_type} | rest]}}
 
       [{"parallel", parent_state} | rest] ->
         # State is nested in a parallel state - calculate depth from stack level
@@ -53,7 +55,24 @@ defmodule SC.Parser.SCXML.StateStack do
         }
 
         updated_parent = %{parent_state | states: parent_state.states ++ [state_with_hierarchy]}
-        {:ok, %{state | stack: [{"parallel", updated_parent} | rest]}}
+        # Update parent state type based on its children (parallel states keep their type)
+        updated_parent_with_type = update_state_type(updated_parent)
+        {:ok, %{state | stack: [{"parallel", updated_parent_with_type} | rest]}}
+
+      [{"final", parent_state} | rest] ->
+        # State is nested in a final state - calculate depth from stack level
+        current_depth = calculate_stack_depth(rest) + 1
+
+        state_with_hierarchy = %{
+          state_element
+          | parent: parent_state.id,
+            depth: current_depth
+        }
+
+        updated_parent = %{parent_state | states: parent_state.states ++ [state_with_hierarchy]}
+        # Update parent state type based on its children (final states keep their type)
+        updated_parent_with_type = update_state_type(updated_parent)
+        {:ok, %{state | stack: [{"final", updated_parent_with_type} | rest]}}
 
       _other_parent ->
         {:ok, %{state | stack: parent_stack}}
@@ -90,6 +109,17 @@ defmodule SC.Parser.SCXML.StateStack do
         }
 
         {:ok, %{state | stack: [{"parallel", updated_parent} | rest]}}
+
+      [{"final", parent_state} | rest] ->
+        # Set the source state ID for final states too
+        transition_with_source = %{transition | source: parent_state.id}
+
+        updated_parent = %{
+          parent_state
+          | transitions: parent_state.transitions ++ [transition_with_source]
+        }
+
+        {:ok, %{state | stack: [{"final", updated_parent} | rest]}}
 
       _other_parent ->
         {:ok, %{state | stack: parent_stack}}
@@ -151,5 +181,29 @@ defmodule SC.Parser.SCXML.StateStack do
   # Count the number of state elements in the stack to determine nesting depth
   defp calculate_stack_depth(stack) do
     Enum.count(stack, fn {element_type, _element} -> element_type == "state" end)
+  end
+
+  # Update state type based on current structure and children
+  # This allows us to determine compound vs atomic at parse time
+  defp update_state_type(%SC.State{type: :parallel} = state) do
+    # Parallel states keep their type regardless of children
+    state
+  end
+
+  defp update_state_type(%SC.State{type: :final} = state) do
+    # Final states keep their type regardless of children
+    state
+  end
+
+  defp update_state_type(%SC.State{states: child_states} = state) do
+    # For regular states, determine type based on children
+    new_type =
+      if Enum.empty?(child_states) do
+        :atomic
+      else
+        :compound
+      end
+
+    %{state | type: new_type}
   end
 end

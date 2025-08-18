@@ -1,21 +1,38 @@
 {
   "description": "Registry of tests that should always pass - used for regression testing",
-  "last_updated": "2025-08-18",
-  "scion_tests": [
-    "test/scion_tests/basic/basic0_test.exs",
-    "test/scion_tests/basic/basic1_test.exs", 
-    "test/scion_tests/basic/basic2_test.exs",
-    "test/scion_tests/hierarchy/hier0_test.exs",
-    "test/scion_tests/hierarchy/hier1_test.exs",
-    "test/scion_tests/hierarchy/hier2_test.exs",
-    "test/scion_tests/parallel/test0_test.exs",
-    "test/scion_tests/parallel/test1_test.exs"
-  ],
-  "w3c_tests": [
-  ],
   "internal_tests": [
     "test/sc_test.exs",
     "test/sc/**/*_test.exs",
     "test/mix/**/*_test.exs"
-  ]
+  ],
+  "last_updated": "2025-08-18",
+  "scion_tests": [
+    "test/scion_tests/basic/basic0_test.exs",
+    "test/scion_tests/basic/basic1_test.exs",
+    "test/scion_tests/basic/basic2_test.exs",
+    "test/scion_tests/default_initial_state/initial1_test.exs",
+    "test/scion_tests/default_initial_state/initial2_test.exs",
+    "test/scion_tests/documentOrder/documentOrder0_test.exs",
+    "test/scion_tests/hierarchy/hier0_test.exs",
+    "test/scion_tests/hierarchy/hier1_test.exs",
+    "test/scion_tests/hierarchy/hier2_test.exs",
+    "test/scion_tests/hierarchy_documentOrder/test0_test.exs",
+    "test/scion_tests/hierarchy_documentOrder/test1_test.exs",
+    "test/scion_tests/more_parallel/test1_test.exs",
+    "test/scion_tests/more_parallel/test4_test.exs",
+    "test/scion_tests/parallel/test0_test.exs",
+    "test/scion_tests/parallel/test1_test.exs",
+    "test/scion_tests/parallel_interrupt/test13_test.exs",
+    "test/scion_tests/parallel_interrupt/test18_test.exs",
+    "test/scion_tests/parallel_interrupt/test19_test.exs",
+    "test/scion_tests/parallel_interrupt/test22_test.exs",
+    "test/scion_tests/parallel_interrupt/test23_test.exs",
+    "test/scion_tests/parallel_interrupt/test24_test.exs",
+    "test/scion_tests/parallel_interrupt/test27_test.exs",
+    "test/scion_tests/parallel_interrupt/test28_test.exs",
+    "test/scion_tests/parallel_interrupt/test29_test.exs",
+    "test/scion_tests/parallel_interrupt/test6_test.exs",
+    "test/scion_tests/parallel_interrupt/test9_test.exs"
+  ],
+  "w3c_tests": []
 }

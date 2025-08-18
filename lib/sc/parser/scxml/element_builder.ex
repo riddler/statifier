@@ -104,6 +104,34 @@ defmodule SC.Parser.SCXML.ElementBuilder do
   end
 
   @doc """
+  Build an SC.State from final XML attributes and location info.
+  """
+  @spec build_final_state(list(), map(), String.t(), map()) :: SC.State.t()
+  def build_final_state(attributes, location, xml_string, element_counts) do
+    attrs_map = attributes_to_map(attributes)
+    document_order = LocationTracker.document_order(element_counts)
+
+    # Calculate attribute-specific locations
+    id_location = LocationTracker.attribute_location(xml_string, "id", location)
+
+    %SC.State{
+      id: get_attr_value(attrs_map, "id"),
+      # Final states don't have initial attributes
+      initial: nil,
+      # Set type directly during parsing
+      type: :final,
+      states: [],
+      transitions: [],
+      document_order: document_order,
+      # Location information
+      source_location: location,
+      id_location: id_location,
+      # Final states don't have initial
+      initial_location: nil
+    }
+  end
+
+  @doc """
   Build an SC.Transition from XML attributes and location info.
   """
   @spec build_transition(list(), map(), String.t(), map()) :: SC.Transition.t()

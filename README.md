@@ -42,6 +42,39 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - Expression evaluation and datamodel support
 - Enhanced validation for complex SCXML constructs
 
+## Future Extensions
+
+### **Feature-Based Test Validation System**
+An enhancement to improve test accuracy by validating that tests actually exercise intended SCXML functionality:
+
+**Goal**: Prevent false positive tests where unsupported features are silently ignored, leading to "passing" tests that don't actually validate the intended behavior.
+
+**Proposed Enhancement**:
+```elixir
+# Example test with feature requirements
+defmodule SCIONTest.SendIdlocation.Test0Test do
+  use SC.Case
+  @tag :scion
+  @required_features [:datamodel, :send_elements, :onentry_actions, :conditional_transitions]
+  
+  test "test0" do
+    # Test implementation that requires these features
+  end
+end
+```
+
+**Implementation Phases**:
+1. **Feature Detection Phase** - Analyze SCXML documents to identify used features
+2. **Feature Validation Phase** - Fail tests when required features are unsupported  
+3. **Test Annotation Phase** - Add `@required_features` tags to existing tests
+4. **Incremental Implementation** - Enable feature flags as capabilities are added
+
+**Benefits**:
+- Eliminates false positive test results
+- Provides clear roadmap of which features tests depend on
+- Enables progressive test suite expansion as features are implemented
+- Improves test reliability and developer confidence
+
 ## Installation
 
 Add `sc` to your list of dependencies in `mix.exs`:

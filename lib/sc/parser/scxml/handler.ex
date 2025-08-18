@@ -56,6 +56,9 @@ defmodule SC.Parser.SCXML.Handler do
       "parallel" ->
         handle_parallel_start(attributes, location, state)
 
+      "final" ->
+        handle_final_start(attributes, location, state)
+
       "transition" ->
         handle_transition_start(attributes, location, state)
 
@@ -77,11 +80,7 @@ defmodule SC.Parser.SCXML.Handler do
       "scxml" ->
         {:ok, state}
 
-      "state" ->
-        StateStack.handle_state_end(state)
-
-      "parallel" ->
-        # Handle parallel same as state
+      state_type when state_type in ["state", "parallel", "final"] ->
         StateStack.handle_state_end(state)
 
       "transition" ->
@@ -168,6 +167,23 @@ defmodule SC.Parser.SCXML.Handler do
 
   defp handle_datamodel_start(state) do
     {:ok, StateStack.push_element(state, "datamodel", nil)}
+  end
+
+  defp handle_final_start(attributes, location, state) do
+    final_element =
+      ElementBuilder.build_final_state(
+        attributes,
+        location,
+        state.xml_string,
+        state.element_counts
+      )
+
+    updated_state = %{
+      state
+      | current_element: {:final, final_element}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "final", final_element)}
   end
 
   defp handle_data_start(attributes, location, state) do

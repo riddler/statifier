@@ -56,10 +56,8 @@ defmodule SC.Document.Validator do
     final_document =
       case validated_result.errors do
         [] ->
-          # Only optimize valid documents
-          document
-          |> determine_state_types()
-          |> SC.Document.build_lookup_maps()
+          # Only optimize valid documents (state types already determined at parse time)
+          SC.Document.build_lookup_maps(document)
 
         _errors ->
           # Don't waste time optimizing invalid documents
@@ -282,41 +280,6 @@ defmodule SC.Document.Validator do
       result
     else
       add_warning(result, "Document initial state '#{initial_id}' is not a top-level state")
-    end
-  end
-
-  # State type determination (moved from parser)
-
-  # Determine state types for all states in the document based on structure
-  @spec determine_state_types(SC.Document.t()) :: SC.Document.t()
-  defp determine_state_types(%SC.Document{} = document) do
-    updated_states = Enum.map(document.states, &update_state_types/1)
-    %{document | states: updated_states}
-  end
-
-  # Update state types based on structure after parsing is complete
-  @spec update_state_types(SC.State.t()) :: SC.State.t()
-  defp update_state_types(%SC.State{type: :parallel} = state) do
-    # Parallel states keep their type, just update children
-    updated_children = Enum.map(state.states, &update_state_types/1)
-    %{state | states: updated_children}
-  end
-
-  defp update_state_types(%SC.State{} = state) do
-    # Update children first (bottom-up)
-    updated_children = Enum.map(state.states, &update_state_types/1)
-
-    # Determine this state's type based on structure (atomic vs compound)
-    state_type = determine_state_type(updated_children, state.initial)
-
-    %{state | type: state_type, states: updated_children}
-  end
-
-  defp determine_state_type(child_states, initial_value) do
-    cond do
-      Enum.empty?(child_states) -> :atomic
-      initial_value != nil or not Enum.empty?(child_states) -> :compound
-      true -> :atomic
     end
   end
 end

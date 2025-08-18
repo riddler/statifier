@@ -18,6 +18,7 @@ defmodule Mix.Tasks.Test.Regression do
   """
 
   # credo:disable-for-this-file Credo.Check.Refactor.IoPuts
+  # credo:disable-for-this-file Credo.Check.Refactor.Nesting
 
   use Mix.Task
 
@@ -54,8 +55,9 @@ defmodule Mix.Tasks.Test.Regression do
           {_output, 0} ->
             IO.puts("✅ All #{length(all_test_files)} regression tests passed!")
 
-          {_output, exit_code} ->
+          {output, exit_code} ->
             IO.puts("❌ Some regression tests failed (exit code: #{exit_code})")
+            show_failing_tests(output, all_test_files)
             System.halt(1)
         end
 
@@ -117,6 +119,145 @@ defmodule Mix.Tasks.Test.Regression do
   defp run_tests(test_files, extra_args) do
     args = ["test"] ++ test_files ++ extra_args
     System.cmd("mix", args, stderr_to_stdout: true)
+  end
+
+  defp show_failing_tests(output, expected_test_files) do
+    IO.puts("\n📋 REGRESSION TEST FAILURE ANALYSIS")
+    IO.puts(String.duplicate("=", 50))
+
+    # Extract failure information from ExUnit output
+    failing_tests = extract_failing_tests_from_output(output)
+
+    if length(failing_tests) > 0 do
+      IO.puts("\n❌ Failed Tests:")
+
+      Enum.each(failing_tests, fn {test_name, file_path, reason} ->
+        IO.puts("  • #{test_name}")
+        IO.puts("    File: #{file_path}")
+
+        if reason do
+          # Show first line of reason to keep it concise
+          first_line = reason |> String.split("\n") |> List.first() |> String.trim()
+          IO.puts("    Reason: #{first_line}")
+        end
+
+        IO.puts("")
+      end)
+
+      IO.puts(
+        "📊 Summary: #{length(failing_tests)} test(s) failed out of #{length(expected_test_files)} regression tests"
+      )
+    else
+      # If we can't parse specific failures, try to identify failing files
+      failing_files = identify_failing_files(output, expected_test_files)
+
+      if length(failing_files) > 0 do
+        IO.puts("\n❌ Files with failures:")
+        Enum.each(failing_files, &IO.puts("  • #{&1}"))
+        IO.puts("\n📊 Summary: #{length(failing_files)} file(s) had failures")
+      else
+        IO.puts("\n⚠️  Could not identify specific failing tests from output.")
+        IO.puts("Run 'mix test.regression --verbose' for detailed output.")
+      end
+    end
+
+    IO.puts("\n💡 To debug:")
+    IO.puts("  1. Run individual failing tests: mix test <test_file>")
+    IO.puts("  2. Check if tests need to be removed from baseline: mix test.baseline")
+    IO.puts("  3. Run with verbose output: mix test.regression --verbose")
+  end
+
+  defp extract_failing_tests_from_output(output) do
+    # Parse ExUnit output to extract failing test information
+    # Look for patterns like:
+    # "  1) test test_name (ModuleName)"
+    # "     path/to/test_file.exs:line_number"
+
+    failure_pattern = ~r/^\s+\d+\)\s+test\s+(.+?)\s+\((.+?)\)\s*$/m
+
+    failures = Regex.scan(failure_pattern, output)
+
+    failures
+    |> Enum.map(fn [_full_match, test_name, module_name] ->
+      # Try to extract file path from subsequent lines
+      file_path = extract_file_path_for_test(output, test_name, module_name)
+      reason = extract_failure_reason(output, test_name)
+
+      {test_name, file_path, reason}
+    end)
+  end
+
+  defp extract_file_path_for_test(output, test_name, _module_name) do
+    # Look for file path in the lines following the test failure
+    lines = String.split(output, "\n")
+
+    # Find the line with our test
+    test_line_index =
+      Enum.find_index(lines, fn line ->
+        String.contains?(line, test_name) and String.contains?(line, "test ")
+      end)
+
+    if test_line_index do
+      # Look in the next few lines for a file path
+      lines
+      |> Enum.drop(test_line_index + 1)
+      |> Enum.take(3)
+      |> Enum.find_value(fn line ->
+        if Regex.match?(~r/^\s+(.+\.exs):\d+/, line) do
+          line |> String.trim() |> String.split(":") |> List.first()
+        end
+      end)
+    end
+  end
+
+  defp extract_failure_reason(output, test_name) do
+    lines = String.split(output, "\n")
+
+    # Find the line with our test
+    test_line_index =
+      Enum.find_index(lines, fn line ->
+        String.contains?(line, test_name) and String.contains?(line, "test ")
+      end)
+
+    if test_line_index do
+      # Look for reason in subsequent lines, stopping at next test or end
+      lines
+      |> Enum.drop(test_line_index + 1)
+      |> Enum.take_while(fn line ->
+        not Regex.match?(~r/^\s+\d+\)\s+test\s+/, line) and String.trim(line) != ""
+      end)
+      |> Enum.drop_while(fn line ->
+        # Skip file path and stacktrace lines
+        Regex.match?(~r/^\s+(.+\.exs):\d+/, line) or
+          String.contains?(line, "stacktrace:") or
+          String.trim(line) == ""
+      end)
+      # Take first couple lines of actual error
+      |> Enum.take(2)
+      |> Enum.join(" ")
+      |> String.trim()
+      |> case do
+        "" -> nil
+        reason -> reason
+      end
+    end
+  end
+
+  defp identify_failing_files(output, expected_test_files) do
+    # Extract file paths mentioned in the output that are in our expected list
+    file_pattern = ~r/([a-zA-Z0-9_\/\.]+_test\.exs)/
+
+    mentioned_files =
+      Regex.scan(file_pattern, output)
+      |> Enum.map(fn [_full, file] -> file end)
+      |> Enum.uniq()
+
+    # Filter to only files that are in our regression test list
+    expected_test_files
+    |> Enum.filter(fn file ->
+      filename = Path.basename(file)
+      Enum.any?(mentioned_files, &String.ends_with?(&1, filename))
+    end)
   end
 
   @doc """

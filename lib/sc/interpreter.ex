@@ -116,6 +116,11 @@ defmodule SC.Interpreter do
     [state.id]
   end
 
+  defp enter_state(%SC.State{type: :final} = state, _document) do
+    # Final state is treated like an atomic state - return its ID
+    [state.id]
+  end
+
   defp enter_state(
          %SC.State{type: :compound, states: child_states, initial: initial_id},
          document

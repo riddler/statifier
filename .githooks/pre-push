@@ -10,8 +10,20 @@ echo "🔍 Running pre-push validation pipeline..."
 # Run formatting check
 echo "📝 Checking code formatting..."
 if ! mix format --check-formatted; then
-    echo "❌ Code formatting check failed. Run 'mix format' to fix."
-    exit 1
+    echo "❌ Code formatting issues found. Running 'mix format' to fix..."
+    mix format
+    
+    # Check if files were actually changed by formatting
+    if ! git diff --quiet; then
+        echo "📝 Code has been automatically formatted."
+        echo "🔄 Please commit the formatting changes and push again:"
+        echo "   git add ."
+        echo "   git commit -m 'Auto-format code with mix format'"
+        echo "   git push"
+        exit 1
+    else
+        echo "✅ No files needed formatting changes."
+    fi
 fi
 
 # Run regression tests (critical - these should never break)
