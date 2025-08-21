@@ -6,7 +6,7 @@ defmodule SC.Interpreter do
   Documents are automatically validated before interpretation.
   """
 
-  alias SC.{Configuration, Document, Event, StateChart, Validator}
+  alias SC.{ConditionEvaluator, Configuration, Document, Event, StateChart, Validator}
 
   @doc """
   Initialize a state chart from a parsed document.
@@ -186,18 +186,36 @@ defmodule SC.Interpreter do
     Enum.find(child_states, &(&1.id == target_id))
   end
 
+  # Check if a transition's condition (if any) evaluates to true
+  defp transition_condition_enabled?(%{compiled_cond: nil}, _context), do: true
+
+  defp transition_condition_enabled?(%{compiled_cond: compiled_cond}, context) do
+    ConditionEvaluator.evaluate_condition(compiled_cond, context)
+  end
+
   defp find_enabled_transitions(%StateChart{} = state_chart, %Event{} = event) do
     # Get all currently active leaf states
     active_leaf_states = Configuration.active_states(state_chart.configuration)
 
-    # Find transitions from these active states that match the event
+    # Build evaluation context for conditions
+    evaluation_context = %{
+      configuration: state_chart.configuration,
+      current_event: event,
+      # Use event data as data model for now
+      data_model: event.data || %{}
+    }
+
+    # Find transitions from these active states that match the event and condition
     active_leaf_states
     |> Enum.flat_map(fn state_id ->
       # Use O(1) lookup for transitions from this state
       transitions = Document.get_transitions_from_state(state_chart.document, state_id)
 
       transitions
-      |> Enum.filter(&Event.matches?(event, &1.event))
+      |> Enum.filter(fn transition ->
+        Event.matches?(event, transition.event) and
+          transition_condition_enabled?(transition, evaluation_context)
+      end)
     end)
     # Process in document order
     |> Enum.sort_by(& &1.document_order)

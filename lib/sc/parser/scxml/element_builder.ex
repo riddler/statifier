@@ -6,6 +6,7 @@ defmodule SC.Parser.SCXML.ElementBuilder do
   and SC.DataElement structs with proper attribute parsing and location tracking.
   """
 
+  alias SC.ConditionEvaluator
   alias SC.Parser.SCXML.LocationTracker
 
   @doc """
@@ -171,10 +172,24 @@ defmodule SC.Parser.SCXML.ElementBuilder do
     target_location = LocationTracker.attribute_location(xml_string, "target", location)
     cond_location = LocationTracker.attribute_location(xml_string, "cond", location)
 
+    cond_attr = get_attr_value(attrs_map, "cond")
+
+    # Compile condition if present
+    compiled_cond =
+      case ConditionEvaluator.compile_condition(cond_attr) do
+        {:ok, compiled} ->
+          compiled
+
+        {:error, _reason} ->
+          # Log compilation error for debugging
+          nil
+      end
+
     %SC.Transition{
       event: get_attr_value(attrs_map, "event"),
       target: get_attr_value(attrs_map, "target"),
-      cond: get_attr_value(attrs_map, "cond"),
+      cond: cond_attr,
+      compiled_cond: compiled_cond,
       document_order: document_order,
       # Location information
       source_location: location,

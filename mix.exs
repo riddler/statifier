@@ -3,13 +3,17 @@ defmodule SC.MixProject do
 
   @app :sc
   @version "0.1.0"
+  @description "StateCharts for Elixir"
+  @source_url "https://github.com/riddler/sc"
   @deps [
     # Development, Test, Local
     {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
     {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+    {:ex_doc, "~> 0.31", only: :dev, runtime: false},
     {:excoveralls, "~> 0.18", only: :test},
 
     # Runtime
+    {:predicator, "~> 2.0"},
     {:saxy, "~> 1.6"}
   ]
 
@@ -21,6 +25,9 @@ defmodule SC.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: @deps,
+      docs: docs(),
+      description: @description,
+      package: package(),
       test_coverage: [tool: ExCoveralls],
       preferred_cli_env: [
         coveralls: :test,
@@ -42,6 +49,27 @@ defmodule SC.MixProject do
   def application do
     [
       extra_applications: [:logger]
+    ]
+  end
+
+  defp package do
+    [
+      name: @app,
+      files: ~w(lib mix.exs README.md LICENSE CHANGELOG.md),
+      licenses: ["MIT"],
+      links: %{"GitHub" => @source_url},
+      maintainers: ["Riddler Team"]
+    ]
+  end
+
+  defp docs do
+    [
+      name: "SC",
+      source_ref: "v#{@version}",
+      canonical: "https://hexdocs.pm/sc",
+      source_url: @source_url,
+      extras: ["README.md", "CHANGELOG.md", "LICENSE"],
+      main: "readme"
     ]
   end
 

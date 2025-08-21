@@ -7,6 +7,8 @@ defmodule SC.Transition do
     :event,
     :target,
     :cond,
+    # Compiled conditional expression for performance
+    :compiled_cond,
     # Source state ID - set during parsing
     source: nil,
     # Document order for deterministic processing
@@ -22,6 +24,7 @@ defmodule SC.Transition do
           event: String.t() | nil,
           target: String.t() | nil,
           cond: String.t() | nil,
+          compiled_cond: term() | nil,
           source: String.t() | nil,
           document_order: integer() | nil,
           source_location: map() | nil,
