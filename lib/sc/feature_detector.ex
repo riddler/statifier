@@ -53,8 +53,9 @@ defmodule SC.FeatureDetector do
       initial_attributes: :supported,
       initial_elements: :supported,
 
-      # Conditional features (unsupported)
-      conditional_transitions: :unsupported,
+      # Conditional features (supported)
+      conditional_transitions: :supported,
+      eventless_transitions: :supported,
 
       # Data model features (unsupported)
       datamodel: :unsupported,
@@ -257,6 +258,7 @@ defmodule SC.FeatureDetector do
   defp detect_single_transition_features(features, %Transition{} = transition) do
     features
     |> add_if_has_event(transition)
+    |> add_if_eventless(transition)
     |> add_if_has_cond(transition)
     |> add_if_targetless(transition)
     |> add_if_internal(transition)
@@ -267,6 +269,12 @@ defmodule SC.FeatureDetector do
   end
 
   defp add_if_has_event(features, _transition), do: features
+
+  defp add_if_eventless(features, %Transition{event: event}) when is_nil(event) do
+    MapSet.put(features, :eventless_transitions)
+  end
+
+  defp add_if_eventless(features, _transition), do: features
 
   defp add_if_has_cond(features, %Transition{cond: cond}) when not is_nil(cond) do
     MapSet.put(features, :conditional_transitions)

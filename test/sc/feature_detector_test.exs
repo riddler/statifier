@@ -183,11 +183,10 @@ defmodule SC.FeatureDetectorTest do
     end
 
     test "fails validation for unsupported features" do
-      mixed_features = MapSet.new([:basic_states, :datamodel, :conditional_transitions])
+      mixed_features = MapSet.new([:basic_states, :datamodel])
 
       assert {:error, unsupported} = FeatureDetector.validate_features(mixed_features)
       assert MapSet.member?(unsupported, :datamodel)
-      assert MapSet.member?(unsupported, :conditional_transitions)
       refute MapSet.member?(unsupported, :basic_states)
     end
 
@@ -207,12 +206,12 @@ defmodule SC.FeatureDetectorTest do
       assert registry[:basic_states] == :supported
       assert registry[:event_transitions] == :supported
       assert registry[:compound_states] == :supported
+      assert registry[:conditional_transitions] == :supported
       assert registry[:parallel_states] == :supported
       assert registry[:final_states] == :supported
 
       # Unsupported features
       assert registry[:datamodel] == :unsupported
-      assert registry[:conditional_transitions] == :unsupported
       assert registry[:onentry_actions] == :unsupported
       assert registry[:send_elements] == :unsupported
       assert registry[:send_idlocation] == :unsupported

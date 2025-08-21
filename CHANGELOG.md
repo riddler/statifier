@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Eventless/Automatic Transitions
+
+- **Eventless Transitions**: Full W3C SCXML support for transitions without event attributes that fire automatically
+- **Automatic Transition Processing**: Microstep loop processes chains of eventless transitions until stable configuration
+- **Cycle Detection**: Prevents infinite loops with configurable iteration limits (100 iterations default)
+- **Parallel Region Preservation**: Proper SCXML semantics for transitions within and across parallel regions
+- **Conflict Resolution**: Child state transitions take priority over ancestor transitions per W3C specification
+
+#### Enhanced Parallel State Support
+
+- **Parallel State Transitions**: Fixed regression where transitions within parallel regions affected unrelated parallel regions
+- **Cross-Parallel Boundaries**: Proper exit semantics when transitions cross parallel region boundaries
+- **SCXML Exit State Calculation**: Implements correct W3C exit set computation for complex state hierarchies
+- **Sibling State Management**: Automatic exit of parallel siblings when transitions leave their shared parent
+
+### Fixed
+
+- **Regression Test**: Fixed parallel state test failure (`test/scion_tests/more_parallel/test1_test.exs`)
+- **SCION Test Suite**: All 4 `cond_js` tests now pass (previously 3/4)
+- **Parallel Interrupt Tests**: Fixed 6 parallel interrupt test failures in regression suite
+- **Code Quality**: Resolved all `mix credo --strict` issues (predicate naming, unused variables, aliases)
+
+### Technical Improvements
+
+- **SCXML Terminology Alignment**: Updated codebase to use proper SCXML specification terminology
+  - **Microstep/Macrostep Processing**: Execute microsteps (single transition sets) until stable macrostep completion
+  - **Exit Set Computation**: Implements W3C SCXML exit set calculation algorithm for proper state exit semantics
+  - **LCCA Computation**: Full Least Common Compound Ancestor algorithm for accurate transition conflict resolution
+  - **NULL Transitions**: Added SCXML specification references while maintaining "eventless transitions" terminology
+- **Feature Detection**: Added `eventless_transitions: :supported` to feature registry
+- **Performance**: Optimized ancestor/descendant lookup using existing parent attributes
+- **Test Coverage**: Enhanced with 10 comprehensive edge case tests covering LCCA, exit sets, and complex hierarchies
+  - **Total Tests**: 444 tests (up from 434), including deep hierarchy and parallel region edge cases
+  - **Coverage Improvement**: Interpreter module coverage increased from 70.4% to 83.0%
+  - **Project Coverage**: Overall coverage improved from 89.0% to 92.3% (exceeds 90% minimum requirement)
+- **Regression Testing**: All 63 regression tests pass (up from 62)
+
 ## [0.1.0] - 2025-08-20
 
 ### Added
