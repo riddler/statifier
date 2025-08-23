@@ -2,7 +2,7 @@ defmodule SC.MixProject do
   use Mix.Project
 
   @app :sc
-  @version "0.1.0"
+  @version "1.0.0"
   @description "StateCharts for Elixir"
   @source_url "https://github.com/riddler/sc"
   @deps [

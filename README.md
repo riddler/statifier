@@ -1,6 +1,6 @@
 # SC - StateCharts for Elixir
 
-[![CI](https://github.com/riddler/sc/workflows/CI/badge.svg)](https://github.com/riddler/sc/actions)
+[![CI](https://github.com/riddler/sc/workflows/CI/badge.svg?branch=main)](https://github.com/riddler/sc/actions)
 [![Coverage](https://codecov.io/gh/riddler/sc/branch/main/graph/badge.svg)](https://codecov.io/gh/riddler/sc)
 
 An Elixir implementation of SCXML (State Chart XML) state charts with a focus on W3C compliance.
@@ -26,11 +26,6 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 
 ## Current Status
 
-**SCION Test Results:** 34/127 tests passing (26.8% pass rate) - ✅ +4 with eventless transitions  
-**W3C Test Results:** 0/59 tests passing (0% pass rate)  
-**Regression Suite:** 63 tests (all critical functionality) - ✅ +41 additional tests validated
-**Test Coverage:** 92.3% overall (exceeds 90% minimum) - ✅ Interpreter module: 83.0% coverage
-
 ### Working Features
 
 - ✅ **Basic state transitions** and event-driven changes
@@ -46,13 +41,12 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - ✅ **SAX-based XML parsing** with accurate location tracking for error reporting
 - ✅ **Performance optimizations** - O(1) state/transition lookups, optimized active configuration
 - ✅ **Source field optimization** - Transitions include source state for faster event processing
-- ✅ **Code quality** - Full Credo compliance with proper module aliasing throughout codebase
 
 ### Planned Features
 
 - History states (`<history>`)
 - Internal and targetless transitions
-- Executable content (`<script>`, `<assign>`, `<send>`, `<onentry>`, `<onexit>`, etc.)
+- More executable content (`<script>`, `<assign>`, `<send>`, etc.)
 - Enhanced datamodel support with more expression functions
 - Enhanced validation for complex SCXML constructs
 
@@ -124,7 +118,7 @@ Add `sc` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:sc, "~> 0.1.0"}
+    {:sc, "~> 1.0.0"}
   ]
 end
 ```
