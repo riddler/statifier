@@ -1,42 +1,54 @@
-defmodule Test.StateChart.W3.If.Test147 do
+defmodule SCXMLTest.If.Test147 do
   use SC.Case
   @tag :scxml_w3
+  @tag required_features: [
+         :assign_elements,
+         :basic_states,
+         :conditional_transitions,
+         :data_elements,
+         :datamodel,
+         :event_transitions,
+         :final_states,
+         :log_elements,
+         :onentry_actions,
+         :raise_elements
+       ]
   @tag conformance: "mandatory", spec: "if"
   test "test147" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <ns0:scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" initial="s0" version="1.0" datamodel="elixir">
-        <ns0:datamodel>
-            <ns0:data id="Var1" expr="0" />
-        </ns0:datamodel>
-        <ns0:state id="s0">
-            <ns0:onentry>
-                <ns0:if cond="false">
-                    <ns0:raise event="foo" />
-                    <ns0:assign location="Var1" expr="Var1 + 1" />
-                    <ns0:elseif cond="true" />
-                    <ns0:raise event="bar" />
-                    <ns0:assign location="Var1" expr="Var1 + 1" />
-                    <ns0:else />
-                    <ns0:raise event="baz" />
-                    <ns0:assign location="Var1" expr="Var1 + 1" />
-                </ns0:if>
-                <ns0:raise event="bat" />
-            </ns0:onentry>
-            <ns0:transition event="bar" cond="Var1==1" target="pass" />
-            <ns0:transition event="*" target="fail" />
-        </ns0:state>
-        <ns0:final id="pass">
-            <ns0:onentry>
-                <ns0:log label="Outcome" expr="'pass'" />
-            </ns0:onentry>
-        </ns0:final>
-        <ns0:final id="fail">
-            <ns0:onentry>
-                <ns0:log label="Outcome" expr="'fail'" />
-            </ns0:onentry>
-        </ns0:final>
-    </ns0:scxml>
+    <scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" initial="s0" version="1.0" datamodel="elixir">
+        <datamodel>
+            <data id="Var1" expr="0" />
+        </datamodel>
+        <state id="s0">
+            <onentry>
+                <if cond="false">
+                    <raise event="foo" />
+                    <assign location="Var1" expr="Var1 + 1" />
+                    <elseif cond="true" />
+                    <raise event="bar" />
+                    <assign location="Var1" expr="Var1 + 1" />
+                    <else />
+                    <raise event="baz" />
+                    <assign location="Var1" expr="Var1 + 1" />
+                </if>
+                <raise event="bat" />
+            </onentry>
+            <transition event="bar" cond="Var1==1" target="pass" />
+            <transition event="*" target="fail" />
+        </state>
+        <final id="pass">
+            <onentry>
+                <log label="Outcome" expr="'pass'" />
+            </onentry>
+        </final>
+        <final id="fail">
+            <onentry>
+                <log label="Outcome" expr="'fail'" />
+            </onentry>
+        </final>
+    </scxml>
     """
 
     description =

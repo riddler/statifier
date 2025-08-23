@@ -1,6 +1,7 @@
 defmodule SCIONTest.MoreParallel.Test7Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [:basic_states, :event_transitions, :parallel_states]
   @tag spec: "more_parallel"
   test "test7" do
     xml = """

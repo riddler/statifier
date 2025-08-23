@@ -1,6 +1,16 @@
 defmodule SCIONTest.Error.ErrorTest do
   use SC.Case
   @tag :scion
+  @tag required_features: [
+         :basic_states,
+         :conditional_transitions,
+         :event_transitions,
+         :final_states,
+         :log_elements,
+         :onentry_actions,
+         :script_elements,
+         :targetless_transitions
+       ]
   @tag spec: "error"
   test "error" do
     xml = """

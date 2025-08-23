@@ -178,6 +178,7 @@ All parsed SCXML elements include precise source location information for valida
 
 ## Dependencies
 
+- **`predicator`** (~> 2.0) - Safe condition (boolean predicate) evaluator
 - **`saxy`** (~> 1.6) - Fast, memory-efficient SAX XML parser with position tracking support
 
 ## Development Dependencies
@@ -306,16 +307,72 @@ XML content within triple quotes uses 4-space base indentation.
 - **Modular validator architecture** - refactored from 386-line monolith into focused modules
 - **Full Credo compliance** - all code quality issues resolved
 
-🚧 **Future Extensions:**
+## SCXML Feature Implementation Roadmap
 
-- History states (`<history>`) - missing from parser and interpreter  
-- Internal transitions (`type="internal"`) and targetless transitions
-- Executable content elements (`<onentry>`, `<onexit>`, `<raise>`, `<assign>`, `<script>`, `<send>`)
-- Enhanced datamodel support with more expression functions
-- Enhanced validation for complex SCXML constructs
-- Additional parser formats (JSON, YAML) leveraging same validation/optimization pipeline
+📋 **Comprehensive Implementation Plan Available**: See `documentation/SCXML_IMPLEMENTATION_PLAN.md` for detailed 3-phase roadmap to achieve 98%+ test coverage across 444 SCION and W3C tests.
 
-The implementation follows the W3C SCXML specification closely and includes comprehensive test coverage from both W3C and SCION test suites. The current interpreter provides a solid foundation for basic SCXML functionality with clear areas identified for future enhancement.
+### Current Implementation Status (Phase 0 - Complete)
+
+✅ **Structural SCXML Features** - Complete W3C compliance for basic state machine functionality:
+
+- Core state machine elements (states, transitions, parallel, initial)
+- SCXML-compliant processing model (microstep/macrostep, exit sets, LCCA)
+- Conditional transitions with expression evaluation
+- Eventless/automatic transitions (NULL transitions)
+- Feature detection and test validation infrastructure
+
+**Current Test Coverage**: 294/444 tests passing (66.2%)
+
+### Planned Implementation Phases
+
+🚧 **Phase 1: Basic Executable Content (2-3 weeks)**
+**Target**: Unlock 80-100 additional tests (30% improvement)
+
+- **`<onentry>` / `<onexit>` actions** - Execute actions during state entry/exit
+- **`<raise event="name"/>` elements** - Generate internal events  
+- **`<log expr="message"/>` elements** - Debug logging support
+- **Action execution framework** - Infrastructure for executable content
+
+**Expected Outcome**: ~374 tests passing (84% coverage)
+
+🚧 **Phase 2: Data Model & Expression Evaluation (4-6 weeks)**
+**Target**: Unlock 50-70 additional tests (25% improvement)
+
+- **`<datamodel>` / `<data>` elements** - Variable storage and initialization
+- **`<assign location="var" expr="value"/>` elements** - Variable assignment
+- **JavaScript expression engine** - Full ECMAScript expression support
+- **Enhanced condition evaluation** - Access to datamodel variables
+
+**Expected Outcome**: ~420 tests passing (95% coverage)
+
+🚧 **Phase 3: Advanced Features (2-3 weeks)**
+**Target**: Achieve comprehensive SCXML support (98%+ coverage)
+
+- **`<history>` states** - Shallow and deep history state support
+- **`<send>` elements** - External event sending with delays
+- **`<script>` elements** - Inline JavaScript execution
+- **Internal/targetless transitions** - Advanced transition behaviors
+
+**Expected Outcome**: ~440+ tests passing (98%+ coverage)
+
+### Implementation Architecture
+
+The phased approach maintains backward compatibility while systematically adding SCXML features:
+
+1. **Parser Extensions**: Add executable content parsing to existing SAX-based parser
+2. **Interpreter Integration**: Extend microstep/macrostep processing with action execution  
+3. **Data Model Layer**: Add variable storage and JavaScript expression evaluation
+4. **Feature Detection Updates**: Maintain comprehensive feature tracking
+5. **Test Coverage Validation**: Ensure each phase improves test coverage without regressions
+
+### Success Metrics
+
+- **Phase 1**: 370+ tests passing, all basic executable content working
+- **Phase 2**: 415+ tests passing, full datamodel and expression support  
+- **Phase 3**: 435+ tests passing, comprehensive SCXML implementation
+- **Final Goal**: 98%+ test coverage, industry-leading SCXML compliance
+
+The implementation plan transforms SC from a basic state machine library into a comprehensive, production-ready SCXML engine with industry-leading test coverage and W3C compliance.
 
 - Always refer to state machines as state charts
 - Always run 'mix format' after writing an Elixir file.

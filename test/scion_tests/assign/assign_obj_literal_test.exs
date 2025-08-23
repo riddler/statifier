@@ -1,6 +1,16 @@
 defmodule SCIONTest.Assign.AssignObjLiteralTest do
   use SC.Case
   @tag :scion
+  @tag required_features: [
+         :assign_elements,
+         :basic_states,
+         :data_elements,
+         :datamodel,
+         :event_transitions,
+         :final_states,
+         :log_elements,
+         :onentry_actions
+       ]
   @tag spec: "assign"
   test "assign_obj_literal" do
     xml = """

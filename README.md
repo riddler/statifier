@@ -60,8 +60,6 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 
 ### **✅ SCXML-Compliant Processing Engine**
 
-**COMPLETED** - Full W3C SCXML specification compliance with proper domain terminology:
-
 - **`Microstep/Macrostep Execution`** - Implements SCXML event processing model with microstep (single transition set execution) and macrostep (series of microsteps until stable)
 - **`Eventless Transitions`** - Transitions without event attributes (called NULL transitions in SCXML spec) that fire automatically upon state entry
 - **`Exit Set Computation`** - Implements W3C SCXML exit set calculation algorithm for determining which states to exit during transitions
@@ -73,8 +71,6 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 
 ### **✅ Enhanced Parallel State Support**
 
-**COMPLETED** - Fixed critical regression and enhanced parallel state semantics:
-
 - **`Cross-Parallel Boundaries`** - Proper exit semantics when transitions leave parallel regions
 - **`Sibling State Management`** - Automatic exit of parallel siblings when transitions exit their shared parent  
 - **`Self-Transitions`** - Transitions within parallel regions preserve unaffected parallel regions
@@ -83,16 +79,12 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 
 ### **✅ Feature-Based Test Validation System**
 
-**COMPLETED** - Improves test accuracy by validating that tests actually exercise intended SCXML functionality:
-
 - **`SC.FeatureDetector`** - Analyzes SCXML documents to detect used features
 - **Feature validation** - Tests fail when they depend on unsupported features  
 - **False positive prevention** - No more "passing" tests that silently ignore unsupported features
 - **Capability tracking** - Clear visibility into which SCXML features are supported
 
 ### **✅ Modular Validator Architecture**
-
-**COMPLETED** - Refactored monolithic validator into focused, maintainable modules:
 
 - **`SC.Validator`** - Main orchestrator (from 386-line monolith)
 - **`SC.Validator.StateValidator`** - State ID validation
@@ -102,8 +94,6 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - **`SC.Validator.Utils`** - Shared utilities
 
 ### **✅ Initial State Elements**
-
-**COMPLETED** - Full W3C-compliant support for `<initial>` elements:
 
 - **Parser support** - `<initial>` elements with `<transition>` children
 - **Interpreter logic** - Proper initial state entry via initial elements
@@ -116,7 +106,6 @@ The next major areas for development focus on expanding SCXML feature support:
 
 ### **High Priority Features**
 
-- **Conditional Transitions** - `cond` attribute evaluation for dynamic transitions
 - **Executable Content** - `<onentry>`, `<onexit>`, `<assign>`, `<script>` elements
 - **Datamodel Support** - `<data>` elements with expression evaluation
 - **History States** - Shallow and deep history state support
@@ -156,10 +145,10 @@ xml = """
 </scxml>
 """
 
-{:ok, document} = SC.Parser.SCXML.parse(xml)
+{:ok, document} = SC.parse(xml)
 
 # Initialize state chart
-{:ok, state_chart} = SC.Interpreter.initialize(document)
+{:ok, state_chart} = SC.interpret(document)
 
 # Check active states
 active_states = SC.Interpreter.active_states(state_chart)
@@ -191,8 +180,8 @@ xml = """
 </scxml>
 """
 
-{:ok, document} = SC.Parser.SCXML.parse(xml)
-{:ok, state_chart} = SC.Interpreter.initialize(document)
+{:ok, document} = SC.parse(xml)
+{:ok, state_chart} = SC.interpret(document)
 
 # Eventless transitions processed automatically during initialization
 active_states = SC.Interpreter.active_states(state_chart)
@@ -224,8 +213,8 @@ xml = """
 </scxml>
 """
 
-{:ok, document} = SC.Parser.SCXML.parse(xml)
-{:ok, state_chart} = SC.Interpreter.initialize(document)
+{:ok, document} = SC.parse(xml)
+{:ok, state_chart} = SC.interpret(document)
 
 # Both parallel regions active simultaneously
 active_states = SC.Interpreter.active_states(state_chart)
@@ -235,9 +224,9 @@ active_states = SC.Interpreter.active_states(state_chart)
 ### Document Validation
 
 ```elixir
-{:ok, document} = SC.Parser.SCXML.parse(xml)
+{:ok, document} = SC.parse(xml)
 
-case SC.Validator.validate(document) do
+case SC..validate(document) do
   {:ok, optimized_document, warnings} -> 
     # Document is valid and optimized, warnings are non-fatal
     IO.puts("Valid document with #{length(warnings)} warnings")
@@ -338,13 +327,13 @@ mix test test/sc/parser/scxml_test.exs
 
 ```elixir
 # 1. Parse: XML → Document structure
-{:ok, document} = SC.Parser.SCXML.parse(xml)
+{:ok, document} = SC.parse(xml)
 
 # 2. Validate: Check semantics + optimize with lookup maps  
-{:ok, optimized_document, warnings} = SC.Validator.validate(document)
+{:ok, optimized_document, warnings} = SC..validate(document)
 
 # 3. Interpret: Run state chart with optimized lookups
-{:ok, state_chart} = SC.Interpreter.initialize(optimized_document)
+{:ok, state_chart} = SC.interpret(optimized_document)
 ```
 
 ## Performance Optimizations
@@ -362,7 +351,7 @@ The implementation includes several key optimizations for production use:
 
 ```elixir
 # Automatic hierarchical entry
-{:ok, state_chart} = SC.Interpreter.initialize(document)
+{:ok, state_chart} = SC.interpret(document)
 active_states = SC.Interpreter.active_states(state_chart)
 # Returns only leaf states (compound/parallel states entered automatically)
 

@@ -1,6 +1,7 @@
 defmodule SCIONTest.Basic.Basic2Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [:basic_states, :event_transitions]
   @tag spec: "basic"
   test "basic2" do
     xml = """

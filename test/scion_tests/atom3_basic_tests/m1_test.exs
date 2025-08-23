@@ -1,6 +1,7 @@
 defmodule SCIONTest.Atom3BasicTests.M1Test do
   use SC.Case
   @tag :scion
+  @tag required_features: []
   @tag spec: "atom3_basic_tests"
   test "m1" do
     xml = """

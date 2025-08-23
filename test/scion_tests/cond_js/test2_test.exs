@@ -1,6 +1,7 @@
 defmodule SCIONTest.CondJs.Test2Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [:basic_states, :conditional_transitions, :event_transitions]
   @tag spec: "cond_js"
   test "test2" do
     xml = """

@@ -1,6 +1,7 @@
 defmodule SCIONTest.DefaultInitialState.Initial1Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [:basic_states, :event_transitions]
   @tag spec: "default_initial_state"
   test "initial1" do
     xml = """

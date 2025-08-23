@@ -1,30 +1,39 @@
-defmodule Test.StateChart.W3.SelectingTransitions.Test419 do
+defmodule SCXMLTest.SelectingTransitions.Test419 do
   use SC.Case
   @tag :scxml_w3
+  @tag required_features: [
+         :basic_states,
+         :event_transitions,
+         :final_states,
+         :log_elements,
+         :onentry_actions,
+         :raise_elements,
+         :send_elements
+       ]
   @tag conformance: "mandatory", spec: "SelectingTransitions"
   test "test419" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <ns0:scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1" datamodel="elixir">
-        <ns0:state id="s1">
-            <ns0:onentry>
-                <ns0:raise event="internalEvent" />
-                <ns0:send event="externalEvent" />
-            </ns0:onentry>
-            <ns0:transition event="*" target="fail" />
-            <ns0:transition target="pass" />
-        </ns0:state>
-        <ns0:final id="pass">
-            <ns0:onentry>
-                <ns0:log label="Outcome" expr="'pass'" />
-            </ns0:onentry>
-        </ns0:final>
-        <ns0:final id="fail">
-            <ns0:onentry>
-                <ns0:log label="Outcome" expr="'fail'" />
-            </ns0:onentry>
-        </ns0:final>
-    </ns0:scxml>
+    <scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1" datamodel="elixir">
+        <state id="s1">
+            <onentry>
+                <raise event="internalEvent" />
+                <send event="externalEvent" />
+            </onentry>
+            <transition event="*" target="fail" />
+            <transition target="pass" />
+        </state>
+        <final id="pass">
+            <onentry>
+                <log label="Outcome" expr="'pass'" />
+            </onentry>
+        </final>
+        <final id="fail">
+            <onentry>
+                <log label="Outcome" expr="'fail'" />
+            </onentry>
+        </final>
+    </scxml>
     """
 
     description =

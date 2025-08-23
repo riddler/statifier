@@ -1,6 +1,7 @@
 defmodule SCIONTest.ScxmlPrefixEventNameMatching.Star0Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [:basic_states, :event_transitions]
   @tag spec: "scxml_prefix_event_name_matching"
   test "star0" do
     xml = """

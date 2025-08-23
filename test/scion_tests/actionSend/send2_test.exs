@@ -1,6 +1,7 @@
 defmodule SCIONTest.ActionSend.Send2Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [:basic_states, :event_transitions, :onexit_actions, :raise_elements]
   @tag spec: "action_send"
   test "send2" do
     xml = """

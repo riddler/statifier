@@ -1,35 +1,44 @@
-defmodule Test.StateChart.W3.SelectingTransitions.Test423 do
+defmodule SCXMLTest.SelectingTransitions.Test423 do
   use SC.Case
   @tag :scxml_w3
+  @tag required_features: [
+         :basic_states,
+         :event_transitions,
+         :final_states,
+         :log_elements,
+         :onentry_actions,
+         :raise_elements,
+         :send_elements
+       ]
   @tag conformance: "mandatory", spec: "SelectingTransitions"
   test "test423" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <ns0:scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" initial="s0" version="1.0" datamodel="elixir">
-        <ns0:state id="s0">
-            <ns0:onentry>
-                <ns0:send event="externalEvent1" />
-                <ns0:send event="externalEvent2" delayexpr="'1s'" />
-                <ns0:raise event="internalEvent" />
-            </ns0:onentry>
-            <ns0:transition event="internalEvent" target="s1" />
-            <ns0:transition event="*" target="fail" />
-        </ns0:state>
-        <ns0:state id="s1">
-            <ns0:transition event="externalEvent2" target="pass" />
-            <ns0:transition event="internalEvent" target="fail" />
-        </ns0:state>
-        <ns0:final id="pass">
-            <ns0:onentry>
-                <ns0:log label="Outcome" expr="'pass'" />
-            </ns0:onentry>
-        </ns0:final>
-        <ns0:final id="fail">
-            <ns0:onentry>
-                <ns0:log label="Outcome" expr="'fail'" />
-            </ns0:onentry>
-        </ns0:final>
-    </ns0:scxml>
+    <scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" initial="s0" version="1.0" datamodel="elixir">
+        <state id="s0">
+            <onentry>
+                <send event="externalEvent1" />
+                <send event="externalEvent2" delayexpr="'1s'" />
+                <raise event="internalEvent" />
+            </onentry>
+            <transition event="internalEvent" target="s1" />
+            <transition event="*" target="fail" />
+        </state>
+        <state id="s1">
+            <transition event="externalEvent2" target="pass" />
+            <transition event="internalEvent" target="fail" />
+        </state>
+        <final id="pass">
+            <onentry>
+                <log label="Outcome" expr="'pass'" />
+            </onentry>
+        </final>
+        <final id="fail">
+            <onentry>
+                <log label="Outcome" expr="'fail'" />
+            </onentry>
+        </final>
+    </scxml>
     """
 
     description =

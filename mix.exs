@@ -6,11 +6,15 @@ defmodule SC.MixProject do
   @description "StateCharts for Elixir"
   @source_url "https://github.com/riddler/sc"
   @deps [
+    # Documentation (split out to reduce compile time in dev/test)
+    {:ex_doc, "~> 0.31", only: :docs, runtime: false},
+
     # Development, Test, Local
+    {:castore, "~> 1.0", only: [:dev, :test]},
     {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
     {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-    {:ex_doc, "~> 0.31", only: :dev, runtime: false},
     {:excoveralls, "~> 0.18", only: :test},
+    {:jason, "~> 1.4", only: [:dev, :test]},
 
     # Runtime
     {:predicator, "~> 2.0"},
@@ -36,7 +40,8 @@ defmodule SC.MixProject do
         "coveralls.html": :test,
         "coveralls.json": :test,
         "coveralls.cobertura": :test,
-        "coveralls.github": :test
+        "coveralls.github": :test,
+        docs: :docs
       ],
       dialyzer: [
         plt_file: {:no_warn, "priv/plts/dialyzer.plt"},

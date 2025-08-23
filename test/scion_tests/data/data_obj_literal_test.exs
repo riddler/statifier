@@ -1,6 +1,15 @@
 defmodule SCIONTest.Data.DataObjLiteralTest do
   use SC.Case
   @tag :scion
+  @tag required_features: [
+         :basic_states,
+         :data_elements,
+         :datamodel,
+         :event_transitions,
+         :final_states,
+         :log_elements,
+         :onentry_actions
+       ]
   @tag spec: "data"
   test "data_obj_literal" do
     xml = """

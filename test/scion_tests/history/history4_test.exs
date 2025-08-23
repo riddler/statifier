@@ -1,6 +1,13 @@
 defmodule SCIONTest.History.History4Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [
+         :basic_states,
+         :compound_states,
+         :event_transitions,
+         :history_states,
+         :parallel_states
+       ]
   @tag spec: "history"
   test "history4" do
     xml = """

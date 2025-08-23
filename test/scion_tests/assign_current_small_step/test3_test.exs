@@ -1,6 +1,16 @@
 defmodule SCIONTest.AssignCurrentSmallStep.Test3Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [
+         :assign_elements,
+         :basic_states,
+         :compound_states,
+         :conditional_transitions,
+         :data_elements,
+         :datamodel,
+         :event_transitions,
+         :parallel_states
+       ]
   @tag spec: "assign_current_small_step"
   test "test3" do
     xml = """

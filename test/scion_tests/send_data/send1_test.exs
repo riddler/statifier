@@ -1,6 +1,15 @@
 defmodule SCIONTest.SendData.Send1Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [
+         :basic_states,
+         :conditional_transitions,
+         :data_elements,
+         :datamodel,
+         :event_transitions,
+         :log_elements,
+         :send_elements
+       ]
   @tag spec: "send_data"
   test "send1" do
     xml = """

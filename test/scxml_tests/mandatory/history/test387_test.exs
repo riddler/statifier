@@ -1,99 +1,110 @@
-defmodule Test.StateChart.W3.History.Test387 do
+defmodule SCXMLTest.History.Test387 do
   use SC.Case
   @tag :scxml_w3
+  @tag required_features: [
+         :basic_states,
+         :compound_states,
+         :event_transitions,
+         :final_states,
+         :history_states,
+         :log_elements,
+         :onentry_actions,
+         :raise_elements,
+         :send_elements
+       ]
   @tag conformance: "mandatory", spec: "history"
   test "test387" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <ns0:scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" initial="s3" version="1.0" datamodel="elixir">
-        <ns0:state id="s0" initial="s01">
-            <ns0:transition event="enteringS011" target="s4" />
-            <ns0:transition event="*" target="fail" />
-            <ns0:history type="shallow" id="s0HistShallow">
-                <ns0:transition target="s01" />
-            </ns0:history>
-            <ns0:history type="deep" id="s0HistDeep">
-                <ns0:transition target="s022" />
-            </ns0:history>
-            <ns0:state id="s01" initial="s011">
-                <ns0:state id="s011">
-                    <ns0:onentry>
-                        <ns0:raise event="enteringS011" />
-                    </ns0:onentry>
-                </ns0:state>
-                <ns0:state id="s012">
-                    <ns0:onentry>
-                        <ns0:raise event="enteringS012" />
-                    </ns0:onentry>
-                </ns0:state>
-            </ns0:state>
-            <ns0:state id="s02" initial="s021">
-                <ns0:state id="s021">
-                    <ns0:onentry>
-                        <ns0:raise event="enteringS021" />
-                    </ns0:onentry>
-                </ns0:state>
-                <ns0:state id="s022">
-                    <ns0:onentry>
-                        <ns0:raise event="enteringS022" />
-                    </ns0:onentry>
-                </ns0:state>
-            </ns0:state>
-        </ns0:state>
-        <ns0:state id="s1" initial="s11">
-            <ns0:transition event="enteringS122" target="pass" />
-            <ns0:transition event="*" target="fail" />
-            <ns0:history type="shallow" id="s1HistShallow">
-                <ns0:transition target="s11" />
-            </ns0:history>
-            <ns0:history type="deep" id="s1HistDeep">
-                <ns0:transition target="s122" />
-            </ns0:history>
-            <ns0:state id="s11" initial="s111">
-                <ns0:state id="s111">
-                    <ns0:onentry>
-                        <ns0:raise event="enteringS111" />
-                    </ns0:onentry>
-                </ns0:state>
-                <ns0:state id="s112">
-                    <ns0:onentry>
-                        <ns0:raise event="enteringS112" />
-                    </ns0:onentry>
-                </ns0:state>
-            </ns0:state>
-            <ns0:state id="s12" initial="s121">
-                <ns0:state id="s121">
-                    <ns0:onentry>
-                        <ns0:raise event="enteringS121" />
-                    </ns0:onentry>
-                </ns0:state>
-                <ns0:state id="s122">
-                    <ns0:onentry>
-                        <ns0:raise event="enteringS122" />
-                    </ns0:onentry>
-                </ns0:state>
-            </ns0:state>
-        </ns0:state>
-        <ns0:state id="s3">
-            <ns0:onentry>
-                <ns0:send event="timeout" delay="1s" />
-            </ns0:onentry>
-            <ns0:transition target="s0HistShallow" />
-        </ns0:state>
-        <ns0:state id="s4">
-            <ns0:transition target="s1HistDeep" />
-        </ns0:state>
-        <ns0:final id="pass">
-            <ns0:onentry>
-                <ns0:log label="Outcome" expr="'pass'" />
-            </ns0:onentry>
-        </ns0:final>
-        <ns0:final id="fail">
-            <ns0:onentry>
-                <ns0:log label="Outcome" expr="'fail'" />
-            </ns0:onentry>
-        </ns0:final>
-    </ns0:scxml>
+    <scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" initial="s3" version="1.0" datamodel="elixir">
+        <state id="s0" initial="s01">
+            <transition event="enteringS011" target="s4" />
+            <transition event="*" target="fail" />
+            <history type="shallow" id="s0HistShallow">
+                <transition target="s01" />
+            </history>
+            <history type="deep" id="s0HistDeep">
+                <transition target="s022" />
+            </history>
+            <state id="s01" initial="s011">
+                <state id="s011">
+                    <onentry>
+                        <raise event="enteringS011" />
+                    </onentry>
+                </state>
+                <state id="s012">
+                    <onentry>
+                        <raise event="enteringS012" />
+                    </onentry>
+                </state>
+            </state>
+            <state id="s02" initial="s021">
+                <state id="s021">
+                    <onentry>
+                        <raise event="enteringS021" />
+                    </onentry>
+                </state>
+                <state id="s022">
+                    <onentry>
+                        <raise event="enteringS022" />
+                    </onentry>
+                </state>
+            </state>
+        </state>
+        <state id="s1" initial="s11">
+            <transition event="enteringS122" target="pass" />
+            <transition event="*" target="fail" />
+            <history type="shallow" id="s1HistShallow">
+                <transition target="s11" />
+            </history>
+            <history type="deep" id="s1HistDeep">
+                <transition target="s122" />
+            </history>
+            <state id="s11" initial="s111">
+                <state id="s111">
+                    <onentry>
+                        <raise event="enteringS111" />
+                    </onentry>
+                </state>
+                <state id="s112">
+                    <onentry>
+                        <raise event="enteringS112" />
+                    </onentry>
+                </state>
+            </state>
+            <state id="s12" initial="s121">
+                <state id="s121">
+                    <onentry>
+                        <raise event="enteringS121" />
+                    </onentry>
+                </state>
+                <state id="s122">
+                    <onentry>
+                        <raise event="enteringS122" />
+                    </onentry>
+                </state>
+            </state>
+        </state>
+        <state id="s3">
+            <onentry>
+                <send event="timeout" delay="1s" />
+            </onentry>
+            <transition target="s0HistShallow" />
+        </state>
+        <state id="s4">
+            <transition target="s1HistDeep" />
+        </state>
+        <final id="pass">
+            <onentry>
+                <log label="Outcome" expr="'pass'" />
+            </onentry>
+        </final>
+        <final id="fail">
+            <onentry>
+                <log label="Outcome" expr="'fail'" />
+            </onentry>
+        </final>
+    </scxml>
     """
 
     description =

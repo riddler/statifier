@@ -1,6 +1,15 @@
 defmodule SCIONTest.TargetlessTransition.Test1Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [
+         :assign_elements,
+         :basic_states,
+         :conditional_transitions,
+         :data_elements,
+         :datamodel,
+         :event_transitions,
+         :targetless_transitions
+       ]
   @tag spec: "targetless_transition"
   test "test1" do
     xml = """

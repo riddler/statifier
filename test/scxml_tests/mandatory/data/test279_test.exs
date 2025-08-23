@@ -1,32 +1,42 @@
-defmodule Test.StateChart.W3.Data.Test279 do
+defmodule SCXMLTest.Data.Test279 do
   use SC.Case
   @tag :scxml_w3
+  @tag required_features: [
+         :basic_states,
+         :conditional_transitions,
+         :data_elements,
+         :datamodel,
+         :event_transitions,
+         :final_states,
+         :log_elements,
+         :onentry_actions
+       ]
   @tag conformance: "mandatory", spec: "data"
   test "test279" do
     xml = """
 
     <?xml version="1.0" encoding="UTF-8"?>
-    <ns0:scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" initial="s0" version="1.0" datamodel="elixir">
-    <ns0:state id="s0">
-        <ns0:transition cond="Var1==1" target="pass" />
-        <ns0:transition target="fail" />
-    </ns0:state>
-    <ns0:state id="s1">
-        <ns0:datamodel>
-            <ns0:data id="Var1" expr="1" />
-        </ns0:datamodel>
-    </ns0:state>
-    <ns0:final id="pass">
-        <ns0:onentry>
-            <ns0:log label="Outcome" expr="'pass'" />
-        </ns0:onentry>
-    </ns0:final>
-    <ns0:final id="fail">
-        <ns0:onentry>
-            <ns0:log label="Outcome" expr="'fail'" />
-        </ns0:onentry>
-    </ns0:final>
-    </ns0:scxml>
+    <scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" initial="s0" version="1.0" datamodel="elixir">
+    <state id="s0">
+        <transition cond="Var1==1" target="pass" />
+        <transition target="fail" />
+    </state>
+    <state id="s1">
+        <datamodel>
+            <data id="Var1" expr="1" />
+        </datamodel>
+    </state>
+    <final id="pass">
+        <onentry>
+            <log label="Outcome" expr="'pass'" />
+        </onentry>
+    </final>
+    <final id="fail">
+        <onentry>
+            <log label="Outcome" expr="'fail'" />
+        </onentry>
+    </final>
+    </scxml>
     """
 
     description =

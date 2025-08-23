@@ -1,6 +1,15 @@
 defmodule SCIONTest.In.TestInPredicateTest do
   use SC.Case
   @tag :scion
+  @tag required_features: [
+         :basic_states,
+         :compound_states,
+         :conditional_transitions,
+         :event_transitions,
+         :initial_elements,
+         :parallel_states,
+         :raise_elements
+       ]
   @tag spec: "in"
   test "TestInPredicate" do
     xml = """

@@ -1,24 +1,33 @@
-defmodule Test.StateChart.W3.Data.Test276sub1 do
+defmodule SCXMLTest.Data.Test276sub1 do
   use SC.Case
   @tag :scxml_w3
+  @tag required_features: [
+         :basic_states,
+         :conditional_transitions,
+         :data_elements,
+         :datamodel,
+         :event_transitions,
+         :final_states,
+         :send_elements
+       ]
   @tag conformance: "mandatory", spec: "data"
   test "test276sub1" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <ns0:scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" initial="s0" version="1.0" datamodel="elixir">
-        <ns0:datamodel>
-            <ns0:data id="Var1" expr="0" />
-        </ns0:datamodel>
-        <ns0:state id="s0">
-            <ns0:transition cond="Var1==1" target="final">
-                <ns0:send target="#_parent" event="event1" />
-            </ns0:transition>
-            <ns0:transition target="final">
-                <ns0:send target="#_parent" event="event0" />
-            </ns0:transition>
-        </ns0:state>
-        <ns0:final id="final" />
-    </ns0:scxml>
+    <scxml xmlns:ns0="http://www.w3.org/2005/07/scxml" initial="s0" version="1.0" datamodel="elixir">
+        <datamodel>
+            <data id="Var1" expr="0" />
+        </datamodel>
+        <state id="s0">
+            <transition cond="Var1==1" target="final">
+                <send target="#_parent" event="event1" />
+            </transition>
+            <transition target="final">
+                <send target="#_parent" event="event0" />
+            </transition>
+        </state>
+        <final id="final" />
+    </scxml>
     """
 
     description =

@@ -1,6 +1,7 @@
 defmodule SCIONTest.DelayedSend.Send2Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [:basic_states, :event_transitions, :onexit_actions, :send_elements]
   @tag spec: "delayed_send"
   test "send2" do
     xml = """

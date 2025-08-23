@@ -1,6 +1,7 @@
 defmodule SCIONTest.HierarchyDocumentOrder.Test1Test do
   use SC.Case
   @tag :scion
+  @tag required_features: [:basic_states, :event_transitions]
   @tag spec: "hierarchy+document_order"
   test "test1" do
     xml = """

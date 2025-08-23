@@ -1,6 +1,7 @@
 defmodule SCIONTest.ParallelInterrupt.Test21cTest do
   use SC.Case
   @tag :scion
+  @tag required_features: [:basic_states, :compound_states, :event_transitions, :parallel_states]
   @tag spec: "parallel+interrupt"
   test "test21c" do
     xml = """
