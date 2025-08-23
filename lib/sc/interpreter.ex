@@ -6,7 +6,15 @@ defmodule SC.Interpreter do
   Documents are automatically validated before interpretation.
   """
 
-  alias SC.{ConditionEvaluator, Configuration, Document, Event, StateChart, Validator}
+  alias SC.{
+    Actions.ActionExecutor,
+    ConditionEvaluator,
+    Configuration,
+    Document,
+    Event,
+    StateChart,
+    Validator
+  }
 
   @doc """
   Initialize a state chart from a parsed document.
@@ -17,10 +25,14 @@ defmodule SC.Interpreter do
   def initialize(%Document{} = document) do
     case Validator.validate(document) do
       {:ok, optimized_document, warnings} ->
-        state_chart =
-          StateChart.new(optimized_document, get_initial_configuration(optimized_document))
+        initial_config = get_initial_configuration(optimized_document)
+        state_chart = StateChart.new(optimized_document, initial_config)
 
-        # Execute microsteps (eventless transitions) after initialization
+        # Execute onentry actions for initial states and queue any raised events
+        initial_states = MapSet.to_list(Configuration.active_states(initial_config))
+        state_chart = ActionExecutor.execute_onentry_actions(initial_states, state_chart)
+
+        # Execute microsteps (eventless transitions and internal events) after initialization
         state_chart = execute_microsteps(state_chart)
 
         # Log warnings if any (TODO: Use proper logging)
@@ -57,10 +69,7 @@ defmodule SC.Interpreter do
 
       transitions ->
         # Execute optimal transition set as a microstep
-        new_config =
-          execute_transitions(state_chart.configuration, transitions, state_chart.document)
-
-        state_chart = StateChart.update_configuration(state_chart, new_config)
+        state_chart = execute_transitions(state_chart, transitions)
 
         # Execute any eventless transitions (complete the macrostep)
         state_chart = execute_microsteps(state_chart)
@@ -109,20 +118,29 @@ defmodule SC.Interpreter do
   end
 
   defp execute_microsteps(%StateChart{} = state_chart, iterations) do
+    # Per SCXML specification: eventless transitions have higher priority than internal events
     eventless_transitions = find_eventless_transitions(state_chart)
 
     case eventless_transitions do
       [] ->
-        # No more eventless transitions - stable configuration reached (end of macrostep)
-        state_chart
+        # No eventless transitions, check for internal events
+        {internal_event, state_chart_after_dequeue} = StateChart.dequeue_event(state_chart)
+
+        case internal_event do
+          %SC.Event{} = event ->
+            # Process the internal event
+            {:ok, state_chart_after_event} = send_event(state_chart_after_dequeue, event)
+            # Continue with more microsteps
+            execute_microsteps(state_chart_after_event, iterations + 1)
+
+          nil ->
+            # No more eventless transitions or internal events - stable configuration reached (end of macrostep)
+            state_chart
+        end
 
       transitions ->
-        # Execute microstep with these eventless transitions
-        new_config =
-          execute_transitions(state_chart.configuration, transitions, state_chart.document)
-
-        new_state_chart = StateChart.update_configuration(state_chart, new_config)
-
+        # Execute microstep with these eventless transitions (higher priority than internal events)
+        new_state_chart = execute_transitions(state_chart, transitions)
         # Continue executing microsteps until stable (recursive call)
         execute_microsteps(new_state_chart, iterations + 1)
     end
@@ -330,13 +348,9 @@ defmodule SC.Interpreter do
   end
 
   # Execute optimal transition set (microstep) with proper SCXML semantics
-  defp execute_transitions(
-         %Configuration{} = config,
-         transitions,
-         %Document{} = document
-       ) do
+  defp execute_transitions(%StateChart{} = state_chart, transitions) do
     # Apply SCXML conflict resolution: create optimal transition set
-    optimal_transition_set = resolve_transition_conflicts(transitions, document)
+    optimal_transition_set = resolve_transition_conflicts(transitions, state_chart.document)
 
     # Group transitions by source state to handle document order correctly
     transitions_by_source = Enum.group_by(optimal_transition_set, & &1.source)
@@ -357,43 +371,55 @@ defmodule SC.Interpreter do
     # Execute the selected transitions
     target_leaf_states =
       selected_transitions
-      |> Enum.flat_map(&execute_single_transition(&1, document))
+      |> Enum.flat_map(&execute_single_transition(&1, state_chart.document))
 
     case target_leaf_states do
       # No valid transitions
       [] ->
-        config
+        state_chart
 
       states ->
         update_configuration_with_parallel_preservation(
-          config,
+          state_chart,
           selected_transitions,
-          states,
-          document
+          states
         )
     end
   end
 
   # Update configuration with proper SCXML exit set computation while preserving unaffected parallel regions
   defp update_configuration_with_parallel_preservation(
-         config,
+         %StateChart{} = state_chart,
          transitions,
-         new_target_states,
-         document
+         new_target_states
        ) do
     # Get the current active leaf states
-    current_active = Configuration.active_states(config)
+    current_active = Configuration.active_states(state_chart.configuration)
 
     # Compute exit set for these specific transitions
-    exit_set = compute_exit_set(transitions, current_active, document)
+    exit_set = compute_exit_set(transitions, current_active, state_chart.document)
+
+    # Determine which states are actually being entered
+    new_target_set = MapSet.new(new_target_states)
+    entering_states = MapSet.difference(new_target_set, current_active)
+
+    # Execute onexit actions for states being exited (with proper event queueing)
+    exiting_states = MapSet.to_list(exit_set)
+    state_chart = ActionExecutor.execute_onexit_actions(exiting_states, state_chart)
+
+    # Execute onentry actions for states being entered (with proper event queueing)
+    entering_states_list = MapSet.to_list(entering_states)
+    state_chart = ActionExecutor.execute_onentry_actions(entering_states_list, state_chart)
 
     # Keep active states that are not being exited
     preserved_states = MapSet.difference(current_active, exit_set)
 
     # Combine preserved states with new target states
-    final_active_states = MapSet.union(preserved_states, MapSet.new(new_target_states))
+    final_active_states = MapSet.union(preserved_states, new_target_set)
+    new_config = Configuration.new(MapSet.to_list(final_active_states))
 
-    Configuration.new(MapSet.to_list(final_active_states))
+    # Update the state chart with the new configuration
+    StateChart.update_configuration(state_chart, new_config)
   end
 
   # Compute the exit set for specific transitions (SCXML terminology)

@@ -63,12 +63,12 @@ defmodule SC.FeatureDetector do
       script_elements: :unsupported,
       assign_elements: :unsupported,
 
-      # Executable content (unsupported)
-      onentry_actions: :unsupported,
-      onexit_actions: :unsupported,
+      # Executable content (partial support)
+      onentry_actions: :supported,
+      onexit_actions: :supported,
       send_elements: :unsupported,
-      log_elements: :unsupported,
-      raise_elements: :unsupported,
+      log_elements: :supported,
+      raise_elements: :supported,
 
       # Advanced transitions (unsupported)
       targetless_transitions: :unsupported,

@@ -210,9 +210,13 @@ defmodule SC.FeatureDetectorTest do
       assert registry[:parallel_states] == :supported
       assert registry[:final_states] == :supported
 
-      # Unsupported features
+      # Recently implemented features
+      assert registry[:onentry_actions] == :supported
+      assert registry[:onexit_actions] == :supported
+      assert registry[:log_elements] == :supported
+
+      # Still unsupported features
       assert registry[:datamodel] == :unsupported
-      assert registry[:onentry_actions] == :unsupported
       assert registry[:send_elements] == :unsupported
       assert registry[:send_idlocation] == :unsupported
     end

@@ -167,7 +167,7 @@ defmodule Mix.Tasks.Test.Baseline do
     test_dir =
       case test_type do
         "scion" -> "test/scion_tests"
-        "scxml_w3" -> "test/scxml_w3_tests"
+        "scxml_w3" -> "test/scxml_tests"
         _other -> "test/#{test_type}_tests"
       end
 
@@ -199,24 +199,28 @@ defmodule Mix.Tasks.Test.Baseline do
   end
 
   defp get_all_test_files(test_dir) do
-    case File.ls(test_dir) do
-      {:ok, subdirs} ->
-        subdirs
-        |> Enum.filter(&File.dir?(Path.join(test_dir, &1)))
-        |> Enum.flat_map(fn subdir ->
-          subdir_path = Path.join(test_dir, subdir)
+    find_test_files_recursive(test_dir)
+    |> Enum.sort()
+  end
 
-          case File.ls(subdir_path) do
-            {:ok, files} ->
-              files
-              |> Enum.filter(&String.ends_with?(&1, "_test.exs"))
-              |> Enum.map(&Path.join(subdir_path, &1))
+  defp find_test_files_recursive(dir) do
+    case File.ls(dir) do
+      {:ok, entries} ->
+        entries
+        |> Enum.flat_map(fn entry ->
+          full_path = Path.join(dir, entry)
 
-            {:error, _ls_error} ->
+          cond do
+            String.ends_with?(entry, "_test.exs") ->
+              [full_path]
+
+            File.dir?(full_path) ->
+              find_test_files_recursive(full_path)
+
+            true ->
               []
           end
         end)
-        |> Enum.sort()
 
       {:error, _ls_error} ->
         []
@@ -305,7 +309,7 @@ defmodule Mix.Tasks.Test.Baseline do
         String.contains?(test_file, "scion_tests/") ->
           {[test_file | scion_acc], w3c_acc}
 
-        String.contains?(test_file, "scxml_w3_tests/") ->
+        String.contains?(test_file, "scxml_tests/") ->
           {scion_acc, [test_file | w3c_acc]}
 
         true ->
@@ -318,7 +322,7 @@ defmodule Mix.Tasks.Test.Baseline do
   defp get_test_args_for_file(test_file) do
     cond do
       String.contains?(test_file, "scion_tests/") -> ["test", "--include", "scion"]
-      String.contains?(test_file, "scxml_w3_tests/") -> ["test", "--include", "scxml_w3"]
+      String.contains?(test_file, "scxml_tests/") -> ["test", "--include", "scxml_w3"]
       # Internal tests
       true -> ["test"]
     end

@@ -9,6 +9,9 @@ defmodule SC.State do
     type: :atomic,
     states: [],
     transitions: [],
+    # Executable content
+    onentry_actions: [],
+    onexit_actions: [],
     # Hierarchy navigation
     parent: nil,
     depth: 0,
@@ -28,6 +31,8 @@ defmodule SC.State do
           type: state_type(),
           states: [SC.State.t()],
           transitions: [SC.Transition.t()],
+          onentry_actions: [term()],
+          onexit_actions: [term()],
           parent: String.t() | nil,
           depth: non_neg_integer(),
           document_order: integer() | nil,

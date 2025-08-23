@@ -6,7 +6,7 @@ defmodule SC.Parser.SCXML.ElementBuilder do
   and SC.DataElement structs with proper attribute parsing and location tracking.
   """
 
-  alias SC.ConditionEvaluator
+  alias SC.{Actions.LogAction, Actions.RaiseAction, ConditionEvaluator}
   alias SC.Parser.SCXML.LocationTracker
 
   @doc """
@@ -222,6 +222,46 @@ defmodule SC.Parser.SCXML.ElementBuilder do
       id_location: id_location,
       expr_location: expr_location,
       src_location: src_location
+    }
+  end
+
+  @doc """
+  Build an SC.LogAction from XML attributes and location info.
+  """
+  @spec build_log_action(list(), map(), String.t(), map()) :: LogAction.t()
+  def build_log_action(attributes, location, xml_string, _element_counts) do
+    attrs_map = attributes_to_map(attributes)
+
+    # Calculate attribute-specific locations
+    label_location = LocationTracker.attribute_location(xml_string, "label", location)
+    expr_location = LocationTracker.attribute_location(xml_string, "expr", location)
+
+    # Store both the original location and attribute-specific locations
+    detailed_location = %{
+      source: location,
+      label: label_location,
+      expr: expr_location
+    }
+
+    LogAction.new(attrs_map, detailed_location)
+  end
+
+  @doc """
+  Build an SC.RaiseAction from XML attributes and location info.
+  """
+  @spec build_raise_action(list(), map(), String.t(), map()) :: RaiseAction.t()
+  def build_raise_action(attributes, location, xml_string, _element_counts) do
+    attrs_map = attributes_to_map(attributes)
+
+    # Calculate attribute-specific locations
+    event_location = LocationTracker.attribute_location(xml_string, "event", location)
+
+    %RaiseAction{
+      event: get_attr_value(attrs_map, "event"),
+      source_location: %{
+        source: location,
+        event: event_location
+      }
     }
   end
 

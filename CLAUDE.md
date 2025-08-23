@@ -357,7 +357,7 @@ XML content within triple quotes uses 4-space base indentation.
 
 ### Implementation Architecture
 
-The phased approach maintains backward compatibility while systematically adding SCXML features:
+The phased approach systematically adds SCXML features:
 
 1. **Parser Extensions**: Add executable content parsing to existing SAX-based parser
 2. **Interpreter Integration**: Extend microstep/macrostep processing with action execution  

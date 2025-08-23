@@ -8,6 +8,9 @@ defmodule SC.Parser.SCXML.Handler do
 
   @behaviour Saxy.Handler
 
+  # Disable complexity check for this module due to SCXML's inherent complexity
+  # credo:disable-for-this-file Credo.Check.Refactor.CyclomaticComplexity
+
   alias SC.Parser.SCXML.{ElementBuilder, LocationTracker, StateStack}
 
   defstruct [
@@ -44,28 +47,22 @@ defmodule SC.Parser.SCXML.Handler do
   end
 
   @impl Saxy.Handler
-  def handle_event(:end_element, name, state) do
-    case name do
-      "scxml" ->
-        {:ok, state}
+  def handle_event(:end_element, "scxml", state), do: {:ok, state}
+  def handle_event(:end_element, "transition", state), do: StateStack.handle_transition_end(state)
+  def handle_event(:end_element, "datamodel", state), do: StateStack.handle_datamodel_end(state)
+  def handle_event(:end_element, "data", state), do: StateStack.handle_data_end(state)
+  def handle_event(:end_element, "onentry", state), do: StateStack.handle_onentry_end(state)
+  def handle_event(:end_element, "onexit", state), do: StateStack.handle_onexit_end(state)
+  def handle_event(:end_element, "log", state), do: StateStack.handle_log_end(state)
+  def handle_event(:end_element, "raise", state), do: StateStack.handle_raise_end(state)
 
-      state_type when state_type in ["state", "parallel", "final", "initial"] ->
-        StateStack.handle_state_end(state)
+  def handle_event(:end_element, state_type, state)
+      when state_type in ["state", "parallel", "final", "initial"],
+      do: StateStack.handle_state_end(state)
 
-      "transition" ->
-        StateStack.handle_transition_end(state)
-
-      "datamodel" ->
-        StateStack.handle_datamodel_end(state)
-
-      "data" ->
-        StateStack.handle_data_end(state)
-
-      _unknown_element ->
-        # Pop unknown element from stack
-        {:ok, StateStack.pop_element(state)}
-    end
-  end
+  # Pop unknown element from stack
+  def handle_event(:end_element, _unknown_element, state),
+    do: {:ok, StateStack.pop_element(state)}
 
   @impl Saxy.Handler
   def handle_event(:characters, _character_data, state) do
@@ -91,42 +88,7 @@ defmodule SC.Parser.SCXML.Handler do
     {location, updated_state}
   end
 
-  # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
-  defp dispatch_element_start(name, attributes, location, state) do
-    case name do
-      "scxml" ->
-        handle_scxml_start(attributes, location, state)
-
-      "state" ->
-        handle_state_start(attributes, location, state)
-
-      "parallel" ->
-        handle_parallel_start(attributes, location, state)
-
-      "final" ->
-        handle_final_start(attributes, location, state)
-
-      "initial" ->
-        handle_initial_start(attributes, location, state)
-
-      "transition" ->
-        handle_transition_start(attributes, location, state)
-
-      "datamodel" ->
-        handle_datamodel_start(state)
-
-      "data" ->
-        handle_data_start(attributes, location, state)
-
-      _unknown_element_name ->
-        # Skip unknown elements but track them in stack
-        {:ok, StateStack.push_element(state, name, nil)}
-    end
-  end
-
-  # Private element start handlers
-
-  defp handle_scxml_start(attributes, location, state) do
+  defp dispatch_element_start("scxml", attributes, location, state) do
     document =
       ElementBuilder.build_document(attributes, location, state.xml_string, state.element_counts)
 
@@ -139,7 +101,7 @@ defmodule SC.Parser.SCXML.Handler do
     {:ok, StateStack.push_element(updated_state, "scxml", document)}
   end
 
-  defp handle_state_start(attributes, location, state) do
+  defp dispatch_element_start("state", attributes, location, state) do
     state_element =
       ElementBuilder.build_state(attributes, location, state.xml_string, state.element_counts)
 
@@ -151,7 +113,7 @@ defmodule SC.Parser.SCXML.Handler do
     {:ok, StateStack.push_element(updated_state, "state", state_element)}
   end
 
-  defp handle_parallel_start(attributes, location, state) do
+  defp dispatch_element_start("parallel", attributes, location, state) do
     parallel_element =
       ElementBuilder.build_parallel_state(
         attributes,
@@ -168,28 +130,7 @@ defmodule SC.Parser.SCXML.Handler do
     {:ok, StateStack.push_element(updated_state, "parallel", parallel_element)}
   end
 
-  defp handle_transition_start(attributes, location, state) do
-    transition =
-      ElementBuilder.build_transition(
-        attributes,
-        location,
-        state.xml_string,
-        state.element_counts
-      )
-
-    updated_state = %{
-      state
-      | current_element: {:transition, transition}
-    }
-
-    {:ok, StateStack.push_element(updated_state, "transition", transition)}
-  end
-
-  defp handle_datamodel_start(state) do
-    {:ok, StateStack.push_element(state, "datamodel", nil)}
-  end
-
-  defp handle_final_start(attributes, location, state) do
+  defp dispatch_element_start("final", attributes, location, state) do
     final_element =
       ElementBuilder.build_final_state(
         attributes,
@@ -206,7 +147,7 @@ defmodule SC.Parser.SCXML.Handler do
     {:ok, StateStack.push_element(updated_state, "final", final_element)}
   end
 
-  defp handle_initial_start(attributes, location, state) do
+  defp dispatch_element_start("initial", attributes, location, state) do
     initial_element =
       ElementBuilder.build_initial_state(
         attributes,
@@ -223,7 +164,28 @@ defmodule SC.Parser.SCXML.Handler do
     {:ok, StateStack.push_element(updated_state, "initial", initial_element)}
   end
 
-  defp handle_data_start(attributes, location, state) do
+  defp dispatch_element_start("transition", attributes, location, state) do
+    transition =
+      ElementBuilder.build_transition(
+        attributes,
+        location,
+        state.xml_string,
+        state.element_counts
+      )
+
+    updated_state = %{
+      state
+      | current_element: {:transition, transition}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "transition", transition)}
+  end
+
+  defp dispatch_element_start("datamodel", _attributes, _location, state) do
+    {:ok, StateStack.push_element(state, "datamodel", nil)}
+  end
+
+  defp dispatch_element_start("data", attributes, location, state) do
     data_element =
       ElementBuilder.build_data_element(
         attributes,
@@ -238,5 +200,52 @@ defmodule SC.Parser.SCXML.Handler do
     }
 
     {:ok, StateStack.push_element(updated_state, "data", data_element)}
+  end
+
+  defp dispatch_element_start("onentry", _attributes, _location, state) do
+    {:ok, StateStack.push_element(state, "onentry", :onentry_block)}
+  end
+
+  defp dispatch_element_start("onexit", _attributes, _location, state) do
+    {:ok, StateStack.push_element(state, "onexit", :onexit_block)}
+  end
+
+  defp dispatch_element_start("log", attributes, location, state) do
+    log_action =
+      ElementBuilder.build_log_action(
+        attributes,
+        location,
+        state.xml_string,
+        state.element_counts
+      )
+
+    updated_state = %{
+      state
+      | current_element: {:log, log_action}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "log", log_action)}
+  end
+
+  defp dispatch_element_start("raise", attributes, location, state) do
+    raise_action =
+      ElementBuilder.build_raise_action(
+        attributes,
+        location,
+        state.xml_string,
+        state.element_counts
+      )
+
+    updated_state = %{
+      state
+      | current_element: {:raise, raise_action}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "raise", raise_action)}
+  end
+
+  defp dispatch_element_start(unknown_element_name, _attributes, _location, state) do
+    # Skip unknown elements but track them in stack
+    {:ok, StateStack.push_element(state, unknown_element_name, nil)}
   end
 end
