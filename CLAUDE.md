@@ -115,14 +115,17 @@ Also use this initial Elixir implementation as reference: <https://github.com/ca
   - **Optimal Transition Set**: SCXML-compliant transition conflict resolution where child state transitions take priority over ancestors
   - **Compound state support**: Automatically enters initial child states recursively
   - **Parallel state support**: Proper concurrent execution with cross-boundary exit semantics and parallel region preservation
-  - **Conditional transitions**: Full `cond` attribute support with Predicator v2.0 expression evaluation and SCXML `In()` function
+  - **Conditional transitions**: Full `cond` attribute support with Predicator v3.0 expression evaluation and SCXML `In()` function
+  - **Assign action support**: Complete `<assign>` element execution with data model integration
   - **Cycle Detection**: Prevents infinite loops in eventless transitions with configurable iteration limits (100 iterations default)
   - **O(1 lookups**: Uses `Document.find_state/2` and `Document.get_transitions_from_state/2`
   - Separates `active_states()` (leaf only) from `active_ancestors()` (includes parents)
   - Provides `{:ok, result}` or `{:error, reason}` responses
 - **`SC.StateChart`** - Runtime container for SCXML state machines
-  - Combines document, configuration, and event queues
+  - Combines document, configuration, event queues, and data model
   - Maintains internal and external event queues per SCXML specification
+  - **Data model storage**: Persistent variable storage with `data_model` field
+  - **Current event context**: Tracks current event for expression evaluation
 - **`SC.Configuration`** - Active state configuration management
   - Stores only leaf states for efficient memory usage
   - Computes ancestor states dynamically via `active_ancestors/2` using O(1) document lookups
@@ -131,6 +134,39 @@ Also use this initial Elixir implementation as reference: <https://github.com/ca
 - **`SC.Event`** - Event representation with internal/external origins
   - Supports event data and origin tracking
   - Used for state machine event processing
+
+### Expression Evaluation and Data Model
+
+- **`SC.ValueEvaluator`** - Comprehensive value evaluation system for SCXML expressions
+  - **Expression compilation**: `compile_expression/1` for reusable predicator compilation
+  - **Value evaluation**: `evaluate_value/2` extracts actual values (not just boolean results)
+  - **Location path resolution**: `resolve_location/1,2` validates assignment paths using predicator v3.0's `context_location`
+  - **Safe assignment operations**: `assign_value/3` performs type-safe nested data model updates
+  - **Integrated assignment**: `evaluate_and_assign/3` combines evaluation and assignment
+  - **SCXML context support**: Full integration with state machine context (events, configuration, datamodel)
+  - **Nested property access**: Support for deep property access (`user.profile.settings.theme`)
+  - **Mixed access patterns**: Combined bracket/dot notation (`users['john'].active`)
+  - **Error handling**: Comprehensive error handling with detailed logging
+- **`SC.ConditionEvaluator`** - Enhanced with predicator v3.0 integration
+  - **Predicator v3.0**: Upgraded from v2.0 with enhanced nested property access capabilities
+  - **SCXML functions**: Maintains `In()` function and SCXML-specific context building
+  - **Type-safe operations**: Improved type coercion and graceful fallback for missing properties
+
+### Actions and Executable Content
+
+- **`SC.Actions.AssignAction`** - SCXML `<assign>` element implementation
+  - **Location-based assignment**: Validates assignment paths using SC.ValueEvaluator
+  - **Expression evaluation**: Uses SC.ValueEvaluator for complex expression processing
+  - **Nested property assignment**: Supports deep assignment (`user.profile.name = "John"`)
+  - **Mixed notation support**: Handles both dot and bracket notation in assignments
+  - **Context integration**: Access to current event data and state configuration
+  - **Error recovery**: Graceful error handling with logging, continues execution on failures
+- **`SC.Actions.LogAction`** - SCXML `<log>` element implementation for debugging
+- **`SC.Actions.RaiseAction`** - SCXML `<raise>` element implementation for internal events
+- **`SC.Actions.ActionExecutor`** - Centralized action execution system
+  - **Phase tracking**: Executes actions during appropriate state entry/exit phases
+  - **Mixed action support**: Handles log, raise, assign, and future action types
+  - **StateChart integration**: Actions can modify state chart data model and event queues
 
 ### Architecture Flow
 
@@ -178,7 +214,7 @@ All parsed SCXML elements include precise source location information for valida
 
 ## Dependencies
 
-- **`predicator`** (~> 2.0) - Safe condition (boolean predicate) evaluator
+- **`predicator`** (~> 3.0) - Safe condition and value evaluator with enhanced nested property access
 - **`saxy`** (~> 1.6) - Fast, memory-efficient SAX XML parser with position tracking support
 
 ## Development Dependencies
@@ -219,6 +255,21 @@ This project includes comprehensive test coverage:
 - Tests both single-line and multiline XML element definitions
 - Ensures proper location tracking for nested elements and datamodel elements
 
+### Expression Evaluation Tests
+
+- **`test/sc/value_evaluator_test.exs`** - Comprehensive tests for SC.ValueEvaluator module
+  - Value evaluation, location resolution, assignment operations
+  - Nested property access and mixed notation support
+  - SCXML context integration and error handling
+- **`test/sc/actions/assign_action_test.exs`** - Complete assign action functionality
+  - Action creation, execution, and error handling
+  - Data model integration and context evaluation
+  - Mixed action execution and state chart modification
+- **`test/sc/parser/assign_parsing_test.exs`** - SCXML assign element parsing
+  - Assign element parsing in onentry/onexit contexts
+  - Mixed action parsing (log, raise, assign together)
+  - Complex expression and location parsing
+
 ## Code Style
 
 - All generated files have no trailing whitespace
@@ -257,7 +308,10 @@ XML content within triple quotes uses 4-space base indentation.
 - ✅ **Parallel states** with concurrent execution and proper exit semantics
 - ✅ **SCXML-compliant processing** - Proper microstep/macrostep execution model with exit set computation and LCCA algorithms
 - ✅ **Eventless transitions** - Automatic transitions without event attributes (also called NULL transitions in SCXML spec)
-- ✅ **Conditional transitions** - Full `cond` attribute support with Predicator v2.0 expression evaluation and SCXML `In()` function
+- ✅ **Conditional transitions** - Full `cond` attribute support with Predicator v3.0 expression evaluation and SCXML `In()` function
+- ✅ **Assign elements** - Complete `<assign>` element support with location-based assignment and nested property access
+- ✅ **Value evaluation** - Non-boolean expression evaluation using Predicator v3.0 for actual data values
+- ✅ **Data model support** - StateChart data model integration with dynamic variable assignment
 - ✅ **Optimal Transition Set** - SCXML-compliant transition conflict resolution where child state transitions take priority over ancestors
 - ✅ Hierarchical states with O(1) optimized lookups
 - ✅ Event-driven state changes
@@ -271,7 +325,7 @@ XML content within triple quotes uses 4-space base indentation.
 - **Document parsing failures**: Complex SCXML with history states, executable content
 - **Validation too strict**: Rejecting valid but complex SCXML documents  
 - **Missing SCXML features**: Targetless transitions, internal transitions
-- **Missing executable content**: `<script>`, `<assign>`, `<send>`, `<raise>`, `<onentry>`, `<onexit>`
+- **Missing executable content**: `<script>`, `<send>` (assign, raise, onentry, onexit now supported)
 - **Missing datamodel features**: Enhanced expression evaluation, additional functions
 
 ## Implementation Status
@@ -286,12 +340,15 @@ XML content within triple quotes uses 4-space base indentation.
 - **Parallel state support** with concurrent execution and proper cross-boundary exit semantics
 - **SCXML-compliant processing model** with proper microstep/macrostep execution, exit set computation, and LCCA algorithms
 - **Eventless transitions** - Automatic transitions without event attributes (also called NULL transitions in SCXML spec)
-- **Conditional transitions** - Full `cond` attribute support with Predicator v2.0 expression evaluation and SCXML `In()` function
+- **Conditional transitions** - Full `cond` attribute support with Predicator v3.0 expression evaluation and SCXML `In()` function
+- **Assign elements** - Complete `<assign>` element support with SC.ValueEvaluator and location-based assignment
+- **Value evaluation system** - SC.ValueEvaluator module for non-boolean expression evaluation and data model operations
+- **Enhanced expression evaluation** - Predicator v3.0 integration with nested property access and mixed notation support
 - **Optimal Transition Set** - SCXML-compliant transition conflict resolution where child state transitions take priority over ancestors
 - **Exit Set Computation** - W3C SCXML exit set calculation algorithm for proper state exit semantics
 - **LCCA Algorithm** - Full Least Common Compound Ancestor computation for accurate transition conflict resolution
 - **O(1 performance optimizations** via state and transition lookup maps
-- Comprehensive test suite integration (SCION + W3C) - 444 tests, 63 regression tests, 92.3% coverage
+- Comprehensive test suite integration (SCION + W3C) - 556 tests, 85 regression tests, 92.9% coverage
 - Test infrastructure with SC.Case module using interpreter
 - **Pattern matching in tests** instead of multiple individual assertions
 - XML parsing with namespace support and precise source location tracking

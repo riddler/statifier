@@ -57,11 +57,11 @@ defmodule SC.FeatureDetector do
       conditional_transitions: :supported,
       eventless_transitions: :supported,
 
-      # Data model features (unsupported)
+      # Data model features (partially supported)
       datamodel: :unsupported,
       data_elements: :unsupported,
       script_elements: :unsupported,
-      assign_elements: :unsupported,
+      assign_elements: :supported,
 
       # Executable content (partial support)
       onentry_actions: :supported,

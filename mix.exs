@@ -17,7 +17,7 @@ defmodule SC.MixProject do
     {:jason, "~> 1.4", only: [:dev, :test]},
 
     # Runtime
-    {:predicator, "~> 2.0"},
+    {:predicator, "~> 3.0"},
     {:saxy, "~> 1.6"}
   ]
 

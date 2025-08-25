@@ -6,7 +6,7 @@ defmodule SC.Parser.SCXML.ElementBuilder do
   and SC.DataElement structs with proper attribute parsing and location tracking.
   """
 
-  alias SC.{Actions.LogAction, Actions.RaiseAction, ConditionEvaluator}
+  alias SC.{Actions.AssignAction, Actions.LogAction, Actions.RaiseAction, ConditionEvaluator}
   alias SC.Parser.SCXML.LocationTracker
 
   @doc """
@@ -263,6 +263,28 @@ defmodule SC.Parser.SCXML.ElementBuilder do
         event: event_location
       }
     }
+  end
+
+  @doc """
+  Build an SC.AssignAction from XML attributes and location info.
+  """
+  @spec build_assign_action(list(), map(), String.t(), map()) :: AssignAction.t()
+  def build_assign_action(attributes, location, xml_string, _element_counts) do
+    attrs_map = attributes_to_map(attributes)
+
+    # Calculate attribute-specific locations
+    location_attr_location = LocationTracker.attribute_location(xml_string, "location", location)
+    expr_location = LocationTracker.attribute_location(xml_string, "expr", location)
+
+    AssignAction.new(
+      get_attr_value(attrs_map, "location") || "",
+      get_attr_value(attrs_map, "expr") || "",
+      %{
+        source: location,
+        location: location_attr_location,
+        expr: expr_location
+      }
+    )
   end
 
   # Private utility functions

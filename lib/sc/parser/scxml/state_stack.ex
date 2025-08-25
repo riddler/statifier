@@ -392,4 +392,43 @@ defmodule SC.Parser.SCXML.StateStack do
     # Raise element not in an onentry/onexit context, just pop it
     {:ok, pop_element(state)}
   end
+
+  @doc """
+  Handle the end of an assign element by adding it to the parent onentry/onexit block.
+  """
+  @spec handle_assign_end(map()) :: {:ok, map()}
+  def handle_assign_end(
+        %{stack: [{_element_name, assign_action} | [{"onentry", actions} | rest]]} = state
+      )
+      when is_list(actions) do
+    updated_actions = actions ++ [assign_action]
+    {:ok, %{state | stack: [{"onentry", updated_actions} | rest]}}
+  end
+
+  def handle_assign_end(
+        %{stack: [{_element_name, assign_action} | [{"onentry", :onentry_block} | rest]]} = state
+      ) do
+    # First action in this onentry block
+    {:ok, %{state | stack: [{"onentry", [assign_action]} | rest]}}
+  end
+
+  def handle_assign_end(
+        %{stack: [{_element_name, assign_action} | [{"onexit", actions} | rest]]} = state
+      )
+      when is_list(actions) do
+    updated_actions = actions ++ [assign_action]
+    {:ok, %{state | stack: [{"onexit", updated_actions} | rest]}}
+  end
+
+  def handle_assign_end(
+        %{stack: [{_element_name, assign_action} | [{"onexit", :onexit_block} | rest]]} = state
+      ) do
+    # First action in this onexit block
+    {:ok, %{state | stack: [{"onexit", [assign_action]} | rest]}}
+  end
+
+  def handle_assign_end(state) do
+    # Assign element not in an onentry/onexit context, just pop it
+    {:ok, pop_element(state)}
+  end
 end

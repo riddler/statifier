@@ -15,6 +15,9 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - ✅ **Parallel States** - Support for concurrent state regions with simultaneous execution
 - ✅ **Eventless Transitions** - Automatic transitions without event attributes (W3C compliant)
 - ✅ **Conditional Transitions** - Full support for `cond` attributes with expression evaluation
+- ✅ **Assign Elements** - Complete `<assign>` element support with location-based assignment and nested property access
+- ✅ **Value Evaluation** - Non-boolean expression evaluation using Predicator v3.0 for actual data values
+- ✅ **Data Model Integration** - StateChart data model with dynamic variable assignment and persistence
 - ✅ **O(1) Performance** - Optimized state and transition lookups via Maps
 - ✅ **Event Processing** - Internal and external event queues per SCXML specification
 - ✅ **Parse → Validate → Optimize Architecture** - Clean separation of concerns
@@ -33,7 +36,10 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - ✅ **Initial state elements** - Full `<initial>` element support with transitions and comprehensive validation
 - ✅ **Parallel states** with concurrent execution of multiple regions and proper cross-boundary exit semantics
 - ✅ **Eventless transitions** - Automatic transitions without event attributes (also called NULL transitions in SCXML spec), with cycle detection and microstep processing
-- ✅ **Conditional transitions** - Full `cond` attribute support with Predicator v2.0 expression evaluation and SCXML `In()` function
+- ✅ **Conditional transitions** - Full `cond` attribute support with Predicator v3.0 expression evaluation and SCXML `In()` function
+- ✅ **Assign elements** - Complete `<assign>` element support with location-based assignment, nested property access, and mixed notation
+- ✅ **Value evaluation system** - SC.ValueEvaluator module for non-boolean expression evaluation and data model operations
+- ✅ **Enhanced expression evaluation** - Predicator v3.0 integration with deep property access and type-safe operations
 - ✅ **Transition conflict resolution** - Child state transitions take priority over ancestor transitions per W3C specification
 - ✅ **SCXML-compliant processing** - Proper microstep/macrostep execution model with exit set computation and LCCA algorithms
 - ✅ **Modular validation** - Refactored from 386-line monolith into focused sub-validators
@@ -46,7 +52,7 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 
 - History states (`<history>`)
 - Internal and targetless transitions
-- More executable content (`<script>`, `<assign>`, `<send>`, etc.)
+- More executable content (`<script>`, `<send>`, etc.) - `<assign>` now supported!
 - Enhanced datamodel support with more expression functions
 - Enhanced validation for complex SCXML constructs
 
@@ -100,7 +106,7 @@ The next major areas for development focus on expanding SCXML feature support:
 
 ### **High Priority Features**
 
-- **Executable Content** - `<onentry>`, `<onexit>`, `<assign>`, `<script>` elements
+- **Executable Content** - `<script>` elements (`<onentry>`, `<onexit>`, `<assign>` now supported!)
 - **Datamodel Support** - `<data>` elements with expression evaluation
 - **History States** - Shallow and deep history state support
 
@@ -229,6 +235,52 @@ case SC..validate(document) do
     # Document has validation errors
     IO.puts("Validation failed with #{length(errors)} errors")
 end
+```
+
+### Assign Elements Example
+
+```elixir
+# SCXML with assign elements for dynamic data manipulation
+xml = """
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+  <state id="start">
+    <onentry>
+      <assign location="userName" expr="'John Doe'"/>
+      <assign location="counter" expr="42"/>
+      <assign location="user.profile.name" expr="'Jane Smith'"/>
+      <assign location="users['admin'].active" expr="true"/>
+    </onentry>
+    <transition target="working"/>
+  </state>
+  
+  <state id="working">
+    <onentry>
+      <assign location="counter" expr="counter + 1"/>
+      <assign location="status" expr="'processing'"/>
+    </onentry>
+    <onexit>
+      <assign location="status" expr="'completed'"/>
+    </onexit>
+    <transition event="finish" target="done"/>
+  </state>
+  
+  <final id="done"/>
+</scxml>
+"""
+
+{:ok, document} = SC.parse(xml)
+{:ok, state_chart} = SC.interpret(document)
+
+# Check the data model after onentry execution
+data_model = state_chart.data_model
+# Returns: %{
+#   "userName" => "John Doe",
+#   "counter" => 43,  # incremented to 43 in working state
+#   "user" => %{"profile" => %{"name" => "Jane Smith"}},
+#   "users" => %{"admin" => %{"active" => true}},
+#   "status" => "processing"
+# }
 ```
 
 ## Development

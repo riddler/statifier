@@ -8,11 +8,20 @@ defmodule SC.StateChart do
 
   alias SC.{Configuration, Document, Event}
 
-  defstruct [:document, :configuration, internal_queue: [], external_queue: []]
+  defstruct [
+    :document,
+    :configuration,
+    :current_event,
+    data_model: %{},
+    internal_queue: [],
+    external_queue: []
+  ]
 
   @type t :: %__MODULE__{
           document: Document.t(),
           configuration: Configuration.t(),
+          current_event: Event.t() | nil,
+          data_model: map(),
           internal_queue: [Event.t()],
           external_queue: [Event.t()]
         }
@@ -25,6 +34,8 @@ defmodule SC.StateChart do
     %__MODULE__{
       document: document,
       configuration: %SC.Configuration{},
+      current_event: nil,
+      data_model: %{},
       internal_queue: [],
       external_queue: []
     }
@@ -38,6 +49,8 @@ defmodule SC.StateChart do
     %__MODULE__{
       document: document,
       configuration: configuration,
+      current_event: nil,
+      data_model: %{},
       internal_queue: [],
       external_queue: []
     }
@@ -93,5 +106,21 @@ defmodule SC.StateChart do
   @spec active_states(t()) :: MapSet.t(String.t())
   def active_states(%__MODULE__{} = state_chart) do
     Configuration.active_ancestors(state_chart.configuration, state_chart.document)
+  end
+
+  @doc """
+  Update the data model of the state chart.
+  """
+  @spec update_data_model(t(), map()) :: t()
+  def update_data_model(%__MODULE__{} = state_chart, data_model) when is_map(data_model) do
+    %{state_chart | data_model: data_model}
+  end
+
+  @doc """
+  Set the current event being processed.
+  """
+  @spec set_current_event(t(), SC.Event.t() | nil) :: t()
+  def set_current_event(%__MODULE__{} = state_chart, event) do
+    %{state_chart | current_event: event}
   end
 end

@@ -6,7 +6,7 @@ defmodule SC.Actions.ActionExecutor do
   and other actions that occur during onentry and onexit processing.
   """
 
-  alias SC.{Actions.LogAction, Actions.RaiseAction, Document, StateChart}
+  alias SC.{Actions.AssignAction, Actions.LogAction, Actions.RaiseAction, Document, StateChart}
   require Logger
 
   @doc """
@@ -83,6 +83,16 @@ defmodule SC.Actions.ActionExecutor do
 
     # Add to internal event queue
     StateChart.enqueue_event(state_chart, internal_event)
+  end
+
+  defp execute_single_action(%AssignAction{} = assign_action, state_id, phase, state_chart) do
+    # Execute assign action by evaluating expression and updating data model
+    Logger.debug(
+      "Executing assign action: #{assign_action.location} = #{assign_action.expr} (state: #{state_id}, phase: #{phase})"
+    )
+
+    # Use the AssignAction's execute method which handles all the logic
+    AssignAction.execute(assign_action, state_chart)
   end
 
   defp execute_single_action(unknown_action, state_id, phase, state_chart) do
