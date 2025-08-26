@@ -1,0 +1,78 @@
+defmodule SCIONTest.InternalTransitions.Test0Test do
+  use Statifier.Case
+  @tag :scion
+  @tag required_features: [
+         :assign_elements,
+         :basic_states,
+         :conditional_transitions,
+         :data_elements,
+         :datamodel,
+         :event_transitions,
+         :internal_transitions,
+         :onentry_actions,
+         :onexit_actions
+       ]
+  @tag spec: "internal_transitions"
+  test "test0" do
+    xml = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!--
+       Copyright 2011-2012 Jacob Beard, INFICON, and other SCION contributors
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -->
+    <scxml
+        xmlns="http://www.w3.org/2005/07/scxml"
+        version="1.0"
+        datamodel="ecmascript">
+
+        <datamodel>
+            <data id="x" expr="0"/>
+        </datamodel>
+
+        <state id="a">
+            <onentry>
+                <assign location="x" expr="x + 1"/>
+            </onentry>
+
+            <onexit>
+                <assign location="x" expr="x + 1"/>
+            </onexit>
+
+            <state id="a1">
+            </state>
+
+            <state id="a2">
+               <!-- if we had exited and re-entered 'a', then x would be 3. but instead it's 1 -->
+               <transition target="b" event="t2" cond="x === 1" />
+            </state>
+
+            <transition target="a2" event="t1" type="internal" cond="x === 1"/>
+        </state>
+
+        <state id="b">
+            <transition target="c" event="t3" cond="x === 2" />
+        </state>
+
+        <state id="c"/>
+
+    </scxml>
+    """
+
+    test_scxml(xml, "", ["a1"], [
+      {%{"name" => "t1"}, ["a2"]},
+      {%{"name" => "t2"}, ["b"]},
+      {%{"name" => "t3"}, ["c"]}
+    ])
+  end
+end

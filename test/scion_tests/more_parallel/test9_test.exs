@@ -1,0 +1,64 @@
+defmodule SCIONTest.MoreParallel.Test9Test do
+  use Statifier.Case
+  @tag :scion
+  @tag required_features: [:basic_states, :event_transitions, :parallel_states]
+  @tag spec: "more_parallel"
+  test "test9" do
+    xml = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!--
+       Copyright 2011-2012 Jacob Beard, INFICON, and other SCION contributors
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -->
+    <scxml
+        datamodel="ecmascript"
+        xmlns="http://www.w3.org/2005/07/scxml"
+        version="1.0">
+
+        <state id="x">
+            <transition event="t" target="a22 b22"/>
+        </state>
+
+        <parallel id="p">
+            <state id="a">
+                <state id="a1">
+                    <state id="a11"/>
+                    <state id="a12"/>
+                </state>
+
+                <state id="a2">
+                    <state id="a21"/>
+                    <state id="a22"/>
+                </state>
+            </state>
+
+            <state id="b">
+
+                <state id="b1">
+                    <state id="b11"/>
+                    <state id="b12"/>
+                </state>
+
+                <state id="b2">
+                    <state id="b21"/>
+                    <state id="b22"/>
+                </state>
+            </state>
+        </parallel>
+    </scxml>
+    """
+
+    test_scxml(xml, "", ["x"], [{%{"name" => "t"}, ["a22", "b22"]}])
+  end
+end
