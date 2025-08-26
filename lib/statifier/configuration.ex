@@ -62,7 +62,7 @@ defmodule Statifier.Configuration do
   where d is the maximum depth and n is the number of states. This optimization is
   critical since active configuration is computed frequently during interpretation.
   """
-  @spec active_ancestors(t(), SC.Document.t()) :: MapSet.t(String.t())
+  @spec active_ancestors(t(), Statifier.Document.t()) :: MapSet.t(String.t())
   def active_ancestors(%__MODULE__{} = config, %Statifier.Document{} = document) do
     config.active_states
     |> Enum.reduce(MapSet.new(), fn state_id, acc ->

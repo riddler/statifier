@@ -19,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Type-Safe Operations**: Improved type coercion and error handling
   - **Graceful Fallback**: Returns `:undefined` for missing properties instead of errors
 
-- **`SC.ValueEvaluator` Module**: Comprehensive value evaluation system for SCXML expressions
+- **`Statifier.ValueEvaluator` Module**: Comprehensive value evaluation system for SCXML expressions
   - **Expression Compilation**: `compile_expression/1` for reusable expression compilation
   - **Value Evaluation**: `evaluate_value/2` extracts actual values (not just boolean results)
   - **Location Path Resolution**: `resolve_location/1,2` validates assignment paths using predicator v3.0
@@ -29,9 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Error Handling**: Comprehensive error handling with detailed logging
 
 - **`<assign>` Element Support**: Full W3C SCXML assign element implementation
-  - **`SC.Actions.AssignAction` Struct**: Represents assign actions with location and expr attributes
+  - **`Statifier.Actions.AssignAction` Struct**: Represents assign actions with location and expr attributes
   - **Location-Based Assignment**: Validates assignment paths before execution
-  - **Expression Evaluation**: Uses SC.ValueEvaluator for complex expression processing
+  - **Expression Evaluation**: Uses Statifier.ValueEvaluator for complex expression processing
   - **Nested Property Assignment**: Supports deep assignment (`user.profile.name = "John"`)
   - **Mixed Notation Support**: Handles both dot and bracket notation in assignments
   - **Context Integration**: Access to current event data and state configuration
@@ -40,7 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### StateChart Data Model Enhancement
 
-- **Data Model Storage**: Added `data_model` field to `SC.StateChart` for variable persistence
+- **Data Model Storage**: Added `data_model` field to `Statifier.StateChart` for variable persistence
 - **Current Event Context**: Added `current_event` field for expression evaluation context
 - **Helper Methods**: `update_data_model/2` and `set_current_event/2` for state management
 - **SCXML Context Building**: Enhanced context building for comprehensive expression evaluation
@@ -72,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Improvements
 
 - **Test Coverage**: Maintained 92.9% overall code coverage with comprehensive new tests
-  - **New Test Modules**: SC.ValueEvaluatorTest, SC.Actions.AssignActionTest, SC.Parser.AssignParsingTest
+  - **New Test Modules**: Statifier.ValueEvaluatorTest, Statifier.Actions.AssignActionTest, Statifier.Parser.AssignParsingTest
   - **556 Total Tests**: All tests pass including new assign functionality
   - **Log Capture**: Added `@moduletag capture_log: true` for clean test output
 - **Performance**: O(1) lookups maintained with new data model operations
@@ -128,14 +128,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ```elixir
 # Value evaluation
-{:ok, compiled} = SC.ValueEvaluator.compile_expression("user.profile.name")
-{:ok, "John Doe"} = SC.ValueEvaluator.evaluate_value(compiled, context)
+{:ok, compiled} = Statifier.ValueEvaluator.compile_expression("user.profile.name")
+{:ok, "John Doe"} = Statifier.ValueEvaluator.evaluate_value(compiled, context)
 
 # Location validation
-{:ok, ["user", "settings", "theme"]} = SC.ValueEvaluator.resolve_location("user.settings.theme")
+{:ok, ["user", "settings", "theme"]} = Statifier.ValueEvaluator.resolve_location("user.settings.theme")
 
 # Combined evaluation and assignment
-{:ok, updated_model} = SC.ValueEvaluator.evaluate_and_assign("result", "count * 2", context)
+{:ok, updated_model} = Statifier.ValueEvaluator.evaluate_and_assign("result", "count * 2", context)
 ```
 
 ### Notes
@@ -153,20 +153,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Phase 1 Executable Content Support
 
 - **`<log>` Action Support**: Full implementation of SCXML `<log>` elements with expression evaluation
-  - **`SC.LogAction` Struct**: Represents log actions with label and expr attributes
+  - **`Statifier.LogAction` Struct**: Represents log actions with label and expr attributes
   - **Expression Evaluation**: Basic literal expression support (full evaluation in Phase 2)
   - **Logger Integration**: Uses Elixir Logger for output with contextual information
   - **Location Tracking**: Complete source location tracking for debugging
 - **`<raise>` Action Support**: Complete implementation of SCXML `<raise>` elements for internal event generation
-  - **`SC.RaiseAction` Struct**: Represents raise actions with event attribute
+  - **`Statifier.RaiseAction` Struct**: Represents raise actions with event attribute
   - **Event Generation**: Logs raised events (full event queue integration in future phases)
   - **Anonymous Events**: Handles raise elements without event attributes
 - **`<onentry>` and `<onexit>` Action Support**: Executable content containers for state transitions
   - **Action Collection**: Parses and stores multiple actions within onentry/onexit blocks
   - **Mixed Actions**: Support for combining log, raise, and future action types
-  - **State Integration**: Actions stored in SC.State struct with onentry_actions/onexit_actions fields
+  - **State Integration**: Actions stored in Statifier.State struct with onentry_actions/onexit_actions fields
 - **Action Execution Infrastructure**: Comprehensive system for executing SCXML actions
-  - **`SC.ActionExecutor` Module**: Centralized action execution with phase tracking
+  - **`Statifier.ActionExecutor` Module**: Centralized action execution with phase tracking
   - **Interpreter Integration**: Actions executed during state entry/exit in interpreter lifecycle
   - **Type Safety**: Pattern matching for different action types with extensibility
 
@@ -208,8 +208,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### ActionExecutor API Modernization
 
-- **REMOVED**: `SC.Actions.ActionExecutor.execute_onentry_actions/2` function clause that accepted `%Document{}` as second parameter
-- **REMOVED**: `SC.Actions.ActionExecutor.execute_onexit_actions/2` function clause that accepted `%Document{}` as second parameter  
+- **REMOVED**: `Statifier.Actions.ActionExecutor.execute_onentry_actions/2` function clause that accepted `%Document{}` as second parameter
+- **REMOVED**: `Statifier.Actions.ActionExecutor.execute_onexit_actions/2` function clause that accepted `%Document{}` as second parameter  
 - **BREAKING**: These functions now only accept `%StateChart{}` as the second parameter for proper event queue integration
 - **Migration**: Replace `ActionExecutor.execute_*_actions(states, document)` with `ActionExecutor.execute_*_actions(states, state_chart)`
 - **Benefit**: Action execution now properly integrates with the StateChart event queue system, enabling raised events to be processed correctly
@@ -351,14 +351,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ```elixir
 # Parse SCXML document
-{:ok, document} = SC.Parser.SCXML.parse(scxml_string)
+{:ok, document} = Statifier.Parser.SCXML.parse(scxml_string)
 
 # Initialize state machine
-{:ok, state_chart} = SC.Interpreter.initialize(document)
+{:ok, state_chart} = Statifier.Interpreter.initialize(document)
 
 # Send events
 event = %Statifier.Event{name: "start", data: %{}}
-{:ok, new_state_chart} = SC.Interpreter.send_event(state_chart, event)
+{:ok, new_state_chart} = Statifier.Interpreter.send_event(state_chart, event)
 
 # Check active states
 active_states = new_state_chart.configuration.active_states
@@ -376,6 +376,6 @@ active_states = new_state_chart.configuration.active_states
 
 ## About
 
-SC is a W3C SCXML (State Chart XML) implementation for Elixir, providing a robust, performant state machine engine for complex application workflows.
+Statifier is a W3C SCXML (State Chart XML) implementation for Elixir, providing a robust, performant state machine engine for complex application workflows.
 
 For more information, visit: <https://github.com/riddler/sc>

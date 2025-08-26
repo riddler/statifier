@@ -3,7 +3,7 @@ defmodule Statifier.Case do
   Test case template for SCXML state machine testing.
 
   Provides utilities for testing state machine behavior against both
-  SCION and W3C test suites using the SC.Interpreter.
+  SCION and W3C test suites using the Statifier.Interpreter.
 
   Now includes feature detection to fail tests that depend on unsupported
   SCXML features, preventing false positive test results.

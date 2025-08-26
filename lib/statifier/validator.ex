@@ -22,7 +22,7 @@ defmodule Statifier.Validator do
           warnings: [String.t()]
         }
 
-  @type validation_result_with_document :: {validation_result(), SC.Document.t()}
+  @type validation_result_with_document :: {validation_result(), Statifier.Document.t()}
 
   @doc """
   Validate an SCXML document and optimize it for runtime use.
@@ -32,7 +32,7 @@ defmodule Statifier.Validator do
   The optimized document includes performance optimizations like lookup maps.
   """
   @spec validate(Statifier.Document.t()) ::
-          {:ok, SC.Document.t(), [String.t()]} | {:error, [String.t()], [String.t()]}
+          {:ok, Statifier.Document.t(), [String.t()]} | {:error, [String.t()], [String.t()]}
   def validate(%Statifier.Document{} = document) do
     {result, final_document} =
       %__MODULE__{}
@@ -55,7 +55,7 @@ defmodule Statifier.Validator do
   allowing for validations that require the entire document context.
   If the document is valid, it will be optimized for runtime performance.
   """
-  @spec finalize(validation_result(), SC.Document.t()) :: validation_result_with_document()
+  @spec finalize(validation_result(), Statifier.Document.t()) :: validation_result_with_document()
   def finalize(%__MODULE__{} = result, %Statifier.Document{} = document) do
     validated_result =
       result

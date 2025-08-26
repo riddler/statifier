@@ -2,7 +2,7 @@ defmodule Statifier.FeatureDetector do
   @moduledoc """
   Detects SCXML features used in documents to enable proper test validation.
 
-  This module analyzes SCXML documents (either raw XML strings or parsed SC.Document
+  This module analyzes SCXML documents (either raw XML strings or parsed Statifier.Document
   structures) to identify which SCXML features are being used. This enables the test
   framework to fail appropriately when tests depend on unsupported features.
   """
@@ -12,7 +12,7 @@ defmodule Statifier.FeatureDetector do
   @doc """
   Detects features used in an SCXML document.
 
-  Takes either a raw XML string or a parsed SC.Document and returns a MapSet
+  Takes either a raw XML string or a parsed Statifier.Document and returns a MapSet
   of feature atoms representing the SCXML features detected in the document.
 
   ## Examples
@@ -20,7 +20,7 @@ defmodule Statifier.FeatureDetector do
       iex> xml = "<scxml><state id='s1'><transition event='go' target='s2'/></state></scxml>"
       iex> Statifier.FeatureDetector.detect_features(xml)
       #MapSet<[:basic_states, :event_transitions]>
-      iex> {:ok, document} = SC.Parser.SCXML.parse(xml)
+      iex> {:ok, document} = Statifier.Parser.SCXML.parse(xml)
       iex> Statifier.FeatureDetector.detect_features(document)
       #MapSet<[:basic_states, :event_transitions]>
   """
@@ -288,7 +288,7 @@ defmodule Statifier.FeatureDetector do
 
   defp add_if_targetless(features, _transition), do: features
 
-  # Note: SC.Transition doesn't currently have a type field
+  # Note: Statifier.Transition doesn't currently have a type field
   # This is a placeholder for when internal transitions are implemented
   defp add_if_internal(features, _transition), do: features
 end

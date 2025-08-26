@@ -30,11 +30,11 @@ defmodule Statifier.Document do
           datamodel: String.t() | nil,
           version: String.t() | nil,
           xmlns: String.t() | nil,
-          states: [SC.State.t()],
-          datamodel_elements: [SC.DataElement.t()],
+          states: [Statifier.State.t()],
+          datamodel_elements: [Statifier.DataElement.t()],
           # Lookup maps for O(1) access
-          state_lookup: %{String.t() => SC.State.t()},
-          transitions_by_source: %{String.t() => [SC.Transition.t()]},
+          state_lookup: %{String.t() => Statifier.State.t()},
+          transitions_by_source: %{String.t() => [Statifier.Transition.t()]},
           document_order: integer() | nil,
           source_location: map() | nil,
           name_location: map() | nil,
@@ -68,7 +68,7 @@ defmodule Statifier.Document do
   @doc """
   Get all transitions from a given source state using O(1) lookup.
   """
-  @spec get_transitions_from_state(t(), String.t()) :: [SC.Transition.t()]
+  @spec get_transitions_from_state(t(), String.t()) :: [Statifier.Transition.t()]
   def get_transitions_from_state(%__MODULE__{transitions_by_source: lookup}, state_id)
       when is_binary(state_id) do
     Map.get(lookup, state_id, [])

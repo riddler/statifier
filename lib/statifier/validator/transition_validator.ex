@@ -10,8 +10,11 @@ defmodule Statifier.Validator.TransitionValidator do
   @doc """
   Validate that all transition targets exist in the document.
   """
-  @spec validate_transition_targets(Statifier.Validator.validation_result(), SC.Document.t()) ::
-          SC.Validator.validation_result()
+  @spec validate_transition_targets(
+          Statifier.Validator.validation_result(),
+          Statifier.Document.t()
+        ) ::
+          Statifier.Validator.validation_result()
   def validate_transition_targets(
         %Statifier.Validator{} = result,
         %Statifier.Document{} = document

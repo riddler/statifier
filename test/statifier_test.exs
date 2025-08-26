@@ -1,10 +1,10 @@
-defmodule SCTest do
+defmodule StatifierTest do
   use ExUnit.Case
-  doctest SC
+  doctest Statifier
 
   alias Statifier.{Configuration, Document}
 
-  describe "SC.parse/1" do
+  describe "Statifier.parse/1" do
     test "parses basic SCXML document successfully" do
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
@@ -13,7 +13,7 @@ defmodule SCTest do
       </scxml>
       """
 
-      assert {:ok, document} = SC.parse(xml)
+      assert {:ok, document} = Statifier.parse(xml)
       assert %Document{} = document
       assert document.name == nil
       assert document.initial == "start"
@@ -21,15 +21,15 @@ defmodule SCTest do
 
     test "returns error for invalid XML" do
       invalid_xml = "<scxml><invalid></scxml>"
-      assert {:error, _reason} = SC.parse(invalid_xml)
+      assert {:error, _reason} = Statifier.parse(invalid_xml)
     end
 
     test "returns error for empty string" do
-      assert {:error, _reason} = SC.parse("")
+      assert {:error, _reason} = Statifier.parse("")
     end
   end
 
-  describe "SC.validate/1" do
+  describe "Statifier.validate/1" do
     test "validates a valid document successfully" do
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
@@ -38,8 +38,8 @@ defmodule SCTest do
       </scxml>
       """
 
-      {:ok, document} = SC.parse(xml)
-      assert {:ok, _optimized_document, _warnings} = SC.validate(document)
+      {:ok, document} = Statifier.parse(xml)
+      assert {:ok, _optimized_document, _warnings} = Statifier.validate(document)
     end
 
     test "returns error for document with missing initial state" do
@@ -50,12 +50,12 @@ defmodule SCTest do
       </scxml>
       """
 
-      {:ok, document} = SC.parse(xml)
-      assert {:error, _errors, _warnings} = SC.validate(document)
+      {:ok, document} = Statifier.parse(xml)
+      assert {:error, _errors, _warnings} = Statifier.validate(document)
     end
   end
 
-  describe "SC.interpret/1" do
+  describe "Statifier.interpret/1" do
     test "initializes interpreter with valid document" do
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
@@ -64,8 +64,8 @@ defmodule SCTest do
       </scxml>
       """
 
-      {:ok, document} = SC.parse(xml)
-      assert {:ok, state_chart} = SC.interpret(document)
+      {:ok, document} = Statifier.parse(xml)
+      assert {:ok, state_chart} = Statifier.interpret(document)
       assert %Statifier.StateChart{} = state_chart
     end
 
@@ -77,7 +77,7 @@ defmodule SCTest do
         name: nil
       }
 
-      assert {:error, _errors, _warnings} = SC.interpret(invalid_document)
+      assert {:error, _errors, _warnings} = Statifier.interpret(invalid_document)
     end
   end
 
@@ -96,13 +96,13 @@ defmodule SCTest do
       """
 
       # Parse
-      assert {:ok, document} = SC.parse(xml)
+      assert {:ok, document} = Statifier.parse(xml)
 
       # Validate
-      assert {:ok, _optimized_document, _warnings} = SC.validate(document)
+      assert {:ok, _optimized_document, _warnings} = Statifier.validate(document)
 
       # Interpret
-      assert {:ok, state_chart} = SC.interpret(document)
+      assert {:ok, state_chart} = Statifier.interpret(document)
 
       # Verify initial state is active
       active_states = Configuration.active_states(state_chart.configuration)

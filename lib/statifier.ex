@@ -1,6 +1,6 @@
-defmodule SC do
+defmodule Statifier do
   @moduledoc """
-  Documentation for `SC`.
+  Documentation for `Statifier`.
   """
 
   alias Statifier.{Interpreter, Parser.SCXML, Validator}

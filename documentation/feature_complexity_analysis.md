@@ -130,8 +130,8 @@ These are the most blocking features - they appear in most failing tests:
 
 ### Parser Enhancements
 
-- Extend `SC.Parser.SCXML.Handler` to handle executable content elements
-- Add data structures for actions in `SC.State` and `SC.Document`
+- Extend `Statifier.Parser.SCXML.Handler` to handle executable content elements
+- Add data structures for actions in `Statifier.State` and `Statifier.Document`
 - Parse expression attributes and script content
 
 ### Interpreter Enhancements  
@@ -143,10 +143,10 @@ These are the most blocking features - they appear in most failing tests:
 
 ### New Modules Needed
 
-- `SC.DataModel` - Variable storage and management
-- `SC.ExpressionEvaluator` - Expression parsing and evaluation
-- `SC.ActionExecutor` - Execute onentry/onexit/transition actions
-- `SC.EventQueue` - Internal event management
+- `Statifier.DataModel` - Variable storage and management
+- `Statifier.ExpressionEvaluator` - Expression parsing and evaluation
+- `Statifier.ActionExecutor` - Execute onentry/onexit/transition actions
+- `Statifier.EventQueue` - Internal event management
 
 ## Risk Assessment
 

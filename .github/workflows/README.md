@@ -1,6 +1,6 @@
 # GitHub Workflows
 
-This directory contains the CI/CD workflows for the SC project.
+This directory contains the CI/CD workflows for the Statifier project.
 
 ## Workflow Strategy
 

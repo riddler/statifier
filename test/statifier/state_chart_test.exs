@@ -222,7 +222,7 @@ defmodule Statifier.StateChartTest do
       # Mock the Configuration.active_ancestors function behavior
       state_chart = StateChart.new(document, configuration)
 
-      # This calls SC.Configuration.active_ancestors/2 which should return the computed ancestors
+      # This calls Statifier.Configuration.active_ancestors/2 which should return the computed ancestors
       active_states = StateChart.active_states(state_chart)
 
       # Since we're using a simple configuration, this should work
