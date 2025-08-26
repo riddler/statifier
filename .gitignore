@@ -22,6 +22,9 @@ statifier-*.tar
 # Temporary files, for example, from tests.
 /tmp/
 
+# Local language server
+.elixir_ls
+
 # Dialyzer PLT files
 /priv/plts/
 
