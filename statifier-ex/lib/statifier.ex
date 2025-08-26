@@ -1,2 +1,0 @@
-defmodule Statifier do
-end
