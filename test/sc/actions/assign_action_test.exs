@@ -184,5 +184,31 @@ defmodule SC.Actions.AssignActionTest do
 
       assert %StateChart{data_model: %{"counter" => 0, "stateCount" => 1}} = result
     end
+
+    test "pre-compiles expressions during creation for performance" do
+      action = AssignAction.new("user.profile.name", "'John Doe'")
+
+      # Verify that expression is pre-compiled
+      assert not is_nil(action.compiled_expr)
+      assert is_list(action.compiled_expr)
+
+      # Verify original strings are preserved
+      assert action.location == "user.profile.name"
+      assert action.expr == "'John Doe'"
+    end
+
+    test "uses pre-compiled expressions for better performance", %{state_chart: state_chart} do
+      action = AssignAction.new("user.settings.theme", "'dark'")
+
+      # Verify pre-compilation occurred for expression
+      assert not is_nil(action.compiled_expr)
+
+      # Execute should use pre-compiled expressions internally
+      result = AssignAction.execute(action, state_chart)
+
+      # Verify result is correct
+      expected_data = %{"user" => %{"settings" => %{"theme" => "dark"}}}
+      assert %StateChart{data_model: ^expected_data} = result
+    end
   end
 end

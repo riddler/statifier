@@ -32,31 +32,51 @@ defmodule SC.Actions.AssignAction do
   require Logger
 
   @enforce_keys [:location, :expr]
-  defstruct [:location, :expr, :source_location]
+  defstruct [:location, :expr, :compiled_expr, :source_location]
 
   @type t :: %__MODULE__{
           location: String.t(),
           expr: String.t(),
+          compiled_expr: term() | nil,
           source_location: map() | nil
         }
 
   @doc """
   Create a new AssignAction from parsed attributes.
 
+  The expr is compiled for performance during creation.
+
   ## Examples
 
-      iex> SC.Actions.AssignAction.new("user.name", "'John'")
-      %SC.Actions.AssignAction{location: "user.name", expr: "'John'"}
+      iex> action = SC.Actions.AssignAction.new("user.name", "'John'")
+      iex> action.location
+      "user.name"
+      iex> action.expr
+      "'John'"
+      iex> is_list(action.compiled_expr) 
+      true
 
   """
   @spec new(String.t(), String.t(), map() | nil) :: t()
   def new(location, expr, source_location \\ nil)
       when is_binary(location) and is_binary(expr) do
+    # Pre-compile expression for performance
+    compiled_expr = compile_safe(expr, :expression)
+
     %__MODULE__{
       location: location,
       expr: expr,
+      compiled_expr: compiled_expr,
       source_location: source_location
     }
+  end
+
+  # Safely compile expressions, returning nil on error
+  defp compile_safe(expr, _type) do
+    case ValueEvaluator.compile_expression(expr) do
+      {:ok, compiled} -> compiled
+      {:error, _reason} -> nil
+    end
   end
 
   @doc """
@@ -73,10 +93,12 @@ defmodule SC.Actions.AssignAction do
   def execute(%__MODULE__{} = assign_action, %StateChart{} = state_chart) do
     context = build_evaluation_context(state_chart)
 
+    # Use ValueEvaluator.evaluate_and_assign with pre-compiled expression if available
     case ValueEvaluator.evaluate_and_assign(
            assign_action.location,
            assign_action.expr,
-           context
+           context,
+           assign_action.compiled_expr
          ) do
       {:ok, updated_data_model} ->
         # Update the state chart with the new data model

@@ -147,19 +147,58 @@ defmodule SC.ValueEvaluator do
   Evaluate an expression and assign its result to a location in the data model.
 
   This combines expression evaluation with location-based assignment.
+  If a pre-compiled expression is provided, it will be used for better performance.
   """
   @spec evaluate_and_assign(String.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
   def evaluate_and_assign(location_expr, value_expr, context)
       when is_binary(location_expr) and is_binary(value_expr) and is_map(context) do
+    evaluate_and_assign(location_expr, value_expr, context, nil)
+  end
+
+  @spec evaluate_and_assign(String.t(), String.t(), map(), term() | nil) ::
+          {:ok, map()} | {:error, term()}
+  def evaluate_and_assign(location_expr, value_expr, context, compiled_expr)
+      when is_binary(location_expr) and is_binary(value_expr) and is_map(context) do
     with {:ok, path} <- resolve_location(location_expr, context),
-         {:ok, compiled_value} <- compile_expression(value_expr),
-         {:ok, evaluated_value} <- evaluate_value(compiled_value, context),
+         {:ok, evaluated_value} <-
+           evaluate_expression_optimized(value_expr, compiled_expr, context),
          data_model <- extract_data_model(context),
          {:ok, updated_model} <- assign_value(path, evaluated_value, data_model) do
       {:ok, updated_model}
     else
       error -> error
     end
+  end
+
+  # Use pre-compiled expression if available, otherwise use the string
+  defp evaluate_expression_optimized(_value_expr, compiled_expr, context)
+       when not is_nil(compiled_expr) do
+    # Pass compiled instructions directly to predicator
+    evaluate_with_predicator(compiled_expr, context)
+  end
+
+  defp evaluate_expression_optimized(value_expr, nil, context) do
+    # Pass string directly to predicator for compilation and evaluation
+    evaluate_with_predicator(value_expr, context)
+  end
+
+  # Evaluate using predicator with proper SCXML context and functions
+  defp evaluate_with_predicator(expression_or_instructions, context) do
+    eval_context =
+      if has_scxml_context?(context) do
+        ConditionEvaluator.build_scxml_context(context)
+      else
+        context
+      end
+
+    scxml_functions = ConditionEvaluator.build_scxml_functions(context)
+
+    case Predicator.evaluate(expression_or_instructions, eval_context, functions: scxml_functions) do
+      {:ok, value} -> {:ok, value}
+      {:error, reason} -> {:error, reason}
+    end
+  rescue
+    error -> {:error, error}
   end
 
   # Private functions
