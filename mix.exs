@@ -1,10 +1,10 @@
-defmodule SC.MixProject do
+defmodule Statifier.MixProject do
   use Mix.Project
 
-  @app :sc
+  @app :statifier
   @version "1.0.0"
-  @description "StateCharts for Elixir"
-  @source_url "https://github.com/riddler/sc"
+  @description "SCXML state machines for Elixir with W3C compliance"
+  @source_url "https://github.com/riddler/statifier"
   @deps [
     # Documentation (split out to reduce compile time in dev/test)
     {:ex_doc, "~> 0.31", only: :docs, runtime: false},
@@ -69,9 +69,9 @@ defmodule SC.MixProject do
 
   defp docs do
     [
-      name: "SC",
+      name: "Statifier",
       source_ref: "v#{@version}",
-      canonical: "https://hexdocs.pm/sc",
+      canonical: "https://hexdocs.pm/statifier",
       source_url: @source_url,
       extras: ["README.md", "CHANGELOG.md", "LICENSE"],
       main: "readme"

@@ -1,5 +1,5 @@
 defmodule SCXMLTest.SelectingTransitions.Test403b do
-  use SC.Case
+  use Statifier.Case
   @tag :scxml_w3
   @tag required_features: [
          :assign_elements,

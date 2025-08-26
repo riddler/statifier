@@ -4,7 +4,7 @@ defmodule Mix.Tasks.Test.UpdateFeatures do
   @moduledoc """
   Updates all SCION and W3C test files with @tag required_features: tags.
 
-  Analyzes the XML content in each test file using SC.FeatureDetector to determine
+  Analyzes the XML content in each test file using Statifier.FeatureDetector to determine
   which SCXML features are required, then adds or updates the @tag required_features: 
   tag accordingly.
 
@@ -20,7 +20,7 @@ defmodule Mix.Tasks.Test.UpdateFeatures do
 
   use Mix.Task
 
-  alias SC.FeatureDetector
+  alias Statifier.FeatureDetector
 
   @switches [dry_run: :boolean, verbose: :boolean]
   @aliases [d: :dry_run, v: :verbose]

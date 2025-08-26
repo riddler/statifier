@@ -357,7 +357,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 {:ok, state_chart} = SC.Interpreter.initialize(document)
 
 # Send events
-event = %SC.Event{name: "start", data: %{}}
+event = %Statifier.Event{name: "start", data: %{}}
 {:ok, new_state_chart} = SC.Interpreter.send_event(state_chart, event)
 
 # Check active states
@@ -366,7 +366,7 @@ active_states = new_state_chart.configuration.active_states
 
 ### Notes
 
-- This is the initial release of the SC SCXML library
+- This is the initial release of the Statifier SCXML library
 - Full W3C SCXML 1.0 specification compliance for supported features
 - Production-ready with comprehensive test coverage
 - Built for high-performance state machine processing in Elixir applications

@@ -1,5 +1,5 @@
 defmodule SCIONTest.Atom3BasicTests.M0Test do
-  use SC.Case
+  use Statifier.Case
   @tag :scion
   @tag required_features: []
   @tag spec: "atom3_basic_tests"

@@ -1,5 +1,5 @@
 defmodule SCIONTest.CondJs.Test1Test do
-  use SC.Case
+  use Statifier.Case
   @tag :scion
   @tag required_features: [:basic_states, :conditional_transitions, :event_transitions]
   @tag spec: "cond_js"

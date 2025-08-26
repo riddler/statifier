@@ -1,8 +1,8 @@
 {
   "description": "Registry of tests that should always pass - used for regression testing",
   "internal_tests": [
-    "test/sc_test.exs",
-    "test/sc/**/*_test.exs",
+    "test/statifier_test.exs",
+    "test/statifier/**/*_test.exs",
     "test/mix/**/*_test.exs"
   ],
   "last_updated": "2025-08-23",

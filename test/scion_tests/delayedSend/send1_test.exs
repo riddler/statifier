@@ -1,5 +1,5 @@
 defmodule SCIONTest.DelayedSend.Send1Test do
-  use SC.Case
+  use Statifier.Case
   @tag :scion
   @tag required_features: [:basic_states, :event_transitions, :send_elements]
   @tag spec: "delayed_send"

@@ -1,5 +1,5 @@
 defmodule SCIONTest.MultipleEventsPerTransition.Test1Test do
-  use SC.Case
+  use Statifier.Case
   @tag :scion
   @tag required_features: [:basic_states, :event_transitions]
   @tag spec: "multiple_events_per_transition"

@@ -1,5 +1,5 @@
 defmodule SCIONTest.DocumentOrder.DocumentOrder0Test do
-  use SC.Case
+  use Statifier.Case
   @tag :scion
   @tag required_features: [:basic_states, :event_transitions]
   @tag spec: "document_order"

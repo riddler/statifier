@@ -1,5 +1,5 @@
 defmodule SCIONTest.Misc.DeepInitialTest do
-  use SC.Case
+  use Statifier.Case
   @tag :scion
   @tag required_features: [:basic_states, :event_transitions, :log_elements, :onentry_actions]
   @tag spec: "misc"

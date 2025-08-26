@@ -15,13 +15,13 @@ defmodule Mix.Tasks.Test.RegressionTest do
     File.mkdir_p!("#{@fixtures_dir}/sc/parser")
     File.write!("#{@fixtures_dir}/sc/parser/sample_test.exs", "# sample test")
     File.write!("#{@fixtures_dir}/sc/sample_test.exs", "# sample test")
-    File.write!("#{@fixtures_dir}/sc_test.exs", "# main test")
+    File.write!("#{@fixtures_dir}/statifier_test.exs", "# main test")
 
     # Create a test JSON file
     test_json = %{
       "description" => "Test registry",
       "internal_tests" => [
-        "#{@fixtures_dir}/sc_test.exs",
+        "#{@fixtures_dir}/statifier_test.exs",
         "#{@fixtures_dir}/sc/**/*_test.exs"
       ],
       "scion_tests" => [
@@ -55,11 +55,11 @@ defmodule Mix.Tasks.Test.RegressionTest do
     end
 
     test "includes direct file paths that exist" do
-      patterns = ["#{@fixtures_dir}/sc_test.exs"]
+      patterns = ["#{@fixtures_dir}/statifier_test.exs"]
 
       result = Regression.expand_test_patterns(patterns)
 
-      assert result == ["#{@fixtures_dir}/sc_test.exs"]
+      assert result == ["#{@fixtures_dir}/statifier_test.exs"]
     end
 
     test "filters out non-test files from wildcard" do
@@ -90,7 +90,7 @@ defmodule Mix.Tasks.Test.RegressionTest do
     test "handles mixed pattern types" do
       patterns = [
         # direct file
-        "#{@fixtures_dir}/sc_test.exs",
+        "#{@fixtures_dir}/statifier_test.exs",
         # wildcard
         "#{@fixtures_dir}/sc/**/*_test.exs",
         # non-existent
@@ -102,7 +102,7 @@ defmodule Mix.Tasks.Test.RegressionTest do
 
         # 1 direct + 2 wildcard matches
         assert length(result) == 3
-        assert "#{@fixtures_dir}/sc_test.exs" in result
+        assert "#{@fixtures_dir}/statifier_test.exs" in result
         assert "#{@fixtures_dir}/sc/parser/sample_test.exs" in result
         assert "#{@fixtures_dir}/sc/sample_test.exs" in result
       end)

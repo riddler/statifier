@@ -101,24 +101,24 @@ This document outlines the comprehensive plan to achieve near-complete SCXML (St
 
 ```elixir
 # Parser Extensions
-defmodule SC.Parser.SCXML.ExecutableContent do
-  def parse_onentry(attrs, children) -> %SC.OnEntryAction{}
-  def parse_onexit(attrs, children) -> %SC.OnExitAction{}
-  def parse_raise(attrs) -> %SC.RaiseEvent{}
-  def parse_log(attrs) -> %SC.LogAction{}
+defmodule Statifier.Parser.SCXML.ExecutableContent do
+  def parse_onentry(attrs, children) -> %Statifier.OnEntryAction{}
+  def parse_onexit(attrs, children) -> %Statifier.OnExitAction{}
+  def parse_raise(attrs) -> %Statifier.RaiseEvent{}
+  def parse_log(attrs) -> %Statifier.LogAction{}
 end
 
 # Data Structures  
-defmodule SC.OnEntryAction do
+defmodule Statifier.OnEntryAction do
   defstruct [:actions, :source_location]
 end
 
-defmodule SC.RaiseEvent do
+defmodule Statifier.RaiseEvent do
   defstruct [:event, :source_location]
 end
 
 # Interpreter Integration
-defmodule SC.Interpreter.ActionExecutor do
+defmodule Statifier.Interpreter.ActionExecutor do
   def execute_onentry_actions(state, context) do
     # Execute all onentry actions for state
   end
@@ -163,7 +163,7 @@ end
 
 ```elixir
 # Data Model Support
-defmodule SC.DataModel do
+defmodule Statifier.DataModel do
   defstruct [:variables, :scoped_contexts]
   
   def get_variable(datamodel, name) -> value
@@ -172,14 +172,14 @@ defmodule SC.DataModel do
 end
 
 # Enhanced Condition Evaluator
-defmodule SC.ConditionEvaluator do
+defmodule Statifier.ConditionEvaluator do
   def evaluate_with_datamodel(compiled_cond, context, datamodel) do
     # Evaluate conditions with access to datamodel variables
   end
 end
 
 # JavaScript Integration
-defmodule SC.JSEngine do  
+defmodule Statifier.JSEngine do  
   def evaluate_expression(expr_string, variables) -> {:ok, result} | {:error, reason}
   def compile_expression(expr_string) -> {:ok, compiled} | {:error, reason}
 end
@@ -210,19 +210,19 @@ end
 
 ```elixir
 # History State Support
-defmodule SC.HistoryTracker do
+defmodule Statifier.HistoryTracker do
   def save_history(state_id, configuration, type) -> updated_tracker
   def restore_history(history_state, tracker) -> target_states
 end
 
 # Event Scheduling  
-defmodule SC.EventScheduler do
+defmodule Statifier.EventScheduler do
   def schedule_event(event, delay, target) -> event_id
   def process_scheduled_events(current_time) -> [events]
 end
 
 # Script Execution
-defmodule SC.ScriptExecutor do
+defmodule Statifier.ScriptExecutor do
   def execute_script(script_content, datamodel) -> updated_datamodel
 end
 ```

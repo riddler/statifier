@@ -93,11 +93,11 @@ def execute_actions(actions, context) do
   Enum.reduce(actions, context, &execute_single_action/2)
 end
 
-def execute_single_action(%SC.Action{type: :raise, attributes: %{"event" => event}}, context) do
+def execute_single_action(%Statifier.Action{type: :raise, attributes: %{"event" => event}}, context) do
   # Add event to internal queue
 end
 
-def execute_single_action(%SC.Action{type: :log, expr: expr}, context) do  
+def execute_single_action(%Statifier.Action{type: :log, expr: expr}, context) do  
   # Evaluate expression and log result
 end
 ```

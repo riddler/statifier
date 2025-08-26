@@ -1,5 +1,5 @@
 defmodule SCIONTest.Parallel.Test0Test do
-  use SC.Case
+  use Statifier.Case
   @tag :scion
   @tag required_features: [:basic_states, :parallel_states]
   @tag spec: "parallel"

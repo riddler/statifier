@@ -326,7 +326,7 @@ mix test.baseline
 
 The regression suite tracks:
 
-- **Internal tests**: All `test/sc/**/*_test.exs` files (supports wildcards) - includes edge case coverage tests
+- **Internal tests**: All `test/statifier/**/*_test.exs` files (supports wildcards) - includes edge case coverage tests
 - **SCION tests**: 8 known passing tests (basic + hierarchy + parallel + conditional)
 - **W3C tests**: Currently none passing
 
@@ -347,7 +347,7 @@ mix coveralls
 
 # Specific test categories
 mix test --include scion test/scion_tests/basic/
-mix test test/sc/parser/scxml_test.exs
+mix test test/statifier/parser/scxml_test.exs
 ```
 
 ## Architecture
@@ -430,7 +430,7 @@ The project includes a sophisticated regression testing system to ensure stabili
 
 ```json
 {
-  "internal_tests": ["test/sc_test.exs", "test/sc/**/*_test.exs"],
+  "internal_tests": ["test/statifier_test.exs", "test/statifier/**/*_test.exs"],
   "scion_tests": ["test/scion_tests/basic/basic0_test.exs", ...],
   "w3c_tests": []
 }
@@ -438,7 +438,7 @@ The project includes a sophisticated regression testing system to ensure stabili
 
 ### **Wildcard Support**
 
-- Supports glob patterns like `test/sc/**/*_test.exs`
+- Supports glob patterns like `test/statifier/**/*_test.exs`
 - Automatically expands to all matching test files
 - Maintains clean, maintainable test registry
 

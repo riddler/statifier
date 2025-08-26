@@ -1,5 +1,5 @@
 defmodule SCIONTest.AssignCurrentSmallStep.Test4Test do
-  use SC.Case
+  use Statifier.Case
   @tag :scion
   @tag required_features: [
          :assign_elements,

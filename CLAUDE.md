@@ -35,10 +35,10 @@ When verifying code changes, always follow this sequence (also automated via pre
 - `mix test --cover` - Run all tests with coverage reporting (maintain 90%+ coverage - currently 92.3%)
 - `mix coveralls` - Alternative coverage command
 - `mix coveralls.detail` - Run tests with detailed coverage report showing uncovered lines
-- `mix test test/sc/location_test.exs` - Run location tracking tests
-- `mix test test/sc/parser/scxml_test.exs` - Run specific SCXML parser tests (uses pattern matching)
-- `mix test test/sc/interpreter/compound_state_test.exs` - Run compound state tests
-- `mix test test/sc/interpreter/eventless_transitions_test.exs` - Run eventless transition tests
+- `mix test test/statifier/location_test.exs` - Run location tracking tests
+- `mix test test/statifier/parser/scxml_test.exs` - Run specific SCXML parser tests (uses pattern matching)
+- `mix test test/statifier/interpreter/compound_state_test.exs` - Run compound state tests
+- `mix test test/statifier/interpreter/eventless_transitions_test.exs` - Run eventless transition tests
 
 **Development:**
 
@@ -240,7 +240,7 @@ This project includes comprehensive test coverage:
 - Uses `SC.Case` for test infrastructure
 - Organized by SCXML specification sections (mandatory tests)
 
-### Parser Tests (`test/sc/parser/scxml_test.exs`)
+### Parser Tests (`test/statifier/parser/scxml_test.exs`)
 
 - Unit tests for `SC.Parser.SCXML`  
 - **Uses pattern matching** instead of multiple individual asserts for cleaner, more informative tests
@@ -248,7 +248,7 @@ This project includes comprehensive test coverage:
 - Validates error handling for invalid XML
 - Ensures proper attribute handling (nil for empty values)
 
-### Location Tracking Tests (`test/sc/location_test.exs`)
+### Location Tracking Tests (`test/statifier/location_test.exs`)
 
 - Tests for precise source location tracking in SCXML documents
 - Validates line number accuracy for elements and attributes
@@ -257,15 +257,15 @@ This project includes comprehensive test coverage:
 
 ### Expression Evaluation Tests
 
-- **`test/sc/value_evaluator_test.exs`** - Comprehensive tests for SC.ValueEvaluator module
+- **`test/statifier/value_evaluator_test.exs`** - Comprehensive tests for SC.ValueEvaluator module
   - Value evaluation, location resolution, assignment operations
   - Nested property access and mixed notation support
   - SCXML context integration and error handling
-- **`test/sc/actions/assign_action_test.exs`** - Complete assign action functionality
+- **`test/statifier/actions/assign_action_test.exs`** - Complete assign action functionality
   - Action creation, execution, and error handling
   - Data model integration and context evaluation
   - Mixed action execution and state chart modification
-- **`test/sc/parser/assign_parsing_test.exs`** - SCXML assign element parsing
+- **`test/statifier/parser/assign_parsing_test.exs`** - SCXML assign element parsing
   - Assign element parsing in onentry/onexit contexts
   - Mixed action parsing (log, raise, assign together)
   - Complex expression and location parsing

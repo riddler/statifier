@@ -1,5 +1,5 @@
 defmodule SCIONTest.ParallelInterrupt.Test31Test do
-  use SC.Case
+  use Statifier.Case
   @tag :scion
   @tag required_features: [:basic_states, :compound_states, :event_transitions, :parallel_states]
   @tag spec: "parallel+interrupt"

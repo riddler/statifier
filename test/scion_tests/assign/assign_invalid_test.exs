@@ -1,5 +1,5 @@
 defmodule SCIONTest.Assign.AssignInvalidTest do
-  use SC.Case
+  use Statifier.Case
   @tag :scion
   @tag required_features: [
          :assign_elements,

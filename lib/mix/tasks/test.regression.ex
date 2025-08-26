@@ -264,16 +264,16 @@ defmodule Mix.Tasks.Test.Regression do
   Expands a list of test patterns, supporting glob wildcards.
 
   Takes a list of test file patterns (which may include glob patterns like
-  `test/sc/**/*_test.exs`) and returns a sorted list of actual test files
+  `test/statifier/**/*_test.exs`) and returns a sorted list of actual test files
   that exist on the filesystem.
 
   ## Examples
 
-      iex> Mix.Tasks.Test.Regression.expand_test_patterns(["test/sc_test.exs"])
-      ["test/sc_test.exs"]
+      iex> Mix.Tasks.Test.Regression.expand_test_patterns(["test/statifier_test.exs"])
+      ["test/statifier_test.exs"]
 
-      iex> Mix.Tasks.Test.Regression.expand_test_patterns(["test/sc/**/*_test.exs"])
-      ["test/sc/parser/scxml_test.exs", "test/sc/document_test.exs", ...]
+      iex> Mix.Tasks.Test.Regression.expand_test_patterns(["test/statifier/**/*_test.exs"])
+      ["test/statifier/parser/scxml_test.exs", "test/statifier/document_test.exs", ...]
 
   """
   @spec expand_test_patterns([String.t()]) :: [String.t()]
