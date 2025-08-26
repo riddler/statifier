@@ -44,7 +44,7 @@ defmodule Statifier.StateChart do
   @doc """
   Create a new state chart with a specific configuration.
   """
-  @spec new(Statifier.Document.t(), SC.Configuration.t()) :: t()
+  @spec new(Statifier.Document.t(), Statifier.Configuration.t()) :: t()
   def new(%Statifier.Document{} = document, %Statifier.Configuration{} = configuration) do
     %__MODULE__{
       document: document,
@@ -59,7 +59,7 @@ defmodule Statifier.StateChart do
   @doc """
   Add an event to the appropriate queue based on its origin.
   """
-  @spec enqueue_event(t(), SC.Event.t()) :: t()
+  @spec enqueue_event(t(), Statifier.Event.t()) :: t()
   def enqueue_event(%__MODULE__{} = state_chart, %Statifier.Event{origin: :external} = event) do
     %{state_chart | external_queue: state_chart.external_queue ++ [event]}
   end
@@ -72,7 +72,7 @@ defmodule Statifier.StateChart do
   Remove and return the next event from internal queue (higher priority).
   Falls back to external queue if internal queue is empty.
   """
-  @spec dequeue_event(t()) :: {SC.Event.t() | nil, t()}
+  @spec dequeue_event(t()) :: {Statifier.Event.t() | nil, t()}
   def dequeue_event(%__MODULE__{internal_queue: [event | rest]} = state_chart) do
     {event, %{state_chart | internal_queue: rest}}
   end
@@ -95,7 +95,7 @@ defmodule Statifier.StateChart do
   @doc """
   Update the configuration of the state chart.
   """
-  @spec update_configuration(t(), SC.Configuration.t()) :: t()
+  @spec update_configuration(t(), Statifier.Configuration.t()) :: t()
   def update_configuration(
         %__MODULE__{} = state_chart,
         %Statifier.Configuration{} = configuration
@@ -122,7 +122,7 @@ defmodule Statifier.StateChart do
   @doc """
   Set the current event being processed.
   """
-  @spec set_current_event(t(), SC.Event.t() | nil) :: t()
+  @spec set_current_event(t(), Statifier.Event.t() | nil) :: t()
   def set_current_event(%__MODULE__{} = state_chart, event) do
     %{state_chart | current_event: event}
   end

@@ -11,8 +11,8 @@ defmodule Statifier.Validator.InitialStateValidator do
   @doc """
   Validate that the document's initial state exists.
   """
-  @spec validate_initial_state(Statifier.Validator.validation_result(), SC.Document.t()) ::
-          SC.Validator.validation_result()
+  @spec validate_initial_state(Statifier.Validator.validation_result(), Statifier.Document.t()) ::
+          Statifier.Validator.validation_result()
   def validate_initial_state(%Statifier.Validator{} = result, %Statifier.Document{initial: nil}) do
     # No initial state specified - this is valid, first state becomes initial
     result
@@ -34,9 +34,9 @@ defmodule Statifier.Validator.InitialStateValidator do
   """
   @spec validate_hierarchical_consistency(
           Statifier.Validator.validation_result(),
-          SC.Document.t()
+          Statifier.Document.t()
         ) ::
-          SC.Validator.validation_result()
+          Statifier.Validator.validation_result()
   def validate_hierarchical_consistency(
         %Statifier.Validator{} = result,
         %Statifier.Document{} = document
@@ -51,8 +51,11 @@ defmodule Statifier.Validator.InitialStateValidator do
   @doc """
   Validate that if document has initial state, it must be a top-level state (not nested).
   """
-  @spec validate_initial_state_hierarchy(Statifier.Validator.validation_result(), SC.Document.t()) ::
-          SC.Validator.validation_result()
+  @spec validate_initial_state_hierarchy(
+          Statifier.Validator.validation_result(),
+          Statifier.Document.t()
+        ) ::
+          Statifier.Validator.validation_result()
   def validate_initial_state_hierarchy(%Statifier.Validator{} = result, %Statifier.Document{
         initial: nil
       }) do

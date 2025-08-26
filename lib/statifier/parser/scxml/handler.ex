@@ -16,7 +16,7 @@ defmodule Statifier.Parser.SCXML.Handler do
   defstruct [
     # Stack of parent elements for hierarchy tracking
     :stack,
-    # Final SC.Document result
+    # Final Statifier.Document result
     :result,
     # Current element being processed
     :current_element,

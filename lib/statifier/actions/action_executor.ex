@@ -20,7 +20,8 @@ defmodule Statifier.Actions.ActionExecutor do
   Execute onentry actions for a list of states being entered.
   Returns the updated state chart with any events raised by actions.
   """
-  @spec execute_onentry_actions([String.t()], SC.StateChart.t()) :: Statifier.StateChart.t()
+  @spec execute_onentry_actions([String.t()], Statifier.StateChart.t()) ::
+          Statifier.StateChart.t()
   def execute_onentry_actions(entering_states, %Statifier.StateChart{} = state_chart) do
     entering_states
     |> Enum.reduce(state_chart, fn state_id, acc_state_chart ->
@@ -38,7 +39,7 @@ defmodule Statifier.Actions.ActionExecutor do
   Execute onexit actions for a list of states being exited.
   Returns the updated state chart with any events raised by actions.
   """
-  @spec execute_onexit_actions([String.t()], SC.StateChart.t()) :: Statifier.StateChart.t()
+  @spec execute_onexit_actions([String.t()], Statifier.StateChart.t()) :: Statifier.StateChart.t()
   def execute_onexit_actions(exiting_states, %Statifier.StateChart{} = state_chart) do
     exiting_states
     |> Enum.reduce(state_chart, fn state_id, acc_state_chart ->

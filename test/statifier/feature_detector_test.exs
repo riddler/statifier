@@ -237,7 +237,7 @@ defmodule Statifier.FeatureDetectorTest do
   end
 
   describe "integration with parsed documents" do
-    test "detects features from parsed SC.Document" do
+    test "detects features from parsed Statifier.Document" do
       xml = """
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="compound">
         <state id="compound" initial="child1">

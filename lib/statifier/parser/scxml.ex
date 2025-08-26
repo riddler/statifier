@@ -6,9 +6,9 @@ defmodule Statifier.Parser.SCXML do
   alias Statifier.Parser.SCXML.Handler
 
   @doc """
-  Parse an SCXML string into an SC.Document struct using Saxy parser.
+  Parse an SCXML string into a Statifier.Document struct using Saxy parser.
   """
-  @spec parse(String.t()) :: {:ok, SC.Document.t()} | {:error, term()}
+  @spec parse(String.t()) :: {:ok, Statifier.Document.t()} | {:error, term()}
   def parse(xml_string) do
     initial_state = %Handler{
       stack: [],

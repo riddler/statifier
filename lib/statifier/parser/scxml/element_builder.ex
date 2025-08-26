@@ -2,8 +2,8 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
   @moduledoc """
   Builds SCXML elements from XML attributes and location information.
 
-  This module handles the creation of SC.Document, SC.State, SC.Transition,
-  and SC.DataElement structs with proper attribute parsing and location tracking.
+  This module handles the creation of Statifier.Document, Statifier.State, Statifier.Transition,
+  and Statifier.DataElement structs with proper attribute parsing and location tracking.
   """
 
   alias Statifier.{
@@ -141,7 +141,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
   @doc """
   Build an initial state element from XML attributes and location info.
 
-  Initial states are represented as SC.State with type: :initial.
+  Initial states are represented as Statifier.State with type: :initial.
   They contain a single transition that specifies the target initial state.
   """
   @spec build_initial_state(list(), map(), String.t(), map()) :: Statifier.State.t()

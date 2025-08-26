@@ -10,7 +10,7 @@ defmodule Statifier.Validator.Utils do
   Add an error to the validation result.
   """
   @spec add_error(Statifier.Validator.validation_result(), String.t()) ::
-          SC.Validator.validation_result()
+          Statifier.Validator.validation_result()
   def add_error(%Statifier.Validator{} = result, error) do
     %{result | errors: [error | result.errors]}
   end
@@ -19,7 +19,7 @@ defmodule Statifier.Validator.Utils do
   Add a warning to the validation result.
   """
   @spec add_warning(Statifier.Validator.validation_result(), String.t()) ::
-          SC.Validator.validation_result()
+          Statifier.Validator.validation_result()
   def add_warning(%Statifier.Validator{} = result, warning) do
     %{result | warnings: [warning | result.warnings]}
   end
@@ -27,7 +27,7 @@ defmodule Statifier.Validator.Utils do
   @doc """
   Check if a state with the given ID exists in the document.
   """
-  @spec state_exists?(String.t(), SC.Document.t()) :: boolean()
+  @spec state_exists?(String.t(), Statifier.Document.t()) :: boolean()
   def state_exists?(state_id, %Statifier.Document{} = document) do
     collect_all_states(document)
     |> Enum.any?(&(&1.id == state_id))
@@ -36,7 +36,7 @@ defmodule Statifier.Validator.Utils do
   @doc """
   Collect all states from a document, including nested states.
   """
-  @spec collect_all_states(Statifier.Document.t()) :: [SC.State.t()]
+  @spec collect_all_states(Statifier.Document.t()) :: [Statifier.State.t()]
   def collect_all_states(%Statifier.Document{states: states}) do
     collect_states_recursive(states)
   end
@@ -44,7 +44,7 @@ defmodule Statifier.Validator.Utils do
   @doc """
   Recursively collect states from a state list.
   """
-  @spec collect_states_recursive([Statifier.State.t()]) :: [SC.State.t()]
+  @spec collect_states_recursive([Statifier.State.t()]) :: [Statifier.State.t()]
   def collect_states_recursive(states) do
     Enum.flat_map(states, fn state ->
       [state | collect_states_recursive(state.states)]
@@ -54,7 +54,7 @@ defmodule Statifier.Validator.Utils do
   @doc """
   Collect all transitions from a list of states.
   """
-  @spec collect_all_transitions([Statifier.State.t()]) :: [SC.Transition.t()]
+  @spec collect_all_transitions([Statifier.State.t()]) :: [Statifier.Transition.t()]
   def collect_all_transitions(states) do
     Enum.flat_map(states, fn state ->
       state.transitions
@@ -77,7 +77,7 @@ defmodule Statifier.Validator.Utils do
   @doc """
   Linear search for a state by ID during validation (before lookup maps are built).
   """
-  @spec find_state_by_id_linear(String.t(), SC.Document.t()) :: Statifier.State.t() | nil
+  @spec find_state_by_id_linear(String.t(), Statifier.Document.t()) :: Statifier.State.t() | nil
   def find_state_by_id_linear(state_id, %Statifier.Document{} = document) do
     collect_all_states(document)
     |> Enum.find(&(&1.id == state_id))

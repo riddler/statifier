@@ -82,7 +82,7 @@ defmodule Statifier.Actions.AssignAction do
   @doc """
   Execute the assign action by evaluating the expression and assigning to the location.
 
-  This uses SC.ValueEvaluator to:
+  This uses Statifier.ValueEvaluator to:
   1. Validate the assignment location path
   2. Evaluate the expression to get the value
   3. Perform the assignment in the data model

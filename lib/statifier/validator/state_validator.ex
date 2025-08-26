@@ -10,8 +10,8 @@ defmodule Statifier.Validator.StateValidator do
   @doc """
   Validate that all state IDs are unique and non-empty.
   """
-  @spec validate_state_ids(Statifier.Validator.validation_result(), SC.Document.t()) ::
-          SC.Validator.validation_result()
+  @spec validate_state_ids(Statifier.Validator.validation_result(), Statifier.Document.t()) ::
+          Statifier.Validator.validation_result()
   def validate_state_ids(%Statifier.Validator{} = result, %Statifier.Document{} = document) do
     all_states = Utils.collect_all_states(document)
 
@@ -23,8 +23,8 @@ defmodule Statifier.Validator.StateValidator do
   @doc """
   Validate that all state IDs are unique within the document.
   """
-  @spec validate_unique_ids(Statifier.Validator.validation_result(), [SC.State.t()]) ::
-          SC.Validator.validation_result()
+  @spec validate_unique_ids(Statifier.Validator.validation_result(), [Statifier.State.t()]) ::
+          Statifier.Validator.validation_result()
   def validate_unique_ids(%Statifier.Validator{} = result, states) do
     ids = Enum.map(states, & &1.id)
     duplicates = ids -- Enum.uniq(ids)
@@ -43,8 +43,8 @@ defmodule Statifier.Validator.StateValidator do
   @doc """
   Validate that no states have empty or nil IDs.
   """
-  @spec validate_non_empty_ids(Statifier.Validator.validation_result(), [SC.State.t()]) ::
-          SC.Validator.validation_result()
+  @spec validate_non_empty_ids(Statifier.Validator.validation_result(), [Statifier.State.t()]) ::
+          Statifier.Validator.validation_result()
   def validate_non_empty_ids(%Statifier.Validator{} = result, states) do
     empty_ids = Enum.filter(states, &(is_nil(&1.id) or &1.id == ""))
 

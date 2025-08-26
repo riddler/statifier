@@ -64,50 +64,50 @@ Also use this initial Elixir implementation as reference: <https://github.com/ca
 
 ### Data Structures
 
-- **`SC.Document`** - Root SCXML document structure with:
+- **`Statifier.Document`** - Root SCXML document structure with:
   - Attributes: `name`, `initial`, `datamodel`, `version`, `xmlns`
   - Collections: `states`, `datamodel_elements`  
   - O(1) Lookup maps: `state_lookup` (id → state), `transitions_by_source` (id → [transitions])
   - Built via `Document.build_lookup_maps/1` during validation phase
-- **`SC.State`** - Individual state with `id`, optional `initial` state, nested `states` list, and `transitions` list
-- **`SC.Transition`** - State transitions with optional `event`, `target`, and `cond` attributes
-- **`SC.DataElement`** - Datamodel elements with required `id` and optional `expr` and `src` attributes
+- **`Statifier.State`** - Individual state with `id`, optional `initial` state, nested `states` list, and `transitions` list
+- **`Statifier.Transition`** - State transitions with optional `event`, `target`, and `cond` attributes
+- **`Statifier.DataElement`** - Datamodel elements with required `id` and optional `expr` and `src` attributes
 
 ### Parsers (Parse Phase)
 
-- **`SC.Parser.SCXML`** - Main SCXML parser using Saxy SAX parser for accurate location tracking
-  - Parses XML strings into `SC.Document` structs with precise source location information
+- **`Statifier.Parser.SCXML`** - Main SCXML parser using Saxy SAX parser for accurate location tracking
+  - Parses XML strings into `Statifier.Document` structs with precise source location information
   - Event-driven SAX parsing for better memory efficiency and location tracking
   - Handles namespace declarations and XML attributes correctly
   - Supports nested states and hierarchical structures
   - Converts empty XML attributes to `nil` for cleaner data representation
   - Returns `{:ok, document}` or `{:error, reason}` tuples
   - **Pure parsing only** - does not build optimization structures
-- **`SC.Parser.SCXML.Handler`** - SAX event handler for SCXML parsing
+- **`Statifier.Parser.SCXML.Handler`** - SAX event handler for SCXML parsing
   - Implements `Saxy.Handler` behavior for processing XML events
   - Tracks element occurrences and position information during parsing
   - Manages element stack for proper hierarchical document construction
-- **`SC.Parser.SCXML.ElementBuilder`** - Builds SCXML elements from SAX events
-- **`SC.Parser.SCXML.LocationTracker`** - Tracks precise source locations for elements and attributes
-- **`SC.Parser.SCXML.StateStack`** - Manages parsing state stack for hierarchical document construction
+- **`Statifier.Parser.SCXML.ElementBuilder`** - Builds SCXML elements from SAX events
+- **`Statifier.Parser.SCXML.LocationTracker`** - Tracks precise source locations for elements and attributes
+- **`Statifier.Parser.SCXML.StateStack`** - Manages parsing state stack for hierarchical document construction
 
 ### Validation and Optimization (Validate + Optimize Phases)
 
-- **`SC.Validator`** - Main validation orchestrator
+- **`Statifier.Validator`** - Main validation orchestrator
   - **Modular architecture**: Split into focused sub-validators for maintainability
   - **Validation**: Structural correctness, semantic consistency, reference validation
   - **Optimization**: Builds O(1) lookup maps via `finalize/2` for valid documents only
   - Returns `{:ok, optimized_document, warnings}` or `{:error, errors, warnings}`
   - **Clean architecture**: Only optimizes documents that pass validation
-- **`SC.Validator.StateValidator`** - State ID uniqueness and validation
-- **`SC.Validator.TransitionValidator`** - Transition target validation
-- **`SC.Validator.InitialStateValidator`** - All initial state constraints (attributes, elements, conflicts)
-- **`SC.Validator.ReachabilityAnalyzer`** - State reachability graph analysis  
-- **`SC.Validator.Utils`** - Shared utilities across validators
+- **`Statifier.Validator.StateValidator`** - State ID uniqueness and validation
+- **`Statifier.Validator.TransitionValidator`** - Transition target validation
+- **`Statifier.Validator.InitialStateValidator`** - All initial state constraints (attributes, elements, conflicts)
+- **`Statifier.Validator.ReachabilityAnalyzer`** - State reachability graph analysis  
+- **`Statifier.Validator.Utils`** - Shared utilities across validators
 
 ### Interpreter and Runtime  
 
-- **`SC.Interpreter`** - Core SCXML interpreter with W3C-compliant processing model
+- **`Statifier.Interpreter`** - Core SCXML interpreter with W3C-compliant processing model
   - **Microstep/Macrostep Execution**: Implements SCXML event processing model where microsteps (single transition set execution) are processed until stable macrostep completion
   - **Exit Set Computation**: Uses W3C SCXML exit set calculation algorithm for determining which states to exit during transitions
   - **LCCA Algorithm**: Full Least Common Compound Ancestor computation for accurate transition conflict resolution and exit set calculation
@@ -121,23 +121,23 @@ Also use this initial Elixir implementation as reference: <https://github.com/ca
   - **O(1 lookups**: Uses `Document.find_state/2` and `Document.get_transitions_from_state/2`
   - Separates `active_states()` (leaf only) from `active_ancestors()` (includes parents)
   - Provides `{:ok, result}` or `{:error, reason}` responses
-- **`SC.StateChart`** - Runtime container for SCXML state machines
+- **`Statifier.StateChart`** - Runtime container for SCXML state machines
   - Combines document, configuration, event queues, and data model
   - Maintains internal and external event queues per SCXML specification
   - **Data model storage**: Persistent variable storage with `data_model` field
   - **Current event context**: Tracks current event for expression evaluation
-- **`SC.Configuration`** - Active state configuration management
+- **`Statifier.Configuration`** - Active state configuration management
   - Stores only leaf states for efficient memory usage
   - Computes ancestor states dynamically via `active_ancestors/2` using O(1) document lookups
   - Uses MapSets for fast state membership testing
   - Optimized MapSet operations (direct construction vs incremental building)
-- **`SC.Event`** - Event representation with internal/external origins
+- **`Statifier.Event`** - Event representation with internal/external origins
   - Supports event data and origin tracking
   - Used for state machine event processing
 
 ### Expression Evaluation and Data Model
 
-- **`SC.ValueEvaluator`** - Comprehensive value evaluation system for SCXML expressions
+- **`Statifier.ValueEvaluator`** - Comprehensive value evaluation system for SCXML expressions
   - **Expression compilation**: `compile_expression/1` for reusable predicator compilation
   - **Value evaluation**: `evaluate_value/2` extracts actual values (not just boolean results)
   - **Location path resolution**: `resolve_location/1,2` validates assignment paths using predicator v3.0's `context_location`
@@ -147,23 +147,23 @@ Also use this initial Elixir implementation as reference: <https://github.com/ca
   - **Nested property access**: Support for deep property access (`user.profile.settings.theme`)
   - **Mixed access patterns**: Combined bracket/dot notation (`users['john'].active`)
   - **Error handling**: Comprehensive error handling with detailed logging
-- **`SC.ConditionEvaluator`** - Enhanced with predicator v3.0 integration
+- **`Statifier.ConditionEvaluator`** - Enhanced with predicator v3.0 integration
   - **Predicator v3.0**: Upgraded from v2.0 with enhanced nested property access capabilities
   - **SCXML functions**: Maintains `In()` function and SCXML-specific context building
   - **Type-safe operations**: Improved type coercion and graceful fallback for missing properties
 
 ### Actions and Executable Content
 
-- **`SC.Actions.AssignAction`** - SCXML `<assign>` element implementation
-  - **Location-based assignment**: Validates assignment paths using SC.ValueEvaluator
-  - **Expression evaluation**: Uses SC.ValueEvaluator for complex expression processing
+- **`Statifier.Actions.AssignAction`** - SCXML `<assign>` element implementation
+  - **Location-based assignment**: Validates assignment paths using Statifier.ValueEvaluator
+  - **Expression evaluation**: Uses Statifier.ValueEvaluator for complex expression processing
   - **Nested property assignment**: Supports deep assignment (`user.profile.name = "John"`)
   - **Mixed notation support**: Handles both dot and bracket notation in assignments
   - **Context integration**: Access to current event data and state configuration
   - **Error recovery**: Graceful error handling with logging, continues execution on failures
-- **`SC.Actions.LogAction`** - SCXML `<log>` element implementation for debugging
-- **`SC.Actions.RaiseAction`** - SCXML `<raise>` element implementation for internal events
-- **`SC.Actions.ActionExecutor`** - Centralized action execution system
+- **`Statifier.Actions.LogAction`** - SCXML `<log>` element implementation for debugging
+- **`Statifier.Actions.RaiseAction`** - SCXML `<raise>` element implementation for internal events
+- **`Statifier.Actions.ActionExecutor`** - Centralized action execution system
   - **Phase tracking**: Executes actions during appropriate state entry/exit phases
   - **Mixed action support**: Handles log, raise, assign, and future action types
   - **StateChart integration**: Actions can modify state chart data model and event queues
@@ -174,13 +174,13 @@ The implementation follows a clean **Parse → Validate → Optimize** architect
 
 ```elixir
 # 1. Parse Phase: XML → Document structure
-{:ok, document} = SC.Parser.SCXML.parse(xml_string)
+{:ok, document} = Statifier.Parser.SCXML.parse(xml_string)
 
 # 2. Validate + Optimize Phase: Check semantics + build lookup maps
-{:ok, optimized_document, warnings} = SC.Validator.validate(document)
+{:ok, optimized_document, warnings} = Statifier.Validator.validate(document)
 
 # 3. Interpret Phase: Use optimized document for runtime
-{:ok, state_chart} = SC.Interpreter.initialize(optimized_document)
+{:ok, state_chart} = Statifier.Interpreter.initialize(optimized_document)
 ```
 
 **Benefits:**
@@ -192,14 +192,14 @@ The implementation follows a clean **Parse → Validate → Optimize** architect
 
 ### Feature Detection and Test Infrastructure
 
-- **`SC.FeatureDetector`** - Detects SCXML features used in documents
+- **`Statifier.FeatureDetector`** - Detects SCXML features used in documents
   - Enables proper test validation by failing tests that depend on unsupported features
   - Prevents false positive test results from unsupported feature usage
   - Supports both XML string and parsed document analysis
   - Tracks feature support status (`:supported`, `:unsupported`, `:partial`)
-- **`SC.Case`** - Test case template module for SCXML testing
+- **`Statifier.Case`** - Test case template module for SCXML testing
   - Provides `test_scxml/4` function for testing state machine behavior
-  - Uses SC.Interpreter for document initialization and event processing
+  - Uses Statifier.Interpreter for document initialization and event processing
   - Supports initial configuration verification and event sequence testing
   - Used by both SCION and W3C test suites
 
@@ -207,7 +207,7 @@ The implementation follows a clean **Parse → Validate → Optimize** architect
 
 All parsed SCXML elements include precise source location information for validation error reporting:
 
-- **Element locations**: Each parsed element (`SC.Document`, `SC.State`, `SC.Transition`, `SC.DataElement`) includes a `source_location` field with line/column information
+- **Element locations**: Each parsed element (`Statifier.Document`, `Statifier.State`, `Statifier.Transition`, `Statifier.DataElement`) includes a `source_location` field with line/column information
 - **Attribute locations**: Individual attributes have dedicated location fields (e.g., `name_location`, `id_location`, `event_location`) for precise error reporting
 - **Multiline support**: Accurately tracks locations for both single-line and multiline XML element definitions
 - **SAX-based tracking**: Uses Saxy's event-driven parsing to maintain position information throughout the parsing process
@@ -230,19 +230,19 @@ This project includes comprehensive test coverage:
 
 - 127+ test files from the SCION project
 - Module naming: `SCIONTest.Category.TestNameTest` (e.g., `SCIONTest.ActionSend.Send1Test`)
-- Uses `SC.Case` for test infrastructure
+- Uses `Statifier.Case` for test infrastructure
 - Tests cover basic state machines, transitions, parallel states, history, etc.
 
 ### W3C SCXML Test Suite (`test/scxml_tests/`)
 
 - 59+ test files from W3C SCXML conformance tests
 - Module naming: `Test.StateChart.W3.Category.TestName` (e.g., `Test.StateChart.W3.Events.Test396`)
-- Uses `SC.Case` for test infrastructure
+- Uses `Statifier.Case` for test infrastructure
 - Organized by SCXML specification sections (mandatory tests)
 
 ### Parser Tests (`test/statifier/parser/scxml_test.exs`)
 
-- Unit tests for `SC.Parser.SCXML`  
+- Unit tests for `Statifier.Parser.SCXML`  
 - **Uses pattern matching** instead of multiple individual asserts for cleaner, more informative tests
 - Tests parsing of simple documents, transitions, datamodels, nested states
 - Validates error handling for invalid XML
@@ -257,7 +257,7 @@ This project includes comprehensive test coverage:
 
 ### Expression Evaluation Tests
 
-- **`test/statifier/value_evaluator_test.exs`** - Comprehensive tests for SC.ValueEvaluator module
+- **`test/statifier/value_evaluator_test.exs`** - Comprehensive tests for Statifier.ValueEvaluator module
   - Value evaluation, location resolution, assignment operations
   - Nested property access and mixed notation support
   - SCXML context integration and error handling
@@ -341,15 +341,15 @@ XML content within triple quotes uses 4-space base indentation.
 - **SCXML-compliant processing model** with proper microstep/macrostep execution, exit set computation, and LCCA algorithms
 - **Eventless transitions** - Automatic transitions without event attributes (also called NULL transitions in SCXML spec)
 - **Conditional transitions** - Full `cond` attribute support with Predicator v3.0 expression evaluation and SCXML `In()` function
-- **Assign elements** - Complete `<assign>` element support with SC.ValueEvaluator and location-based assignment
-- **Value evaluation system** - SC.ValueEvaluator module for non-boolean expression evaluation and data model operations
+- **Assign elements** - Complete `<assign>` element support with Statifier.ValueEvaluator and location-based assignment
+- **Value evaluation system** - Statifier.ValueEvaluator module for non-boolean expression evaluation and data model operations
 - **Enhanced expression evaluation** - Predicator v3.0 integration with nested property access and mixed notation support
 - **Optimal Transition Set** - SCXML-compliant transition conflict resolution where child state transitions take priority over ancestors
 - **Exit Set Computation** - W3C SCXML exit set calculation algorithm for proper state exit semantics
 - **LCCA Algorithm** - Full Least Common Compound Ancestor computation for accurate transition conflict resolution
 - **O(1 performance optimizations** via state and transition lookup maps
 - Comprehensive test suite integration (SCION + W3C) - 556 tests, 85 regression tests, 92.9% coverage
-- Test infrastructure with SC.Case module using interpreter
+- Test infrastructure with Statifier.Case module using interpreter
 - **Pattern matching in tests** instead of multiple individual assertions
 - XML parsing with namespace support and precise source location tracking
 - Error handling for malformed XML
@@ -429,7 +429,7 @@ The phased approach systematically adds SCXML features:
 - **Phase 3**: 435+ tests passing, comprehensive SCXML implementation
 - **Final Goal**: 98%+ test coverage, industry-leading SCXML compliance
 
-The implementation plan transforms SC from a basic state machine library into a comprehensive, production-ready SCXML engine with industry-leading test coverage and W3C compliance.
+The implementation plan transforms Statifier from a basic state machine library into a comprehensive, production-ready SCXML engine with industry-leading test coverage and W3C compliance.
 
 - Always refer to state machines as state charts
 - Always run 'mix format' after writing an Elixir file.

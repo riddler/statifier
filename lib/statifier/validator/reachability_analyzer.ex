@@ -10,8 +10,8 @@ defmodule Statifier.Validator.ReachabilityAnalyzer do
   @doc """
   Validate that all states except the initial state are reachable.
   """
-  @spec validate_reachability(Statifier.Validator.validation_result(), SC.Document.t()) ::
-          SC.Validator.validation_result()
+  @spec validate_reachability(Statifier.Validator.validation_result(), Statifier.Document.t()) ::
+          Statifier.Validator.validation_result()
   def validate_reachability(%Statifier.Validator{} = result, %Statifier.Document{} = document) do
     all_states = Utils.collect_all_states(document)
     initial_state = Utils.get_initial_state(document)
@@ -35,7 +35,7 @@ defmodule Statifier.Validator.ReachabilityAnalyzer do
   @doc """
   Find all states reachable from a given starting state.
   """
-  @spec find_reachable_states(String.t(), SC.Document.t(), MapSet.t(String.t())) ::
+  @spec find_reachable_states(String.t(), Statifier.Document.t(), MapSet.t(String.t())) ::
           MapSet.t(String.t())
   def find_reachable_states(state_id, document, visited) do
     if MapSet.member?(visited, state_id) do

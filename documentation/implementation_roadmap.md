@@ -31,7 +31,7 @@ Analysis of 444 tests (294 passing, 150 failing) reveals that **13 missing SCXML
 
 ### Data Structure Extensions
 
-**SC.State** needs:
+**Statifier.State** needs:
 
 ```elixir
 defstruct [
@@ -41,7 +41,7 @@ defstruct [
 ]
 ```
 
-**SC.Transition** needs:
+**Statifier.Transition** needs:
 
 ```elixir
 defstruct [
@@ -51,7 +51,7 @@ defstruct [
 ]
 ```
 
-**New SC.Action** struct:
+**New Statifier.Action** struct:
 
 ```elixir
 defstruct [
@@ -63,7 +63,7 @@ defstruct [
 
 ### Parser Extensions
 
-**SC.Parser.SCXML.Handler** needs cases for:
+**Statifier.Parser.SCXML.Handler** needs cases for:
 
 - `onentry` → collect child actions, add to state
 - `onexit` → collect child actions, add to state  
@@ -74,7 +74,7 @@ defstruct [
 
 ### Interpreter Enhancements
 
-**SC.Interpreter** execution flow changes:
+**Statifier.Interpreter** execution flow changes:
 
 ```elixir
 # During state transition execution:
@@ -86,7 +86,7 @@ defstruct [
 
 ### New Modules Required
 
-**SC.ActionExecutor**:
+**Statifier.ActionExecutor**:
 
 ```elixir
 def execute_actions(actions, context) do
@@ -102,7 +102,7 @@ def execute_single_action(%Statifier.Action{type: :log, expr: expr}, context) do
 end
 ```
 
-**SC.ExpressionEvaluator** (Phase 2):
+**Statifier.ExpressionEvaluator** (Phase 2):
 
 ```elixir
 def evaluate(expr, data_model) do
@@ -111,7 +111,7 @@ def evaluate(expr, data_model) do
 end
 ```
 
-**SC.DataModel** (Phase 2):
+**Statifier.DataModel** (Phase 2):
 
 ```elixir
 def new(initial_data \\ %{}) do
@@ -165,7 +165,7 @@ end
 
 **Weeks 3-4**: Data model integration  
 
-- Implement SC.DataModel for variable storage
+- Implement Statifier.DataModel for variable storage
 - Add assign action support
 - Integrate with expression evaluator
 

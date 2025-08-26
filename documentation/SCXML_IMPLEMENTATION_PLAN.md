@@ -279,7 +279,7 @@ end
 
 ### Feature Detection Integration
 
-Update `SC.FeatureDetector.feature_registry/0` to reflect new capabilities:
+Update `Statifier.FeatureDetector.feature_registry/0` to reflect new capabilities:
 
 ```elixir
 def feature_registry do
@@ -386,9 +386,9 @@ end
 
 ## Conclusion
 
-This implementation plan transforms SC from a **basic state machine library** into a **comprehensive, production-ready SCXML engine** with industry-leading test coverage and W3C compliance. The phased approach ensures continuous delivery of value while managing implementation complexity and risk.
+This implementation plan transforms Statifier from a **basic state machine library** into a **comprehensive, production-ready SCXML engine** with industry-leading test coverage and W3C compliance. The phased approach ensures continuous delivery of value while managing implementation complexity and risk.
 
-The expected outcome is one of the most complete and well-tested SCXML implementations available in any programming language, positioning SC as the definitive choice for state machine requirements in Elixir applications.
+The expected outcome is one of the most complete and well-tested SCXML implementations available in any programming language, positioning Statifier as the definitive choice for state machine requirements in Elixir applications.
 
 ---
 

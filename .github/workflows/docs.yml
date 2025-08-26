@@ -77,10 +77,10 @@ jobs:
       run: |
         echo "Checking for API consistency between CLAUDE.md and README.md..."
         
-        # Check that both files reference SC.Validator (not SC.Document.Validator)
-        if grep -q "SC\.Document\.Validator" CLAUDE.md README.md; then
-          echo "❌ Found outdated SC.Document.Validator references - should be SC.Validator"
-          grep -n "SC\.Document\.Validator" CLAUDE.md README.md || true
+        # Check that both files reference Statifier.Validator (not Statifier.Document.Validator)
+        if grep -q "Statifier\.Document\.Validator" CLAUDE.md README.md; then
+          echo "❌ Found outdated Statifier.Document.Validator references - should be Statifier.Validator"
+          grep -n "Statifier\.Document\.Validator" CLAUDE.md README.md || true
           exit 1
         fi
         
