@@ -1,63 +1,14 @@
-# Custom Statifier files
-
-# Downloaded/installed as part of setup - OS specific
-bin/utils/oq
-
-
-# Compiled source
-*.com
-*.class
-*.dll
-*.exe
-*.o
-*.so
-
-# Packages
-#
-# It's better to unpack these files and commit the raw source
-# git has its own built in compression methods
-*.7z
-*.dmg
-*.gz
-*.iso
-*.jar
-*.rar
-*.tar
-*.zip
-
-# Logs and databases
-*.log
-*.sql
-*.sqlite
-
-# OS generated files #
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Editor-made files
-*.swp
-
-# Elixir
-
 # The directory Mix will write compiled artifacts to.
-*-ex/_build/
+/_build/
 
 # If you run "mix test --cover", coverage assets end up here.
-*-ex/cover/
+/cover/
 
 # The directory Mix downloads your dependencies sources to.
-*-ex/deps/
+/deps/
 
-# Where 3rd-party dependencies like ExDoc output generated docs.
-*-ex/doc/
-
-# Ignore .fetch files in case you like to edit your project deps locally.
-*-ex/.fetch
+# Where third-party dependencies like ExDoc output generated docs.
+/doc/
 
 # If the VM crashes, it generates a dump, let's ignore it too.
 erl_crash.dump
@@ -65,21 +16,14 @@ erl_crash.dump
 # Also ignore archive artifacts (built via "mix archive.build").
 *.ez
 
-# If NPM crashes, it generates a log, let's ignore it too.
-npm-debug.log
+# Ignore package tarball (built via "mix hex.build").
+statifier-*.tar
 
-# The directory NPM downloads your dependencies sources to.
-*-ex/assets/node_modules/
+# Temporary files, for example, from tests.
+/tmp/
 
-# Since we are building assets from assets/,
-# we ignore priv/static. You may want to comment
-# this depending on your deployment strategy.
-*-ex/priv/static/
+# Dialyzer PLT files
+/priv/plts/
 
-# Files matching config/*.secret.exs pattern contain sensitive
-# data and you should not commit them into version control.
-#
-# Alternatively, you may comment the line below and commit the
-# secrets files as long as you replace their contents by environment
-# variables.
-*-ex/config/*.secret.exs
+# Keep granted permissions local to the person
+.claude
