@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & Discussions
+    url: https://github.com/riddler/statifier/discussions
+    about: Please ask and answer questions in GitHub Discussions
+  - name: SCXML Specification
+    url: https://www.w3.org/TR/scxml/
+    about: Reference the W3C SCXML specification
