@@ -9,6 +9,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+#### If/Else/ElseIf Conditional Action Support
+
+- **`<if>` Action Support**: Full implementation of SCXML `<if>` elements with conditional execution
+  - **`Statifier.Actions.IfAction` Struct**: Represents if/elseif/else conditional blocks
+  - **Nested Action Execution**: Supports multiple actions within each conditional block
+  - **Expression Evaluation**: Uses Statifier.Evaluator for condition evaluation
+  - **ActionExecutor Integration**: Seamlessly integrates with existing action execution framework
+  - **Complex Conditionals**: Support for if/elseif/else chains with proper precedence
+
+- **Parser Extensions for Conditional Actions**: Extended SCXML parser to handle conditional elements
+  - **If/ElseIf/Else Parsing**: Complete parsing support for conditional action blocks
+  - **StateStack Integration**: Proper conditional block handling in parsing state stack
+  - **Mixed Action Support**: Parse conditional actions alongside log/raise/assign actions
+  - **Location Tracking**: Complete source location tracking for debugging conditional blocks
+
+#### Test Coverage Improvements
+
+- **90.8% Overall Coverage**: Comprehensive test coverage improvements through targeted edge case testing
+  - **StateStack Coverage**: Improved from 72.7% to 95.8% (+23.1% - biggest impact module)
+  - **ActionExecutor Edge Cases**: Added comprehensive error handling and edge case tests  
+  - **Interpreter Coverage**: Added simple edge case tests avoiding duplication with existing functionality
+  - **Handler Coverage**: Added unknown element handling and parsing edge case tests
+  - **4 New Test Files**: Comprehensive coverage tests for critical modules
+
+- **Enhanced LogAction**: Improved string evaluation and error handling
+  - **Evaluator Integration**: Uses Statifier.Evaluator for consistent expression handling
+  - **String Validation**: Proper Unicode string validation and safe logging
+  - **Fallback Parsing**: Graceful fallback for quoted string parsing
+  - **Error Recovery**: Continues execution even with invalid expressions
+
 #### Architecture Improvements
 
 - **Unified `Statifier.Evaluator` Module**: Consolidated `ConditionEvaluator` and `ValueEvaluator` into single module
@@ -30,6 +60,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Action Execution Architecture
+
+- **ActionExecutor Delegation Pattern**: Improved action execution through proper delegation
+  - **Public `execute_single_action/2`**: Made function public for IfAction integration
+  - **Action Delegation**: ActionExecutor now properly delegates to action.execute/2 methods
+  - **Centralized Execution**: All actions now execute through consistent ActionExecutor interface
+  - **Better Separation of Concerns**: Each action type handles its own execution logic
+
+- **Code Quality Improvements**: Enhanced code maintainability and compliance
+  - **Zero Credo Issues**: All static analysis issues resolved across the codebase
+  - **Unused Variable Cleanup**: Fixed unused variable warnings in Handler and ElementBuilder
+  - **Alias Ordering**: Proper alphabetical alias ordering in all test files
+  - **Clean Validation Pipeline**: All steps pass - format ✓ test ✓ credo ✓ dialyzer ✓
+
 #### Test Coverage Improvements
 
 - **13 New Passing Tests**: Unlocked additional test coverage through datamodel improvements
@@ -42,6 +86,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **SCION Tests**: 44 → 53 passing tests
   - **W3C Tests**: 5 → 9 passing tests
   - **Maintained Quality**: All 98 regression tests continue to pass
+
+### Examples
+
+#### If/Else/ElseIf Conditional Actions
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+  <state id="start">
+    <onentry>
+      <assign location="score" expr="85"/>
+      <if cond="score >= 90">
+        <assign location="grade" expr="'A'"/>
+        <log label="grade" expr="'Excellent work!'"/>
+      <elseif cond="score >= 80"/>
+        <assign location="grade" expr="'B'"/>
+        <log label="grade" expr="'Good job!'"/>
+      <elseif cond="score >= 70"/>
+        <assign location="grade" expr="'C'"/>
+        <log label="grade" expr="'Satisfactory'"/>
+      <else/>
+        <assign location="grade" expr="'F'"/>
+        <log label="grade" expr="'Needs improvement'"/>
+      </if>
+    </onentry>
+  </state>
+</scxml>
+```
+
+#### Nested Conditional Logic
+
+```xml
+<state id="processing">
+  <onentry>
+    <if cond="user.authenticated">
+      <if cond="user.role == 'admin'">
+        <assign location="permissions" expr="'full'"/>
+        <raise event="admin_access"/>
+      <else/>
+        <assign location="permissions" expr="'limited'"/>
+        <raise event="user_access"/>
+      </if>
+    <else/>
+      <assign location="permissions" expr="'none'"/>
+      <raise event="auth_required"/>
+    </if>
+  </onentry>
+</state>
+```
+
+#### Mixed Actions with Conditionals
+
+```xml
+<state id="validation">
+  <onentry>
+    <log label="status" expr="'Starting validation'"/>
+    <assign location="errors" expr="[]"/>
+    <if cond="data.email == null">
+      <assign location="errors[0]" expr="'Email required'"/>
+    </if>
+    <if cond="data.age < 18">
+      <assign location="errors[1]" expr="'Must be 18 or older'"/>
+    </if>
+    <if cond="errors.length > 0">
+      <raise event="validation_failed"/>
+    <else/>
+      <raise event="validation_passed"/>
+    </if>
+  </onentry>
+</state>
+```
 
 ## [1.1.0] 2025-08-26
 
