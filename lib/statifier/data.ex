@@ -1,6 +1,9 @@
-defmodule Statifier.DataElement do
+defmodule Statifier.Data do
   @moduledoc """
   Represents a data element in an SCXML datamodel.
+
+  Corresponds to SCXML `<data>` elements which define variables in the state machine's datamodel.
+  Each data element has an `id` (required) and optional `expr` or `src` for initialization.
   """
 
   defstruct [

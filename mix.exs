@@ -3,7 +3,7 @@ defmodule Statifier.MixProject do
 
   @app :statifier
   @version "1.1.0"
-  @description "SCXML state machines for Elixir with W3C compliance"
+  @description "StateCharts for Elixir with W3C compliance"
   @source_url "https://github.com/riddler/statifier"
   @deps [
     # Documentation (split out to reduce compile time in dev/test)

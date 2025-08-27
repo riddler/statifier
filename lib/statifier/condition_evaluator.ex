@@ -42,8 +42,8 @@ defmodule Statifier.ConditionEvaluator do
   def evaluate_condition(nil, _context), do: true
 
   def evaluate_condition(compiled_cond, context) when is_map(context) do
-    # If context has configuration/current_event, build SCXML context
-    # Otherwise, use context directly for predicator
+    # Context should be pre-built by Datamodel.build_condition_context
+    # For backward compatibility, check if we need to build SCXML context
     eval_context =
       if has_scxml_context?(context) do
         build_scxml_context(context)
@@ -51,10 +51,11 @@ defmodule Statifier.ConditionEvaluator do
         context
       end
 
-    # Provide SCXML functions via v2.0 functions option
-    scxml_functions = build_scxml_functions(context)
+    # Always provide SCXML functions through Predicator's functions parameter
+    # The In() function needs to be provided this way, not as a context variable
+    functions = build_functions_with_in_support(context)
 
-    case Predicator.evaluate(compiled_cond, eval_context, functions: scxml_functions) do
+    case Predicator.evaluate(compiled_cond, eval_context, functions: functions) do
       {:ok, result} when is_boolean(result) -> result
       {:ok, _non_boolean} -> false
       {:error, _reason} -> false
@@ -65,7 +66,8 @@ defmodule Statifier.ConditionEvaluator do
 
   # Check if context has SCXML-specific keys
   defp has_scxml_context?(context) do
-    Map.has_key?(context, :configuration) or Map.has_key?(context, :current_event)
+    Map.has_key?(context, :configuration) or Map.has_key?(context, :current_event) or
+      Map.has_key?(context, "configuration") or Map.has_key?(context, "current_event")
   end
 
   @doc """
@@ -80,29 +82,47 @@ defmodule Statifier.ConditionEvaluator do
     |> add_scxml_functions()
   end
 
-  defp add_current_states(ctx, %{configuration: %Configuration{active_states: states}}) do
-    state_ids = MapSet.to_list(states)
-    Map.put(ctx, "_current_states", state_ids)
+  defp add_current_states(ctx, context) do
+    config = context[:configuration] || context["configuration"]
+
+    case config do
+      %Configuration{active_states: states} ->
+        state_ids = MapSet.to_list(states)
+        Map.put(ctx, "_current_states", state_ids)
+
+      _invalid_config ->
+        Map.put(ctx, "_current_states", [])
+    end
   end
 
-  defp add_current_states(ctx, _context), do: Map.put(ctx, "_current_states", [])
+  defp add_event_data(ctx, context) do
+    event = context[:current_event] || context["current_event"]
 
-  defp add_event_data(ctx, %{current_event: event}) when not is_nil(event) do
-    event_ctx = %{
-      "name" => event.name || "",
-      "data" => event.data || %{}
-    }
+    case event do
+      nil ->
+        Map.put(ctx, "_event", %{"name" => "", "data" => %{}})
 
-    Map.put(ctx, "_event", event_ctx)
+      event ->
+        event_ctx = %{
+          "name" => event.name || "",
+          "data" => event.data || %{}
+        }
+
+        Map.put(ctx, "_event", event_ctx)
+    end
   end
 
-  defp add_event_data(ctx, _context), do: Map.put(ctx, "_event", %{"name" => "", "data" => %{}})
+  defp add_data_model(ctx, context) do
+    data = context[:data_model] || context["datamodel"] || context[:datamodel] || %{}
 
-  defp add_data_model(ctx, %{data_model: data}) when is_map(data) do
-    Map.merge(ctx, data)
+    case data do
+      data when is_map(data) ->
+        Map.merge(ctx, data)
+
+      _invalid_data ->
+        ctx
+    end
   end
-
-  defp add_data_model(ctx, _context), do: ctx
 
   defp add_scxml_functions(ctx) do
     # Add SCXML built-in functions as variables that can be used in expressions
@@ -139,5 +159,31 @@ defmodule Statifier.ConditionEvaluator do
            {:ok, result}
          end}
     }
+  end
+
+  @doc """
+  Build functions map with proper In() function handling.
+
+  This handles both new Datamodel context (with In function) and legacy contexts.
+  Used by both ConditionEvaluator and ValueEvaluator for consistency.
+  """
+  @spec build_functions_with_in_support(map()) :: %{String.t() => {integer(), function()}}
+  def build_functions_with_in_support(context) do
+    if Map.has_key?(context, "In") and is_function(context["In"]) do
+      # Use the In function from the context (provided by Datamodel)
+      in_function = context["In"]
+
+      %{
+        "In" =>
+          {1,
+           fn [state_id], _eval_context ->
+             result = in_function.(state_id)
+             {:ok, result}
+           end}
+      }
+    else
+      # Fallback to providing In() via Predicator functions for backward compatibility
+      build_scxml_functions(context)
+    end
   end
 end

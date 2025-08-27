@@ -3,7 +3,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
   Builds SCXML elements from XML attributes and location information.
 
   This module handles the creation of Statifier.Document, Statifier.State, Statifier.Transition,
-  and Statifier.DataElement structs with proper attribute parsing and location tracking.
+  and Statifier.Data structs with proper attribute parsing and location tracking.
   """
 
   alias Statifier.{
@@ -206,9 +206,9 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
   end
 
   @doc """
-  Build an Statifier.DataElement from XML attributes and location info.
+  Build an Statifier.Data from XML attributes and location info.
   """
-  @spec build_data_element(list(), map(), String.t(), map()) :: Statifier.DataElement.t()
+  @spec build_data_element(list(), map(), String.t(), map()) :: Statifier.Data.t()
   def build_data_element(attributes, location, xml_string, element_counts) do
     attrs_map = attributes_to_map(attributes)
     document_order = LocationTracker.document_order(element_counts)
@@ -218,7 +218,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
     expr_location = LocationTracker.attribute_location(xml_string, "expr", location)
     src_location = LocationTracker.attribute_location(xml_string, "src", location)
 
-    %Statifier.DataElement{
+    %Statifier.Data{
       id: get_attr_value(attrs_map, "id"),
       expr: get_attr_value(attrs_map, "expr"),
       src: get_attr_value(attrs_map, "src"),

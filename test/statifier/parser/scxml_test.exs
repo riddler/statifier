@@ -76,12 +76,12 @@ defmodule Statifier.Parser.SCXMLTest do
               %Document{
                 datamodel: "elixir",
                 datamodel_elements: [
-                  %Statifier.DataElement{
+                  %Statifier.Data{
                     id: "counter",
                     expr: "0",
                     src: nil
                   },
-                  %Statifier.DataElement{
+                  %Statifier.Data{
                     id: "name",
                     expr: nil
                   }
@@ -252,7 +252,7 @@ defmodule Statifier.Parser.SCXMLTest do
                   }
                 ],
                 datamodel_elements: [
-                  %Statifier.DataElement{
+                  %Statifier.Data{
                     expr: nil,
                     src: nil
                   }
@@ -311,8 +311,8 @@ defmodule Statifier.Parser.SCXMLTest do
               %Document{
                 document_order: 1,
                 datamodel_elements: [
-                  %Statifier.DataElement{document_order: 3},
-                  %Statifier.DataElement{document_order: 4}
+                  %Statifier.Data{document_order: 3},
+                  %Statifier.Data{document_order: 4}
                 ],
                 states: [
                   %Statifier.State{

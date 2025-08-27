@@ -31,7 +31,7 @@ defmodule Statifier.Document do
           version: String.t() | nil,
           xmlns: String.t() | nil,
           states: [Statifier.State.t()],
-          datamodel_elements: [Statifier.DataElement.t()],
+          datamodel_elements: [Statifier.Data.t()],
           # Lookup maps for O(1) access
           state_lookup: %{String.t() => Statifier.State.t()},
           transitions_by_source: %{String.t() => [Statifier.Transition.t()]},

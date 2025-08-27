@@ -10,6 +10,7 @@ defmodule Statifier.Interpreter do
     Actions.ActionExecutor,
     ConditionEvaluator,
     Configuration,
+    Datamodel,
     Document,
     Event,
     StateChart,
@@ -27,6 +28,10 @@ defmodule Statifier.Interpreter do
       {:ok, optimized_document, warnings} ->
         initial_config = get_initial_configuration(optimized_document)
         state_chart = StateChart.new(optimized_document, initial_config)
+
+        # Initialize data model from datamodel_elements
+        datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
+        state_chart = StateChart.update_data_model(state_chart, datamodel)
 
         # Execute onentry actions for initial states and queue any raised events
         initial_states = MapSet.to_list(Configuration.active_states(initial_config))
@@ -266,13 +271,13 @@ defmodule Statifier.Interpreter do
     # Get all currently active states (including ancestors)
     active_states_with_ancestors = StateChart.active_states(state_chart)
 
-    # Build evaluation context for conditions
-    evaluation_context = %{
-      configuration: state_chart.configuration,
-      current_event: event_or_nil,
-      # Use event data as data model for now, or empty map for eventless
-      data_model: if(event_or_nil, do: event_or_nil.data || %{}, else: %{})
-    }
+    # Build evaluation context for conditions using Datamodel
+    evaluation_context =
+      Datamodel.build_condition_context(state_chart.data_model, %{
+        "configuration" => state_chart.configuration,
+        "current_event" => event_or_nil,
+        "In" => fn state_id -> Configuration.active?(state_chart.configuration, state_id) end
+      })
 
     # Find transitions from all active states (including ancestors) that match the event/NULL and condition
     active_states_with_ancestors

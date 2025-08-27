@@ -71,7 +71,7 @@ Also use this initial Elixir implementation as reference: <https://github.com/ca
   - Built via `Document.build_lookup_maps/1` during validation phase
 - **`Statifier.State`** - Individual state with `id`, optional `initial` state, nested `states` list, and `transitions` list
 - **`Statifier.Transition`** - State transitions with optional `event`, `target`, and `cond` attributes
-- **`Statifier.DataElement`** - Datamodel elements with required `id` and optional `expr` and `src` attributes
+- **`Statifier.Data`** - Datamodel elements with required `id` and optional `expr` and `src` attributes
 
 ### Parsers (Parse Phase)
 
@@ -207,7 +207,7 @@ The implementation follows a clean **Parse → Validate → Optimize** architect
 
 All parsed SCXML elements include precise source location information for validation error reporting:
 
-- **Element locations**: Each parsed element (`Statifier.Document`, `Statifier.State`, `Statifier.Transition`, `Statifier.DataElement`) includes a `source_location` field with line/column information
+- **Element locations**: Each parsed element (`Statifier.Document`, `Statifier.State`, `Statifier.Transition`, `Statifier.Data`) includes a `source_location` field with line/column information
 - **Attribute locations**: Individual attributes have dedicated location fields (e.g., `name_location`, `id_location`, `event_location`) for precise error reporting
 - **Multiline support**: Accurately tracks locations for both single-line and multiline XML element definitions
 - **SAX-based tracking**: Uses Saxy's event-driven parsing to maintain position information throughout the parsing process
@@ -332,7 +332,7 @@ XML content within triple quotes uses 4-space base indentation.
 
 ✅ **Completed:**
 
-- Core data structures (Document, State, Transition, DataElement) with location tracking
+- Core data structures (Document, State, Transition, Data) with location tracking
 - SCXML parser using Saxy SAX parser for accurate position tracking
 - **Parse → Validate → Optimize architecture** with clean separation of concerns
 - Complete interpreter infrastructure (Interpreter, StateChart, Configuration, Event, Validator)  

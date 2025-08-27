@@ -367,7 +367,7 @@ mix test test/statifier/parser/scxml_test.exs
 - **`Statifier.Document`** - Root SCXML document with states, metadata, and O(1) lookup maps
 - **`Statifier.State`** - Individual states with transitions and hierarchical nesting support
 - **`Statifier.Transition`** - State transitions with events and targets
-- **`Statifier.DataElement`** - Datamodel elements with expressions
+- **`Statifier.Data`** - Datamodel elements with expressions
 
 ### Architecture Flow
 

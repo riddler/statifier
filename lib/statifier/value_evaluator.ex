@@ -69,9 +69,10 @@ defmodule Statifier.ValueEvaluator do
       end
 
     # Provide SCXML functions via v3.0 functions option
-    scxml_functions = ConditionEvaluator.build_scxml_functions(context)
+    # Handle In() function like ConditionEvaluator
+    functions = ConditionEvaluator.build_functions_with_in_support(context)
 
-    case Predicator.evaluate(compiled_expr, eval_context, functions: scxml_functions) do
+    case Predicator.evaluate(compiled_expr, eval_context, functions: functions) do
       {:ok, value} -> {:ok, value}
       {:error, reason} -> {:error, reason}
     end
@@ -98,6 +99,7 @@ defmodule Statifier.ValueEvaluator do
         context
       end
 
+    # Note: context_location doesn't need functions parameter, so no need to handle In() here
     case Predicator.context_location(location_expr, eval_context) do
       {:ok, path_components} -> {:ok, path_components}
       {:error, reason} -> {:error, reason}
@@ -191,9 +193,10 @@ defmodule Statifier.ValueEvaluator do
         context
       end
 
-    scxml_functions = ConditionEvaluator.build_scxml_functions(context)
+    # Handle In() function like in evaluate_value
+    functions = ConditionEvaluator.build_functions_with_in_support(context)
 
-    case Predicator.evaluate(expression_or_instructions, eval_context, functions: scxml_functions) do
+    case Predicator.evaluate(expression_or_instructions, eval_context, functions: functions) do
       {:ok, value} -> {:ok, value}
       {:error, reason} -> {:error, reason}
     end
