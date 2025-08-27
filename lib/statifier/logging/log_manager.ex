@@ -44,7 +44,7 @@ defmodule Statifier.Logging.LogManager do
   """
 
   alias Statifier.{Configuration, StateChart}
-  alias Statifier.Logging.Adapter
+  alias Statifier.Logging.{Adapter, ElixirLoggerAdapter}
 
   @levels [:trace, :debug, :info, :warn, :error]
 
@@ -192,5 +192,110 @@ defmodule Statifier.Logging.LogManager do
     configured_index = Enum.find_index(@levels, &(&1 == configured_level)) || 0
     log_index = Enum.find_index(@levels, &(&1 == log_level)) || 0
     log_index >= configured_index
+  end
+
+  @doc """
+  Configure logging for a StateChart from initialization options.
+
+  This function is called by `Interpreter.initialize/2` to set up logging
+  based on provided options, application configuration, or environment defaults.
+
+  ## Options
+
+  * `:log_adapter` - Logging adapter configuration. Can be:
+    * An adapter struct (e.g., `%TestAdapter{max_entries: 100}`)
+    * A tuple `{AdapterModule, opts}` (e.g., `{TestAdapter, [max_entries: 50]}`)
+    * If not provided, uses environment-specific defaults
+
+  * `:log_level` - Minimum log level (`:trace`, `:debug`, `:info`, `:warn`, `:error`)
+    * Defaults to `:debug` in test environment, `:info` otherwise
+
+  ## Examples
+
+      # Use with runtime options
+      state_chart = LogManager.configure_from_options(state_chart, [
+        log_adapter: {TestAdapter, [max_entries: 100]},
+        log_level: :debug
+      ])
+
+      # Use with application configuration set
+      state_chart = LogManager.configure_from_options(state_chart, [])
+
+  """
+  @spec configure_from_options(StateChart.t(), keyword()) :: StateChart.t()
+  def configure_from_options(state_chart, opts) when is_list(opts) do
+    adapter_config = get_adapter_config(opts)
+    log_level = get_log_level(opts)
+
+    case build_adapter(adapter_config) do
+      {:ok, adapter} ->
+        StateChart.configure_logging(state_chart, adapter, log_level)
+
+      {:error, _reason} ->
+        # Fall back to default adapter if configuration fails
+        default_adapter = get_default_adapter()
+        StateChart.configure_logging(state_chart, default_adapter, log_level)
+    end
+  end
+
+  # Private configuration helper functions
+
+  # Get adapter configuration from options, application config, or environment default
+  defp get_adapter_config(opts) do
+    case Keyword.get(opts, :log_adapter) do
+      nil ->
+        # Check application configuration
+        case Application.get_env(:statifier, :default_log_adapter) do
+          nil -> get_default_adapter_config()
+          config -> config
+        end
+
+      config ->
+        config
+    end
+  end
+
+  # Get log level from options, application config, or environment default
+  defp get_log_level(opts) do
+    case Keyword.get(opts, :log_level) do
+      nil ->
+        # Check application configuration
+        case Application.get_env(:statifier, :default_log_level) do
+          nil -> get_default_log_level()
+          level -> level
+        end
+
+      level ->
+        level
+    end
+  end
+
+  # Build adapter from configuration (struct or {module, opts} tuple)
+  defp build_adapter(adapter_struct) when is_struct(adapter_struct) do
+    {:ok, adapter_struct}
+  end
+
+  defp build_adapter({module, opts}) when is_atom(module) and is_list(opts) do
+    adapter = struct!(module, opts)
+    {:ok, adapter}
+  rescue
+    e -> {:error, "Failed to build adapter #{inspect(module)}: #{Exception.message(e)}"}
+  end
+
+  defp build_adapter(invalid) do
+    {:error, "Invalid adapter configuration: #{inspect(invalid)}"}
+  end
+
+  # Default configuration - ElixirLoggerAdapter is always the default
+  defp get_default_adapter_config do
+    {ElixirLoggerAdapter, []}
+  end
+
+  defp get_default_adapter do
+    %ElixirLoggerAdapter{}
+  end
+
+  defp get_default_log_level do
+    :info
   end
 end

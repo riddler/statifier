@@ -35,6 +35,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Configuration Helpers**: `configure_logging/3` and `set_log_level/2` functions for easy setup
   - **Seamless Integration**: Logging works with existing StateChart lifecycle and event processing
 
+#### Logging Configuration System
+
+- **Enhanced `Interpreter.initialize/2`**: Comprehensive logging configuration support during state chart initialization
+  - **Runtime Configuration Options**: Accept `:log_adapter` and `:log_level` options via keyword list
+  - **Adapter Configuration Flexibility**: Support for direct adapter structs or `{Module, opts}` tuples
+  - **Backward Compatibility**: Existing `initialize/1` calls continue to work with sensible defaults
+  - **Comprehensive Documentation**: Detailed examples and usage patterns in function documentation
+
+- **Centralized Configuration Logic**: All configuration logic consolidated in `LogManager.configure_from_options/2`
+  - **Configuration Precedence**: Runtime options > Application config > Environment defaults
+  - **Application Configuration Support**: Integration with `Application.get_env/3` for system-wide settings
+  - **Robust Error Handling**: Graceful fallback to ElixirLoggerAdapter on invalid configurations
+  - **Validation and Safety**: Comprehensive configuration validation with detailed error messages
+
+- **Production-Ready Defaults**: Sensible defaults that work across all environments
+  - **ElixirLoggerAdapter Default**: Always the base default for robust logging in all environments
+  - **Test Environment Configuration**: TestAdapter configured via `test_helper.exs` for clean test output
+  - **Flexible Fallback Strategy**: Invalid configurations always fall back to most robust adapter
+  - **Environment Independence**: No dependency on `Mix.env()` or custom environment detection
+
+- **Comprehensive Configuration Testing**: 12 dedicated tests covering all configuration scenarios
+  - **Runtime Configuration Tests**: Verification of all option types and combinations
+  - **Application Configuration Tests**: Testing precedence and override behavior
+  - **Error Handling Tests**: Validation of graceful fallback for invalid configurations
+  - **Integration Tests**: End-to-end testing of configuration system with state chart initialization
+
 ### Examples
 
 #### Core Logging Infrastructure
@@ -91,6 +117,50 @@ defmodule MyStateMachineTest do
     assert logs |> hd() |> Map.get(:metadata) |> Map.get(:current_state) == ["processing"]
   end
 end
+```
+
+#### Logging Configuration System
+
+```elixir
+# Use default configuration (ElixirLoggerAdapter, :info level)
+{:ok, state_chart} = Interpreter.initialize(document)
+
+# Configure with runtime options
+{:ok, state_chart} = Interpreter.initialize(document, [
+  log_adapter: {TestAdapter, [max_entries: 50]},
+  log_level: :debug
+])
+
+# Configure with direct adapter struct
+adapter = %TestAdapter{max_entries: 100}
+{:ok, state_chart} = Interpreter.initialize(document, 
+  log_adapter: adapter,
+  log_level: :trace
+)
+
+# Configure via application environment (in config files or test_helper.exs)
+Application.put_env(:statifier, :default_log_adapter, {TestAdapter, [max_entries: 200]})
+Application.put_env(:statifier, :default_log_level, :warn)
+{:ok, state_chart} = Interpreter.initialize(document)  # Uses application config
+```
+
+#### Configuration Precedence Examples
+
+```elixir
+# Application configuration
+Application.put_env(:statifier, :default_log_adapter, {TestAdapter, [max_entries: 300]})
+Application.put_env(:statifier, :default_log_level, :error)
+
+# Runtime options override application config
+{:ok, state_chart} = Interpreter.initialize(document, [
+  log_adapter: {ElixirLoggerAdapter, []},  # Overrides TestAdapter
+  log_level: :info                         # Overrides :error
+])
+
+# Invalid configurations fall back gracefully
+{:ok, state_chart} = Interpreter.initialize(document, [
+  log_adapter: {NonExistentModule, []}     # Falls back to ElixirLoggerAdapter
+])
 ```
 
 ## [1.2.0] 2025-08-27
