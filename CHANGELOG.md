@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Architecture Improvements
+
+- **Unified `Statifier.Evaluator` Module**: Consolidated `ConditionEvaluator` and `ValueEvaluator` into single module
+  - **Single Entry Point**: One module for all expression evaluation (conditions and values)
+  - **Improved Maintainability**: Eliminated code duplication between evaluator modules
+  - **Future Extensibility**: Better prepared for pluggable datamodel architectures (ECMAScript, XPath)
+  - **Consistent API**: Unified function signatures and error handling patterns
+
+- **Enhanced `Statifier.Datamodel` Module**: Improved data model operations and separation of concerns
+  - **`put_in_path/3` Function**: Moved from Evaluator to Datamodel for better architecture
+  - **Improved Error Handling**: Returns `{:ok, result} | {:error, reason}` instead of raising exceptions
+  - **Type Safety**: Proper `Datamodel.t()` typing throughout the codebase
+  - **Data Model Operations**: Centralized location for all data model manipulation logic
+
+- **Feature Detection Updates**: Enhanced SCXML feature tracking for better test validation
+  - **Datamodel Support**: Marked `:datamodel` and `:data_elements` as `:supported` in feature registry
+  - **Accurate Test Results**: Prevents false test failures from unsupported feature detection
+  - **Better Compliance Tracking**: Improved visibility into SCXML feature implementation status
+
+### Changed
+
+#### Test Coverage Improvements
+
+- **13 New Passing Tests**: Unlocked additional test coverage through datamodel improvements
+  - **9 SCION Tests**: Including assign actions, current small step assignments, data initialization
+  - **4 W3C Tests**: Including executable content evaluation, foreach loops, conditional execution
+  - **Test Categories**: `assign/`, `assign_current_small_step/`, `data/`, `foreach/`, `if_else/`
+  - **Overall Progress**: Improved from 48/184 to 61/184 total tests passing (33% compliance)
+
+- **Updated Test Baseline**: Added new passing tests to regression test suite
+  - **SCION Tests**: 44 → 53 passing tests
+  - **W3C Tests**: 5 → 9 passing tests
+  - **Maintained Quality**: All 98 regression tests continue to pass
+
 ## [1.1.0] 2025-08-26
 
 ### Added
