@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.0] 2025-08-27
-
 ### Added
 
 #### Core Logging Infrastructure
@@ -36,6 +34,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Logging Fields**: Added `log_adapter`, `log_level`, and `logs` fields to StateChart struct
   - **Configuration Helpers**: `configure_logging/3` and `set_log_level/2` functions for easy setup
   - **Seamless Integration**: Logging works with existing StateChart lifecycle and event processing
+
+### Examples
+
+#### Core Logging Infrastructure
+
+```elixir
+# Configure logging with TestAdapter for testing
+adapter = %Statifier.Logging.TestAdapter{max_entries: 100}
+state_chart = StateChart.configure_logging(state_chart, adapter, :debug)
+
+# Configure logging with ElixirLoggerAdapter for production
+adapter = %Statifier.Logging.ElixirLoggerAdapter{}
+state_chart = StateChart.configure_logging(state_chart, adapter, :info)
+
+# Log messages with automatic metadata extraction
+state_chart = LogManager.info(state_chart, "Processing started", %{action_type: "initialization"})
+state_chart = LogManager.error(state_chart, "Validation failed", %{field: "email"})
+
+# Inspect captured logs in tests
+logs = TestAdapter.get_logs(state_chart)
+error_logs = TestAdapter.get_logs(state_chart, :error)
+state_chart = TestAdapter.clear_logs(state_chart)
+```
+
+#### Production Logging Integration
+
+```elixir
+# Initialize state chart with production logging
+{:ok, state_chart} = Interpreter.initialize(document)
+adapter = %Statifier.Logging.ElixirLoggerAdapter{}
+state_chart = StateChart.configure_logging(state_chart, adapter, :info)
+
+# All state chart operations now include automatic logging
+{:ok, state_chart} = Interpreter.send_event(state_chart, event)
+# Logs: [info] Processing event "start" current_state=["idle"] event="start"
+```
+
+#### Test Environment Usage
+
+```elixir
+defmodule MyStateMachineTest do
+  use ExUnit.Case
+
+  test "validates error logging during processing" do
+    adapter = %Statifier.Logging.TestAdapter{max_entries: 50}
+    state_chart = StateChart.configure_logging(state_chart, adapter, :debug)
+    
+    # ... perform operations that should log ...
+    
+    # Verify specific log messages were captured
+    logs = TestAdapter.get_logs(state_chart)
+    assert [%{level: :error, message: "Validation failed"}] = logs
+    
+    # Check metadata extraction
+    assert logs |> hd() |> Map.get(:metadata) |> Map.get(:current_state) == ["processing"]
+  end
+end
+```
+
+## [1.2.0] 2025-08-27
+
+### Added
 
 #### If/Else/ElseIf Conditional Action Support
 
@@ -116,62 +176,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Maintained Quality**: All 98 regression tests continue to pass
 
 ### Examples
-
-#### Core Logging Infrastructure
-
-```elixir
-# Configure logging with TestAdapter for testing
-adapter = %Statifier.Logging.TestAdapter{max_entries: 100}
-state_chart = StateChart.configure_logging(state_chart, adapter, :debug)
-
-# Configure logging with ElixirLoggerAdapter for production
-adapter = %Statifier.Logging.ElixirLoggerAdapter{}
-state_chart = StateChart.configure_logging(state_chart, adapter, :info)
-
-# Log messages with automatic metadata extraction
-state_chart = LogManager.info(state_chart, "Processing started", %{action_type: "initialization"})
-state_chart = LogManager.error(state_chart, "Validation failed", %{field: "email"})
-
-# Inspect captured logs in tests
-logs = TestAdapter.get_logs(state_chart)
-error_logs = TestAdapter.get_logs(state_chart, :error)
-state_chart = TestAdapter.clear_logs(state_chart)
-```
-
-#### Production Logging Integration
-
-```elixir
-# Initialize state chart with production logging
-{:ok, state_chart} = Interpreter.initialize(document)
-adapter = %Statifier.Logging.ElixirLoggerAdapter{}
-state_chart = StateChart.configure_logging(state_chart, adapter, :info)
-
-# All state chart operations now include automatic logging
-{:ok, state_chart} = Interpreter.send_event(state_chart, event)
-# Logs: [info] Processing event "start" current_state=["idle"] event="start"
-```
-
-#### Test Environment Usage
-
-```elixir
-defmodule MyStateMachineTest do
-  use ExUnit.Case
-
-  test "validates error logging during processing" do
-    adapter = %Statifier.Logging.TestAdapter{max_entries: 50}
-    state_chart = StateChart.configure_logging(state_chart, adapter, :debug)
-    
-    # ... perform operations that should log ...
-    
-    # Verify specific log messages were captured
-    logs = TestAdapter.get_logs(state_chart)
-    assert [%{level: :error, message: "Validation failed"}] = logs
-    
-    # Check metadata extraction
-    assert logs |> hd() |> Map.get(:metadata) |> Map.get(:current_state) == ["processing"]
-  end
-end
-```
 
 #### If/Else/ElseIf Conditional Actions
 
