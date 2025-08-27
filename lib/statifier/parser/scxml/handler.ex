@@ -287,7 +287,7 @@ defmodule Statifier.Parser.SCXML.Handler do
     {:ok, StateStack.push_element(updated_state, "if", if_container)}
   end
 
-  defp dispatch_element_start("elseif", attributes, location, state) do
+  defp dispatch_element_start("elseif", attributes, _location, state) do
     # Add new elseif block to current if container
     elseif_block = %{
       type: :elseif,
@@ -304,7 +304,7 @@ defmodule Statifier.Parser.SCXML.Handler do
     {:ok, StateStack.push_element(updated_state, "elseif", elseif_block)}
   end
 
-  defp dispatch_element_start("else", _attributes, location, state) do
+  defp dispatch_element_start("else", _attributes, _location, state) do
     # Add final else block to current if container
     else_block = %{
       type: :else,

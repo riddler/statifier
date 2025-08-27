@@ -1,7 +1,7 @@
 defmodule Statifier.Actions.IfActionTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.{Actions.IfAction, Actions.AssignAction, Configuration, StateChart}
+  alias Statifier.{Actions.AssignAction, Actions.IfAction, Configuration, StateChart}
 
   describe "IfAction.new/2" do
     test "creates if action with single block" do

@@ -10,6 +10,7 @@ defmodule Statifier.Actions.LogAction do
   the element has no effect.
   """
 
+  alias Statifier.Evaluator
   require Logger
 
   defstruct [:label, :expr, :source_location]
@@ -37,13 +38,63 @@ defmodule Statifier.Actions.LogAction do
   """
   @spec execute(t(), Statifier.StateChart.t()) :: Statifier.StateChart.t()
   def execute(%__MODULE__{} = log_action, state_chart) do
-    # For now, treat expr as literal value - future enhancement will add proper expression evaluation
-    message = log_action.expr || "Log"
+    # Use Evaluator to handle quoted strings and expressions properly
+    message = evaluate_log_expression(log_action.expr, state_chart)
     label = log_action.label || "Log"
 
-    Logger.info("#{label}: #{message}")
+    # Ensure message is a valid string for logging
+    safe_message =
+      case message do
+        msg when is_binary(msg) and msg != "" ->
+          case String.valid?(msg) do
+            true -> msg
+            false -> inspect(msg)
+          end
+
+        other ->
+          inspect(other)
+      end
+
+    Logger.info("#{label}: #{safe_message}")
 
     # Log actions don't modify the state chart
     state_chart
+  end
+
+  # Evaluate log expression using the Evaluator for consistent handling
+  defp evaluate_log_expression(nil, _state_chart), do: "Log"
+
+  defp evaluate_log_expression(expr, state_chart) when is_binary(expr) do
+    case Evaluator.evaluate_value(expr, state_chart) do
+      {:ok, value} ->
+        result = to_string(value)
+        if result == "", do: expr, else: result
+
+      {:error, _reason} ->
+        # Fall back to simple string parsing for basic quoted strings
+        parse_quoted_string_fallback(expr)
+    end
+  end
+
+  defp evaluate_log_expression(other, _state_chart), do: inspect(other)
+
+  # Extract quoted string parsing to reduce complexity
+  defp parse_quoted_string_fallback(expr) do
+    fallback_result =
+      case expr do
+        "'" <> rest -> extract_quoted_content(rest, "'")
+        "\"" <> rest -> extract_quoted_content(rest, "\"")
+        _other -> expr
+      end
+
+    # Ensure we always return something non-empty
+    if fallback_result == "", do: expr, else: fallback_result
+  end
+
+  defp extract_quoted_content(rest, quote) do
+    case String.split(rest, quote, parts: 2) do
+      [content, _remainder] -> if content == "", do: quote <> rest, else: content
+      _other -> quote <> rest
+    end
   end
 end
