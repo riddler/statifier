@@ -514,13 +514,13 @@ defmodule Statifier.Parser.SCXML.StateStack do
     # Add elseif block to if container and switch to it
     updated_blocks = if_container.conditional_blocks ++ [elseif_block]
     new_index = length(updated_blocks) - 1
-    
+
     updated_container = %{
-      if_container 
+      if_container
       | conditional_blocks: updated_blocks,
         current_block_index: new_index
     }
-    
+
     {:ok, %{state | stack: [{"if", updated_container} | rest]}}
   end
 
@@ -539,13 +539,13 @@ defmodule Statifier.Parser.SCXML.StateStack do
     # Add else block to if container and switch to it
     updated_blocks = if_container.conditional_blocks ++ [else_block]
     new_index = length(updated_blocks) - 1
-    
+
     updated_container = %{
-      if_container 
+      if_container
       | conditional_blocks: updated_blocks,
         current_block_index: new_index
     }
-    
+
     {:ok, %{state | stack: [{"if", updated_container} | rest]}}
   end
 
@@ -558,27 +558,28 @@ defmodule Statifier.Parser.SCXML.StateStack do
   defp add_action_to_current_block(if_container, action) do
     current_index = if_container.current_block_index
     current_blocks = if_container.conditional_blocks
-    
+
     # Get current block and add action to it
     current_block = Enum.at(current_blocks, current_index)
     updated_block = %{current_block | actions: current_block.actions ++ [action]}
-    
+
     # Replace the block in the list
     updated_blocks = List.replace_at(current_blocks, current_index, updated_block)
-    
+
     %{if_container | conditional_blocks: updated_blocks}
   end
 
   # Helper function to create IfAction from parsed if container
   defp create_if_action_from_container(if_container) do
     # Convert parsed blocks to IfAction format
-    conditional_blocks = Enum.map(if_container.conditional_blocks, fn block ->
-      %{
-        type: block.type,
-        cond: block.cond,
-        actions: block.actions
-      }
-    end)
+    conditional_blocks =
+      Enum.map(if_container.conditional_blocks, fn block ->
+        %{
+          type: block.type,
+          cond: block.cond,
+          actions: block.actions
+        }
+      end)
 
     # Create IfAction with collected blocks
     alias Statifier.Actions.IfAction

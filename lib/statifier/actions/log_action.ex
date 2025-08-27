@@ -10,6 +10,8 @@ defmodule Statifier.Actions.LogAction do
   the element has no effect.
   """
 
+  require Logger
+
   defstruct [:label, :expr, :source_location]
 
   @type t :: %__MODULE__{
@@ -28,5 +30,20 @@ defmodule Statifier.Actions.LogAction do
       expr: Map.get(attributes, "expr"),
       source_location: source_location
     }
+  end
+
+  @doc """
+  Executes the log action by evaluating the expression and logging the result.
+  """
+  @spec execute(t(), Statifier.StateChart.t()) :: Statifier.StateChart.t()
+  def execute(%__MODULE__{} = log_action, state_chart) do
+    # For now, treat expr as literal value - future enhancement will add proper expression evaluation
+    message = log_action.expr || "Log"
+    label = log_action.label || "Log"
+
+    Logger.info("#{label}: #{message}")
+
+    # Log actions don't modify the state chart
+    state_chart
   end
 end

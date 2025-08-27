@@ -145,36 +145,16 @@ defmodule Statifier.Actions.IfAction do
 
   # Execute a single action within the conditional block
   defp execute_single_action(action, state_chart) do
-    # Delegate to the action's execute method or handle directly
+    # Delegate to each action's own execute method
     case action do
       %Statifier.Actions.AssignAction{} = assign ->
         Statifier.Actions.AssignAction.execute(assign, state_chart)
 
       %Statifier.Actions.RaiseAction{} = raise ->
-        # Execute raise action by creating internal event
-        alias Statifier.{Event, StateChart}
-        require Logger
-        
-        event_name = raise.event || "anonymous_event"
-        Logger.info("Raising event '#{event_name}' (from if action)")
-        
-        # Create internal event and enqueue it
-        internal_event = %Event{
-          name: event_name,
-          data: %{},
-          origin: :internal
-        }
-        
-        # Add to internal event queue
-        StateChart.enqueue_event(state_chart, internal_event)
+        Statifier.Actions.RaiseAction.execute(raise, state_chart)
 
       %Statifier.Actions.LogAction{} = log ->
-        # Execute log action - simplified version
-        require Logger
-        # For now, treat expr as literal value
-        message = log.expr || "Log"
-        Logger.info("#{log.label || "Log"}: #{message} (from if action)")
-        state_chart
+        Statifier.Actions.LogAction.execute(log, state_chart)
 
       %__MODULE__{} = nested_if ->
         # Support nested if statements

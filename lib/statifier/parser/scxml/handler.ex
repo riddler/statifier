@@ -272,7 +272,7 @@ defmodule Statifier.Parser.SCXML.Handler do
       cond: get_attribute(attributes, "cond"),
       actions: []
     }
-    
+
     if_container = %{
       conditional_blocks: [first_if_block],
       current_block_index: 0,
