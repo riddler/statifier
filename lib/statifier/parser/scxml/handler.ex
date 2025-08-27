@@ -56,6 +56,9 @@ defmodule Statifier.Parser.SCXML.Handler do
   def handle_event(:end_element, "log", state), do: StateStack.handle_log_end(state)
   def handle_event(:end_element, "raise", state), do: StateStack.handle_raise_end(state)
   def handle_event(:end_element, "assign", state), do: StateStack.handle_assign_end(state)
+  def handle_event(:end_element, "if", state), do: StateStack.handle_if_end(state)
+  def handle_event(:end_element, "elseif", state), do: StateStack.handle_elseif_end(state)
+  def handle_event(:end_element, "else", state), do: StateStack.handle_else_end(state)
 
   def handle_event(:end_element, state_type, state)
       when state_type in ["state", "parallel", "final", "initial"],
@@ -262,8 +265,72 @@ defmodule Statifier.Parser.SCXML.Handler do
     {:ok, StateStack.push_element(updated_state, "assign", assign_action)}
   end
 
+  defp dispatch_element_start("if", attributes, location, state) do
+    # Start a conditional container with the first if block
+    first_if_block = %{
+      type: :if,
+      cond: get_attribute(attributes, "cond"),
+      actions: []
+    }
+
+    if_container = %{
+      conditional_blocks: [first_if_block],
+      current_block_index: 0,
+      location: location
+    }
+
+    updated_state = %{
+      state
+      | current_element: {:if, if_container}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "if", if_container)}
+  end
+
+  defp dispatch_element_start("elseif", attributes, _location, state) do
+    # Add new elseif block to current if container
+    elseif_block = %{
+      type: :elseif,
+      cond: get_attribute(attributes, "cond"),
+      actions: []
+    }
+
+    updated_state = %{
+      state
+      | current_element: {:elseif, elseif_block}
+    }
+
+    # Push elseif as marker - will be handled by StateStack to add to if container
+    {:ok, StateStack.push_element(updated_state, "elseif", elseif_block)}
+  end
+
+  defp dispatch_element_start("else", _attributes, _location, state) do
+    # Add final else block to current if container
+    else_block = %{
+      type: :else,
+      cond: nil,
+      actions: []
+    }
+
+    updated_state = %{
+      state
+      | current_element: {:else, else_block}
+    }
+
+    # Push else as marker - will be handled by StateStack to add to if container
+    {:ok, StateStack.push_element(updated_state, "else", else_block)}
+  end
+
   defp dispatch_element_start(unknown_element_name, _attributes, _location, state) do
     # Skip unknown elements but track them in stack
     {:ok, StateStack.push_element(state, unknown_element_name, nil)}
+  end
+
+  # Helper function to extract attribute value from attributes list
+  defp get_attribute(attributes, name) do
+    case List.keyfind(attributes, name, 0) do
+      {^name, value} -> value
+      nil -> nil
+    end
   end
 end

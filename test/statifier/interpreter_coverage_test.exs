@@ -1,8 +1,53 @@
 defmodule Statifier.InterpreterCoverageTest do
   use ExUnit.Case
-  alias Statifier.{Document, Event, Interpreter, Parser.SCXML}
+  alias Statifier.{Configuration, Document, Event, Interpreter, Parser.SCXML, State, StateChart}
 
   describe "Interpreter edge cases for coverage" do
+    test "initialize with document having no states" do
+      # Test initializing interpreter with empty document
+      empty_document = %Document{
+        states: [],
+        initial: nil,
+        state_lookup: %{},
+        transitions_by_source: %{}
+      }
+
+      # Should handle gracefully
+      result = Interpreter.initialize(empty_document)
+      assert {:ok, %StateChart{}} = result
+
+      assert result |> elem(1) |> Map.get(:configuration) |> Configuration.active_states() ==
+               MapSet.new()
+    end
+
+    test "send_event with non-matching event returns unchanged state" do
+      # Simple edge case: event that doesn't match any transitions
+      state1 = %State{
+        id: "state1",
+        type: :atomic,
+        states: [],
+        transitions: []
+      }
+
+      document = %Document{
+        states: [state1],
+        initial: "state1",
+        state_lookup: %{"state1" => state1},
+        transitions_by_source: %{"state1" => []}
+      }
+
+      {:ok, state_chart} = Interpreter.initialize(document)
+
+      # Event that doesn't match any transition
+      non_matching_event = %Event{name: "no_match", data: %{}, origin: :external}
+
+      result = Interpreter.send_event(state_chart, non_matching_event)
+      assert {:ok, updated_chart} = result
+
+      # Should stay in same state
+      assert Configuration.active_states(updated_chart.configuration) == MapSet.new(["state1"])
+    end
+
     test "initialize with validation errors" do
       # Create document with validation errors (invalid initial state)
       xml = """
