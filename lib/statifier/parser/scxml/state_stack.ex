@@ -349,6 +349,15 @@ defmodule Statifier.Parser.SCXML.StateStack do
     {:ok, %{state | stack: [{"onexit", [log_action]} | rest]}}
   end
 
+  # Handle log action within if container
+  def handle_log_end(
+        %{stack: [{_element_name, log_action} | [{"if", if_container} | rest]]} = state
+      ) do
+    # Add log action to current conditional block within if container
+    updated_container = add_action_to_current_block(if_container, log_action)
+    {:ok, %{state | stack: [{"if", updated_container} | rest]}}
+  end
+
   def handle_log_end(state) do
     # Log element not in an onentry/onexit context, just pop it
     {:ok, pop_element(state)}
@@ -386,6 +395,15 @@ defmodule Statifier.Parser.SCXML.StateStack do
       ) do
     # First action in this onexit block
     {:ok, %{state | stack: [{"onexit", [raise_action]} | rest]}}
+  end
+
+  # Handle raise action within if container
+  def handle_raise_end(
+        %{stack: [{_element_name, raise_action} | [{"if", if_container} | rest]]} = state
+      ) do
+    # Add raise action to current conditional block within if container
+    updated_container = add_action_to_current_block(if_container, raise_action)
+    {:ok, %{state | stack: [{"if", updated_container} | rest]}}
   end
 
   def handle_raise_end(state) do
@@ -427,6 +445,15 @@ defmodule Statifier.Parser.SCXML.StateStack do
     {:ok, %{state | stack: [{"onexit", [assign_action]} | rest]}}
   end
 
+  # Handle assign action within if container
+  def handle_assign_end(
+        %{stack: [{_element_name, assign_action} | [{"if", if_container} | rest]]} = state
+      ) do
+    # Add assign action to current conditional block within if container
+    updated_container = add_action_to_current_block(if_container, assign_action)
+    {:ok, %{state | stack: [{"if", updated_container} | rest]}}
+  end
+
   def handle_assign_end(state) do
     # Assign element not in an onentry/onexit context, just pop it
     {:ok, pop_element(state)}
@@ -436,29 +463,125 @@ defmodule Statifier.Parser.SCXML.StateStack do
   Handle the end of an if element by creating an IfAction from collected conditional blocks.
   """
   @spec handle_if_end(map()) :: {:ok, map()}
+  def handle_if_end(
+        %{stack: [{_element_name, if_container} | [{"onentry", actions} | rest]]} = state
+      )
+      when is_list(actions) do
+    # Create IfAction from collected conditional blocks and add to onentry
+    if_action = create_if_action_from_container(if_container)
+    updated_actions = actions ++ [if_action]
+    {:ok, %{state | stack: [{"onentry", updated_actions} | rest]}}
+  end
+
+  def handle_if_end(
+        %{stack: [{_element_name, if_container} | [{"onentry", :onentry_block} | rest]]} = state
+      ) do
+    # First action in onentry block
+    if_action = create_if_action_from_container(if_container)
+    {:ok, %{state | stack: [{"onentry", [if_action]} | rest]}}
+  end
+
+  def handle_if_end(
+        %{stack: [{_element_name, if_container} | [{"onexit", actions} | rest]]} = state
+      )
+      when is_list(actions) do
+    # Create IfAction from collected conditional blocks and add to onexit
+    if_action = create_if_action_from_container(if_container)
+    updated_actions = actions ++ [if_action]
+    {:ok, %{state | stack: [{"onexit", updated_actions} | rest]}}
+  end
+
+  def handle_if_end(
+        %{stack: [{_element_name, if_container} | [{"onexit", :onexit_block} | rest]]} = state
+      ) do
+    # First action in onexit block
+    if_action = create_if_action_from_container(if_container)
+    {:ok, %{state | stack: [{"onexit", [if_action]} | rest]}}
+  end
+
   def handle_if_end(state) do
-    # For now, just pop the if element - full implementation follows
-    # TODO: Collect all conditional blocks and create IfAction
+    # If element not in an onentry/onexit context, just pop it
     {:ok, pop_element(state)}
   end
 
   @doc """
-  Handle the end of an elseif element by switching to new conditional block.
+  Handle the end of an elseif element by adding it to the if container and switching blocks.
   """
   @spec handle_elseif_end(map()) :: {:ok, map()}
+  def handle_elseif_end(
+        %{stack: [{_element_name, elseif_block} | [{"if", if_container} | rest]]} = state
+      ) do
+    # Add elseif block to if container and switch to it
+    updated_blocks = if_container.conditional_blocks ++ [elseif_block]
+    new_index = length(updated_blocks) - 1
+    
+    updated_container = %{
+      if_container 
+      | conditional_blocks: updated_blocks,
+        current_block_index: new_index
+    }
+    
+    {:ok, %{state | stack: [{"if", updated_container} | rest]}}
+  end
+
   def handle_elseif_end(state) do
-    # For now, just pop the elseif element
-    # TODO: Switch conditional block context
+    # Elseif not within if context, just pop it
     {:ok, pop_element(state)}
   end
 
   @doc """
-  Handle the end of an else element by switching to final conditional block.
+  Handle the end of an else element by adding it to the if container as final block.
   """
   @spec handle_else_end(map()) :: {:ok, map()}
+  def handle_else_end(
+        %{stack: [{_element_name, else_block} | [{"if", if_container} | rest]]} = state
+      ) do
+    # Add else block to if container and switch to it
+    updated_blocks = if_container.conditional_blocks ++ [else_block]
+    new_index = length(updated_blocks) - 1
+    
+    updated_container = %{
+      if_container 
+      | conditional_blocks: updated_blocks,
+        current_block_index: new_index
+    }
+    
+    {:ok, %{state | stack: [{"if", updated_container} | rest]}}
+  end
+
   def handle_else_end(state) do
-    # For now, just pop the else element
-    # TODO: Switch to else block context
+    # Else not within if context, just pop it
     {:ok, pop_element(state)}
+  end
+
+  # Helper function to add an action to the current conditional block
+  defp add_action_to_current_block(if_container, action) do
+    current_index = if_container.current_block_index
+    current_blocks = if_container.conditional_blocks
+    
+    # Get current block and add action to it
+    current_block = Enum.at(current_blocks, current_index)
+    updated_block = %{current_block | actions: current_block.actions ++ [action]}
+    
+    # Replace the block in the list
+    updated_blocks = List.replace_at(current_blocks, current_index, updated_block)
+    
+    %{if_container | conditional_blocks: updated_blocks}
+  end
+
+  # Helper function to create IfAction from parsed if container
+  defp create_if_action_from_container(if_container) do
+    # Convert parsed blocks to IfAction format
+    conditional_blocks = Enum.map(if_container.conditional_blocks, fn block ->
+      %{
+        type: block.type,
+        cond: block.cond,
+        actions: block.actions
+      }
+    end)
+
+    # Create IfAction with collected blocks
+    alias Statifier.Actions.IfAction
+    IfAction.new(conditional_blocks, if_container[:location])
   end
 end

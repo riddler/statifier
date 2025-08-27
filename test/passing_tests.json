@@ -66,6 +66,8 @@
     "test/scxml_tests/mandatory/SelectingTransitions/test407_test.exs",
     "test/scxml_tests/mandatory/events/test396_test.exs",
     "test/scxml_tests/mandatory/foreach/test153_test.exs",
+    "test/scxml_tests/mandatory/if/test147_test.exs",
+    "test/scxml_tests/mandatory/if/test148_test.exs",
     "test/scxml_tests/mandatory/if/test149_test.exs",
     "test/scxml_tests/mandatory/onentry/test375_test.exs",
     "test/scxml_tests/mandatory/onexit/test377_test.exs",

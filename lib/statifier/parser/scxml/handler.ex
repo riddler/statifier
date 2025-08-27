@@ -266,53 +266,58 @@ defmodule Statifier.Parser.SCXML.Handler do
   end
 
   defp dispatch_element_start("if", attributes, location, state) do
-    # Start a conditional block container
-    if_block = %{
+    # Start a conditional container with the first if block
+    first_if_block = %{
       type: :if,
       cond: get_attribute(attributes, "cond"),
-      actions: [],
+      actions: []
+    }
+    
+    if_container = %{
+      conditional_blocks: [first_if_block],
+      current_block_index: 0,
       location: location
     }
 
     updated_state = %{
       state
-      | current_element: {:if, :if_container}
+      | current_element: {:if, if_container}
     }
 
-    {:ok, StateStack.push_element(updated_state, "if", if_block)}
+    {:ok, StateStack.push_element(updated_state, "if", if_container)}
   end
 
   defp dispatch_element_start("elseif", attributes, location, state) do
-    # Switch to new conditional block within current if container
+    # Add new elseif block to current if container
     elseif_block = %{
       type: :elseif,
       cond: get_attribute(attributes, "cond"),
-      actions: [],
-      location: location
+      actions: []
     }
 
     updated_state = %{
       state
-      | current_element: {:elseif, :elseif_marker}
+      | current_element: {:elseif, elseif_block}
     }
 
+    # Push elseif as marker - will be handled by StateStack to add to if container
     {:ok, StateStack.push_element(updated_state, "elseif", elseif_block)}
   end
 
   defp dispatch_element_start("else", _attributes, location, state) do
-    # Switch to final conditional block within current if container
+    # Add final else block to current if container
     else_block = %{
       type: :else,
       cond: nil,
-      actions: [],
-      location: location
+      actions: []
     }
 
     updated_state = %{
       state
-      | current_element: {:else, :else_marker}
+      | current_element: {:else, else_block}
     }
 
+    # Push else as marker - will be handled by StateStack to add to if container
     {:ok, StateStack.push_element(updated_state, "else", else_block)}
   end
 

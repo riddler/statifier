@@ -63,9 +63,10 @@ defmodule Statifier.FeatureDetector do
       script_elements: :unsupported,
       assign_elements: :supported,
 
-      # Executable content (partial support)
+      # Executable content (supported)
       onentry_actions: :supported,
       onexit_actions: :supported,
+      if_elements: :supported,
       send_elements: :unsupported,
       log_elements: :supported,
       raise_elements: :supported,
@@ -133,6 +134,7 @@ defmodule Statifier.FeatureDetector do
     |> add_if_present(xml, ~r/<data(\s|>)/, :data_elements)
     |> add_if_present(xml, ~r/<script(\s|>)/, :script_elements)
     |> add_if_present(xml, ~r/<assign(\s|>)/, :assign_elements)
+    |> add_if_present(xml, ~r/<if(\s|>)/, :if_elements)
     |> add_if_present(xml, ~r/<onentry(\s|>)/, :onentry_actions)
     |> add_if_present(xml, ~r/<onexit(\s|>)/, :onexit_actions)
     |> add_if_present(xml, ~r/<send(\s|>)/, :send_elements)

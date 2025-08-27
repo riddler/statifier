@@ -145,20 +145,43 @@ defmodule Statifier.Actions.IfAction do
 
   # Execute a single action within the conditional block
   defp execute_single_action(action, state_chart) do
-    # For now, we'll delegate back to ActionExecutor for consistency
-    # This avoids circular dependencies and maintains the single execution path
+    # Delegate to the action's execute method or handle directly
     case action do
       %Statifier.Actions.AssignAction{} = assign ->
-        # TODO: Execute assign action - for now just return unchanged state_chart
         Statifier.Actions.AssignAction.execute(assign, state_chart)
+
+      %Statifier.Actions.RaiseAction{} = raise ->
+        # Execute raise action by creating internal event
+        alias Statifier.{Event, StateChart}
+        require Logger
+        
+        event_name = raise.event || "anonymous_event"
+        Logger.info("Raising event '#{event_name}' (from if action)")
+        
+        # Create internal event and enqueue it
+        internal_event = %Event{
+          name: event_name,
+          data: %{},
+          origin: :internal
+        }
+        
+        # Add to internal event queue
+        StateChart.enqueue_event(state_chart, internal_event)
+
+      %Statifier.Actions.LogAction{} = log ->
+        # Execute log action - simplified version
+        require Logger
+        # For now, treat expr as literal value
+        message = log.expr || "Log"
+        Logger.info("#{log.label || "Log"}: #{message} (from if action)")
+        state_chart
 
       %__MODULE__{} = nested_if ->
         # Support nested if statements
         execute(nested_if, state_chart)
 
       _other_action ->
-        # For other action types, we need to figure out how to execute them
-        # For now, just return unchanged state_chart
+        # For unknown action types, just continue
         state_chart
     end
   end
