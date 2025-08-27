@@ -14,7 +14,11 @@ defmodule Statifier.StateChart do
     :current_event,
     datamodel: %{},
     internal_queue: [],
-    external_queue: []
+    external_queue: [],
+    # Logging fields
+    log_adapter: nil,
+    log_level: :info,
+    logs: []
   ]
 
   @type t :: %__MODULE__{
@@ -23,7 +27,10 @@ defmodule Statifier.StateChart do
           current_event: Event.t() | nil,
           datamodel: Statifier.Datamodel.t(),
           internal_queue: [Event.t()],
-          external_queue: [Event.t()]
+          external_queue: [Event.t()],
+          log_adapter: struct() | nil,
+          log_level: atom(),
+          logs: [map()]
         }
 
   @doc """
@@ -37,7 +44,10 @@ defmodule Statifier.StateChart do
       current_event: nil,
       datamodel: %{},
       internal_queue: [],
-      external_queue: []
+      external_queue: [],
+      log_adapter: nil,
+      log_level: :info,
+      logs: []
     }
   end
 
@@ -52,7 +62,10 @@ defmodule Statifier.StateChart do
       current_event: nil,
       datamodel: %{},
       internal_queue: [],
-      external_queue: []
+      external_queue: [],
+      log_adapter: nil,
+      log_level: :info,
+      logs: []
     }
   end
 
@@ -125,5 +138,33 @@ defmodule Statifier.StateChart do
   @spec set_current_event(t(), Statifier.Event.t() | nil) :: t()
   def set_current_event(%__MODULE__{} = state_chart, event) do
     %{state_chart | current_event: event}
+  end
+
+  @doc """
+  Configure logging for the state chart.
+
+  ## Parameters
+
+  - `state_chart` - StateChart to configure
+  - `adapter` - Logging adapter instance
+  - `level` - Minimum log level (optional, defaults to :info)
+
+  ## Examples
+
+      adapter = %Statifier.Logging.TestAdapter{max_entries: 100}
+      state_chart = StateChart.configure_logging(state_chart, adapter, :debug)
+
+  """
+  @spec configure_logging(t(), struct(), atom()) :: t()
+  def configure_logging(%__MODULE__{} = state_chart, adapter, level \\ :info) do
+    %{state_chart | log_adapter: adapter, log_level: level}
+  end
+
+  @doc """
+  Update the log level for the state chart.
+  """
+  @spec set_log_level(t(), atom()) :: t()
+  def set_log_level(%__MODULE__{} = state_chart, level) do
+    %{state_chart | log_level: level}
   end
 end
