@@ -431,5 +431,60 @@ The phased approach systematically adds SCXML features:
 
 The implementation plan transforms Statifier from a basic state machine library into a comprehensive, production-ready SCXML engine with industry-leading test coverage and W3C compliance.
 
+## Future Architecture Plans
+
+### Long-Lived State Chart Execution (GenServer Integration)
+
+**Current State**: Statifier currently provides a functional, synchronous API for state chart execution with immutable data structures.
+
+**Future Enhancement**: Add GenServer-based long-lived state chart interpreters for:
+
+#### **Persistent State Chart Instances**
+- **`Statifier.InterpreterServer`**: GenServer wrapper around functional interpreter
+- **State Persistence**: Maintain state chart configuration across multiple events
+- **Event Queuing**: Asynchronous event processing with proper SCXML queue semantics
+- **Runtime Reconfiguration**: Dynamic logging, data model, and configuration changes
+- **Process Supervision**: OTP supervision trees for fault-tolerant state chart execution
+
+#### **Use Cases**
+- **Workflow Engines**: Long-running business process execution
+- **User Session Management**: Stateful user interaction flows
+- **IoT Device State Management**: Persistent device state tracking
+- **Game State Management**: Complex game logic with persistent state
+
+#### **API Design Considerations**
+- **Backward Compatibility**: Existing functional API remains unchanged
+- **Optional GenServer Layer**: Choice between functional and process-based execution
+- **Event Broadcasting**: Phoenix PubSub integration for state change notifications
+- **Clustering Support**: Distributed state chart execution across nodes
+
+#### **Implementation Phases**
+1. **Basic GenServer Wrapper**: Simple process-based state chart execution
+2. **Advanced Features**: Supervision, clustering, persistence
+3. **Integration Layer**: Phoenix, LiveView, and ecosystem integration
+
+### Enhanced Logging System (In Progress)
+
+**Flexible Logging Architecture** for both functional and GenServer-based execution:
+
+#### **Multi-Adapter Logging System**
+- **`Statifier.Logging.LogManager`**: Central logging coordination
+- **Per-Adapter Log Levels**: Different log levels for different adapters
+- **Runtime Reconfiguration**: Dynamic logging configuration during execution
+- **Test-Friendly**: `TestAdapter` for clean test output and log inspection
+
+#### **Built-in Adapters**
+- **`ElixirLoggerAdapter`**: Integration with Elixir's Logger (production)
+- **`TestAdapter`**: In-memory log collection for testing
+- **Future**: Database adapters, file adapters, external service adapters
+
+#### **Metadata Standardization**
+- **`state_chart_id`**: Unique identifier for state chart instances
+- **`current_state`**: Active leaf state(s) for context
+- **`event`**: Current event being processed
+- **`action_type`**: Type of action generating the log entry
+
+This logging system will integrate seamlessly with both the current functional API and future GenServer-based persistent interpreters.
+
 - Always refer to state machines as state charts
 - Always run 'mix format' after writing an Elixir file.
