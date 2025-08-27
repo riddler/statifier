@@ -67,10 +67,10 @@ fi
 
 # Run type checking (optional - can be slow)
 # Uncomment if you want type checking in the pre-push hook
-# echo "🔬 Running type checking (Dialyzer)..."
-# if ! mix dialyzer; then
-#     echo "❌ Dialyzer type checking failed."
-#     exit 1
-# fi
+echo "🔬 Running type checking (Dialyzer)..."
+if ! mix dialyzer; then
+    echo "❌ Dialyzer type checking failed."
+    exit 1
+fi
 
 echo "✅ All validation checks passed! Ready to push."

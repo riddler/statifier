@@ -47,7 +47,7 @@ defmodule Statifier.Actions.AssignActionTest do
         document: document,
         configuration: configuration,
         current_event: nil,
-        data_model: %{},
+        datamodel: %{},
         internal_queue: [],
         external_queue: []
       }
@@ -60,7 +60,7 @@ defmodule Statifier.Actions.AssignActionTest do
 
       result = AssignAction.execute(action, state_chart)
 
-      assert %StateChart{data_model: %{"userName" => "John Doe"}} = result
+      assert %StateChart{datamodel: %{"userName" => "John Doe"}} = result
     end
 
     test "executes nested assignment", %{state_chart: state_chart} do
@@ -69,26 +69,26 @@ defmodule Statifier.Actions.AssignActionTest do
       result = AssignAction.execute(action, state_chart)
 
       expected_data = %{"user" => %{"profile" => %{"name" => "Jane Smith"}}}
-      assert %StateChart{data_model: ^expected_data} = result
+      assert %StateChart{datamodel: ^expected_data} = result
     end
 
     test "executes arithmetic assignment", %{state_chart: state_chart} do
-      state_chart = %{state_chart | data_model: %{"counter" => 5}}
+      state_chart = %{state_chart | datamodel: %{"counter" => 5}}
       action = AssignAction.new("counter", "counter + 3")
 
       result = AssignAction.execute(action, state_chart)
 
-      assert %StateChart{data_model: %{"counter" => 8}} = result
+      assert %StateChart{datamodel: %{"counter" => 8}} = result
     end
 
     test "executes assignment with mixed notation", %{state_chart: state_chart} do
-      state_chart = %{state_chart | data_model: %{"users" => %{}}}
+      state_chart = %{state_chart | datamodel: %{"users" => %{}}}
       action = AssignAction.new("users['john'].active", "true")
 
       result = AssignAction.execute(action, state_chart)
 
       expected_data = %{"users" => %{"john" => %{"active" => true}}}
-      assert %StateChart{data_model: ^expected_data} = result
+      assert %StateChart{datamodel: ^expected_data} = result
     end
 
     test "executes assignment using event data", %{state_chart: state_chart} do
@@ -98,11 +98,11 @@ defmodule Statifier.Actions.AssignActionTest do
 
       result = AssignAction.execute(action, state_chart)
 
-      assert %StateChart{data_model: %{"lastUpdate" => "updated"}} = result
+      assert %StateChart{datamodel: %{"lastUpdate" => "updated"}} = result
     end
 
     test "preserves existing data when assigning new values", %{state_chart: state_chart} do
-      state_chart = %{state_chart | data_model: %{"existing" => "value", "counter" => 10}}
+      state_chart = %{state_chart | datamodel: %{"existing" => "value", "counter" => 10}}
       action = AssignAction.new("newField", "'new value'")
 
       result = AssignAction.execute(action, state_chart)
@@ -113,7 +113,7 @@ defmodule Statifier.Actions.AssignActionTest do
         "newField" => "new value"
       }
 
-      assert %StateChart{data_model: ^expected_data} = result
+      assert %StateChart{datamodel: ^expected_data} = result
     end
 
     test "updates nested data without affecting siblings", %{state_chart: state_chart} do
@@ -125,7 +125,7 @@ defmodule Statifier.Actions.AssignActionTest do
         "app" => %{"version" => "1.0"}
       }
 
-      state_chart = %{state_chart | data_model: initial_data}
+      state_chart = %{state_chart | datamodel: initial_data}
       action = AssignAction.new("user.settings.theme", "'dark'")
 
       result = AssignAction.execute(action, state_chart)
@@ -138,7 +138,7 @@ defmodule Statifier.Actions.AssignActionTest do
         "app" => %{"version" => "1.0"}
       }
 
-      assert %StateChart{data_model: ^expected_data} = result
+      assert %StateChart{datamodel: ^expected_data} = result
     end
 
     test "handles assignment errors gracefully", %{state_chart: state_chart} do
@@ -169,20 +169,20 @@ defmodule Statifier.Actions.AssignActionTest do
       result = AssignAction.execute(action, state_chart)
 
       expected_data = %{"config" => %{"settings" => "complex_value"}}
-      assert %StateChart{data_model: ^expected_data} = result
+      assert %StateChart{datamodel: ^expected_data} = result
     end
 
     test "works with state machine context", %{state_chart: state_chart} do
       # Test that the assign action has access to the full SCXML context
       configuration = %Configuration{active_states: MapSet.new(["active_state"])}
-      state_chart = %{state_chart | configuration: configuration, data_model: %{"counter" => 0}}
+      state_chart = %{state_chart | configuration: configuration, datamodel: %{"counter" => 0}}
 
       # This tests that we have access to state machine context during evaluation
       action = AssignAction.new("stateCount", "counter + 1")
 
       result = AssignAction.execute(action, state_chart)
 
-      assert %StateChart{data_model: %{"counter" => 0, "stateCount" => 1}} = result
+      assert %StateChart{datamodel: %{"counter" => 0, "stateCount" => 1}} = result
     end
 
     test "pre-compiles expressions during creation for performance" do
@@ -208,7 +208,7 @@ defmodule Statifier.Actions.AssignActionTest do
 
       # Verify result is correct
       expected_data = %{"user" => %{"settings" => %{"theme" => "dark"}}}
-      assert %StateChart{data_model: ^expected_data} = result
+      assert %StateChart{datamodel: ^expected_data} = result
     end
   end
 end

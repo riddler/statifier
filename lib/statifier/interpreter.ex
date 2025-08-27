@@ -8,9 +8,10 @@ defmodule Statifier.Interpreter do
 
   alias Statifier.{
     Actions.ActionExecutor,
-    ConditionEvaluator,
     Configuration,
+    Datamodel,
     Document,
+    Evaluator,
     Event,
     StateChart,
     Validator
@@ -27,6 +28,10 @@ defmodule Statifier.Interpreter do
       {:ok, optimized_document, warnings} ->
         initial_config = get_initial_configuration(optimized_document)
         state_chart = StateChart.new(optimized_document, initial_config)
+
+        # Initialize data model from datamodel_elements
+        datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
+        state_chart = StateChart.update_datamodel(state_chart, datamodel)
 
         # Execute onentry actions for initial states and queue any raised events
         initial_states = MapSet.to_list(Configuration.active_states(initial_config))
@@ -249,7 +254,7 @@ defmodule Statifier.Interpreter do
   defp transition_condition_enabled?(%{compiled_cond: nil}, _context), do: true
 
   defp transition_condition_enabled?(%{compiled_cond: compiled_cond}, context) do
-    ConditionEvaluator.evaluate_condition(compiled_cond, context)
+    Evaluator.evaluate_condition(compiled_cond, context)
   end
 
   defp find_enabled_transitions(%StateChart{} = state_chart, %Event{} = event) do
@@ -266,13 +271,8 @@ defmodule Statifier.Interpreter do
     # Get all currently active states (including ancestors)
     active_states_with_ancestors = StateChart.active_states(state_chart)
 
-    # Build evaluation context for conditions
-    evaluation_context = %{
-      configuration: state_chart.configuration,
-      current_event: event_or_nil,
-      # Use event data as data model for now, or empty map for eventless
-      data_model: if(event_or_nil, do: event_or_nil.data || %{}, else: %{})
-    }
+    # Update the state chart with current event for context building
+    state_chart_with_event = %{state_chart | current_event: event_or_nil}
 
     # Find transitions from all active states (including ancestors) that match the event/NULL and condition
     active_states_with_ancestors
@@ -283,7 +283,7 @@ defmodule Statifier.Interpreter do
       transitions
       |> Enum.filter(fn transition ->
         matches_event_or_eventless?(transition, event_or_nil) and
-          transition_condition_enabled?(transition, evaluation_context)
+          transition_condition_enabled?(transition, state_chart_with_event)
       end)
     end)
     # Process in document order

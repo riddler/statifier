@@ -293,10 +293,10 @@ defmodule Statifier.Parser.SCXML.StateStackTest do
 
   describe "handle_data_end/1" do
     test "adds data element to document datamodel" do
-      data_element = %Statifier.DataElement{id: "test_data", expr: "value"}
+      data_element = %Statifier.Data{id: "test_data", expr: "value"}
 
       existing_document = %Document{
-        datamodel_elements: [%Statifier.DataElement{id: "existing", expr: "old"}]
+        datamodel_elements: [%Statifier.Data{id: "existing", expr: "old"}]
       }
 
       parsing_state = %{
@@ -320,7 +320,7 @@ defmodule Statifier.Parser.SCXML.StateStackTest do
     end
 
     test "handles data element with non-datamodel parent" do
-      data_element = %Statifier.DataElement{id: "orphan_data", expr: "value"}
+      data_element = %Statifier.Data{id: "orphan_data", expr: "value"}
 
       parsing_state = %{
         stack: [
