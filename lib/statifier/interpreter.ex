@@ -16,14 +16,43 @@ defmodule Statifier.Interpreter do
     StateChart,
     Validator
   }
+  alias Statifier.Logging.LogManager
 
   @doc """
   Initialize a state chart from a parsed document.
 
   Automatically validates the document and sets up the initial configuration.
+
+  ## Options
+
+  * `:log_adapter` - Logging adapter configuration. Can be:
+    * An adapter struct (e.g., `%TestAdapter{max_entries: 100}`)
+    * A tuple `{AdapterModule, opts}` (e.g., `{TestAdapter, [max_entries: 50]}`)
+    * If not provided, uses environment-specific defaults
+
+  * `:log_level` - Minimum log level (`:trace`, `:debug`, `:info`, `:warn`, `:error`)
+    * Defaults to `:debug` in test environment, `:info` otherwise
+
+  ## Examples
+
+      # Use default configuration
+      {:ok, state_chart} = Interpreter.initialize(document)
+
+      # Configure logging explicitly
+      {:ok, state_chart} = Interpreter.initialize(document, [
+        log_adapter: {TestAdapter, [max_entries: 100]},
+        log_level: :debug
+      ])
+
   """
   @spec initialize(Document.t()) :: {:ok, StateChart.t()} | {:error, [String.t()], [String.t()]}
   def initialize(%Document{} = document) do
+    initialize(document, [])
+  end
+
+  @spec initialize(Document.t(), keyword()) ::
+          {:ok, StateChart.t()} | {:error, [String.t()], [String.t()]}
+  def initialize(%Document{} = document, opts) when is_list(opts) do
     case Validator.validate(document) do
       {:ok, optimized_document, warnings} ->
         initial_config = get_initial_configuration(optimized_document)
@@ -32,6 +61,9 @@ defmodule Statifier.Interpreter do
         # Initialize data model from datamodel_elements
         datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
         state_chart = StateChart.update_datamodel(state_chart, datamodel)
+
+        # Configure logging based on options or defaults
+        state_chart = LogManager.configure_from_options(state_chart, opts)
 
         # Execute onentry actions for initial states and queue any raised events
         initial_states = MapSet.to_list(Configuration.active_states(initial_config))
