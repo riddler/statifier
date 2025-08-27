@@ -2,7 +2,7 @@ defmodule Statifier.MixProject do
   use Mix.Project
 
   @app :statifier
-  @version "1.0.0"
+  @version "1.1.0"
   @description "SCXML state machines for Elixir with W3C compliance"
   @source_url "https://github.com/riddler/statifier"
   @deps [
