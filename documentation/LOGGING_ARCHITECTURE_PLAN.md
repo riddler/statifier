@@ -72,10 +72,12 @@ end
 #### Automatic Core Metadata Extraction
 
 The LogManager automatically extracts:
+
 - `current_state`: Active leaf states from configuration
 - `event`: Current event being processed (if any)
 
 Additional metadata can be provided by callers for context-specific information:
+
 - `action_type`: Type of action (log_action, raise_action, assign_action, etc.)
 - `phase`: Execution phase (onentry, onexit, transition)
 - `target`: Transition target state
@@ -133,11 +135,13 @@ assert [%{level: :debug, message: "Debug info"}] = state_chart.logs
 ### Migration Examples
 
 #### Before (Current Implementation)
+
 ```elixir
 Logger.info("Raising event '#{event_name}'")
 ```
 
 #### After (New Implementation)
+
 ```elixir
 state_chart = LogManager.info(state_chart, "Raising event '#{event_name}'", %{
   action_type: "raise_action"
@@ -148,7 +152,8 @@ state_chart = LogManager.info(state_chart, "Raising event '#{event_name}'", %{
 
 ### Phase 1: Core Infrastructure (2 days)
 
-#### Tasks:
+#### Tasks
+
 1. Create `Statifier.Logging.Adapter` protocol
 2. Implement `Statifier.Logging.ElixirLoggerAdapter`
 3. Implement `Statifier.Logging.TestAdapter`
@@ -159,7 +164,8 @@ state_chart = LogManager.info(state_chart, "Raising event '#{event_name}'", %{
 
 ### Phase 2: Migration & Testing (1-2 days)
 
-#### Tasks:
+#### Tasks
+
 1. Replace all `Logger.*` calls with `LogManager.*` calls throughout codebase:
    - `lib/statifier/actions/log_action.ex`
    - `lib/statifier/actions/raise_action.ex`
@@ -175,6 +181,7 @@ state_chart = LogManager.info(state_chart, "Raising event '#{event_name}'", %{
 ## GitHub Issues Breakdown
 
 ### Issue 1: Implement Core Logging Infrastructure
+
 - [ ] Create Adapter protocol
 - [ ] Implement ElixirLoggerAdapter
 - [ ] Implement TestAdapter  
@@ -182,24 +189,28 @@ state_chart = LogManager.info(state_chart, "Raising event '#{event_name}'", %{
 - [ ] Create LogManager with automatic metadata extraction
 
 ### Issue 2: Add Configuration System
+
 - [ ] Add application configuration support
 - [ ] Update Interpreter.initialize/2
 - [ ] Add test environment configuration
 - [ ] Document configuration options
 
 ### Issue 3: Migrate Existing Logger Calls
+
 - [ ] Replace Logger calls in actions modules
 - [ ] Replace Logger calls in datamodel module
 - [ ] Replace Logger calls in evaluator module
 - [ ] Update all metadata to use new pattern
 
 ### Issue 4: Test Integration
+
 - [ ] Configure TestAdapter for test suite
 - [ ] Update existing tests for new logging
 - [ ] Add logging-specific test cases
 - [ ] Verify clean test output
 
 ### Issue 5: Documentation & Examples
+
 - [ ] Update API documentation
 - [ ] Add usage examples
 - [ ] Update CHANGELOG.md

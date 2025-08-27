@@ -11,7 +11,9 @@ assignees: ''
 <!-- A clear and concise description of what the bug is. -->
 
 ## To Reproduce
+
 Steps to reproduce the behavior:
+
 1. Parse this SCXML: '...'
 2. Send event '....'
 3. See error
@@ -44,6 +46,7 @@ Error output here
 ```
 
 ## Environment
+
 - Statifier version: [e.g., 1.1.0]
 - Elixir version: [e.g., 1.17.0]
 - OTP version: [e.g., 26.0]

@@ -16,7 +16,7 @@ assignees: ''
 - [ ] CHANGELOG Update
 - [ ] Code Comments
 - [ ] Architecture Documentation
-- [ ] Other: 
+- [ ] Other:
 
 ## Description
 <!-- What documentation needs to be added or improved? -->
@@ -41,7 +41,7 @@ assignees: ''
 - [ ] `/documentation` folder
 - [ ] ExDoc comments
 - [ ] Wiki
-- [ ] Other: 
+- [ ] Other:
 
 ## Examples Needed
 <!-- Do we need code examples? If so, what kind? -->

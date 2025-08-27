@@ -16,9 +16,9 @@ Closes #
 
 ## Changes Made
 <!-- List the specific changes made in this PR -->
-- 
-- 
-- 
+-
+-
+-
 
 ## Testing
 <!-- Describe the tests you ran to verify your changes -->
@@ -39,7 +39,7 @@ Closes #
 <!-- If this affects SCXML compliance -->
 - [ ] Follows W3C SCXML specification
 - [ ] Updates feature detection if needed
-- [ ] Related spec section: 
+- [ ] Related spec section:
 
 ## Documentation
 <!-- Documentation updates made -->
