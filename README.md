@@ -123,7 +123,7 @@ Add `statifier` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:statifier, "~> 1.1"}
+    {:statifier, "~> 1.2"}
   ]
 end
 ```
