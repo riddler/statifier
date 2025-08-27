@@ -11,8 +11,7 @@ defmodule Statifier.Actions.ActionExecutor do
     Actions.IfAction,
     Actions.LogAction,
     Actions.RaiseAction,
-    Document,
-    StateChart
+    Document
   }
 
   require Logger
@@ -54,6 +53,17 @@ defmodule Statifier.Actions.ActionExecutor do
     end)
   end
 
+  @doc """
+  Execute a single action without state/phase context.
+
+  This is a public interface for executing individual actions from other action types
+  like IfAction that need to execute nested actions.
+  """
+  @spec execute_single_action(term(), Statifier.StateChart.t()) :: Statifier.StateChart.t()
+  def execute_single_action(action, state_chart) do
+    execute_single_action(action, "unknown", :action, state_chart)
+  end
+
   # Private functions
 
   defp execute_actions(actions, state_id, phase, state_chart) do
@@ -64,34 +74,19 @@ defmodule Statifier.Actions.ActionExecutor do
   end
 
   defp execute_single_action(%LogAction{} = log_action, state_id, phase, state_chart) do
-    # Execute log action by evaluating the expression and logging the result
-    label = log_action.label || "Log"
+    # Log context information for debugging
+    Logger.debug("Executing log action (state: #{state_id}, phase: #{phase})")
 
-    # For now, treat expr as a literal value (full expression evaluation comes in Phase 2)
-    message = evaluate_simple_expression(log_action.expr)
-
-    # Use Elixir's Logger to output the log message
-    Logger.info("#{label}: #{message} (state: #{state_id}, phase: #{phase})")
-
-    # Log actions don't modify the state chart
-    state_chart
+    # Delegate to LogAction's own execute method
+    LogAction.execute(log_action, state_chart)
   end
 
   defp execute_single_action(%RaiseAction{} = raise_action, state_id, phase, state_chart) do
-    # Execute raise action by generating an internal event
-    event_name = raise_action.event || "anonymous_event"
+    # Log context information for debugging
+    Logger.debug("Executing raise action (state: #{state_id}, phase: #{phase})")
 
-    Logger.info("Raising event '#{event_name}' (state: #{state_id}, phase: #{phase})")
-
-    # Create internal event and enqueue it
-    internal_event = %Statifier.Event{
-      name: event_name,
-      data: %{},
-      origin: :internal
-    }
-
-    # Add to internal event queue
-    StateChart.enqueue_event(state_chart, internal_event)
+    # Delegate to RaiseAction's own execute method
+    RaiseAction.execute(raise_action, state_chart)
   end
 
   defp execute_single_action(%AssignAction{} = assign_action, state_id, phase, state_chart) do
@@ -122,31 +117,4 @@ defmodule Statifier.Actions.ActionExecutor do
     # Unknown actions don't modify the state chart
     state_chart
   end
-
-  # Simple expression evaluator for basic literals
-  # This will be replaced with full expression evaluation in Phase 2
-  defp evaluate_simple_expression(expr) when is_binary(expr) do
-    case expr do
-      # Handle quoted strings like 'pass', 'fail'
-      "'" <> rest ->
-        case String.split(rest, "'", parts: 2) do
-          [content, _remainder] -> content
-          _other -> expr
-        end
-
-      # Handle double-quoted strings
-      "\"" <> rest ->
-        case String.split(rest, "\"", parts: 2) do
-          [content, _remainder] -> content
-          _other -> expr
-        end
-
-      # Return as-is for other expressions (numbers, identifiers, etc.)
-      _other_expr ->
-        expr
-    end
-  end
-
-  defp evaluate_simple_expression(nil), do: ""
-  defp evaluate_simple_expression(other), do: inspect(other)
 end

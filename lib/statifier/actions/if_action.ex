@@ -38,7 +38,7 @@ defmodule Statifier.Actions.IfAction do
 
   """
 
-  alias Statifier.{Evaluator, StateChart}
+  alias Statifier.{Actions.ActionExecutor, Evaluator, StateChart}
 
   @enforce_keys [:conditional_blocks]
   defstruct [:conditional_blocks, :source_location]
@@ -139,30 +139,7 @@ defmodule Statifier.Actions.IfAction do
   defp execute_block_actions([], state_chart), do: state_chart
 
   defp execute_block_actions([action | remaining_actions], state_chart) do
-    updated_state_chart = execute_single_action(action, state_chart)
+    updated_state_chart = ActionExecutor.execute_single_action(action, state_chart)
     execute_block_actions(remaining_actions, updated_state_chart)
-  end
-
-  # Execute a single action within the conditional block
-  defp execute_single_action(action, state_chart) do
-    # Delegate to each action's own execute method
-    case action do
-      %Statifier.Actions.AssignAction{} = assign ->
-        Statifier.Actions.AssignAction.execute(assign, state_chart)
-
-      %Statifier.Actions.RaiseAction{} = raise ->
-        Statifier.Actions.RaiseAction.execute(raise, state_chart)
-
-      %Statifier.Actions.LogAction{} = log ->
-        Statifier.Actions.LogAction.execute(log, state_chart)
-
-      %__MODULE__{} = nested_if ->
-        # Support nested if statements
-        execute(nested_if, state_chart)
-
-      _other_action ->
-        # For unknown action types, just continue
-        state_chart
-    end
   end
 end
