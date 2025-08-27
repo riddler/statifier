@@ -1,0 +1,107 @@
+defmodule Statifier.Actions.IfActionTest do
+  use ExUnit.Case, async: true
+
+  alias Statifier.{Actions.IfAction, Actions.AssignAction, Configuration, StateChart}
+
+  describe "IfAction.new/2" do
+    test "creates if action with single block" do
+      assign_action = AssignAction.new("x", "10")
+      
+      blocks = [
+        %{type: :if, cond: "true", actions: [assign_action]}
+      ]
+      
+      if_action = IfAction.new(blocks)
+      
+      assert length(if_action.conditional_blocks) == 1
+      assert if_action.conditional_blocks |> hd() |> Map.get(:type) == :if
+      assert if_action.conditional_blocks |> hd() |> Map.get(:cond) == "true"
+    end
+
+    test "creates if-else action with multiple blocks" do
+      assign_action1 = AssignAction.new("x", "10")
+      assign_action2 = AssignAction.new("x", "20")
+      
+      blocks = [
+        %{type: :if, cond: "x === 0", actions: [assign_action1]},
+        %{type: :else, cond: nil, actions: [assign_action2]}
+      ]
+      
+      if_action = IfAction.new(blocks)
+      
+      assert length(if_action.conditional_blocks) == 2
+      assert if_action.conditional_blocks |> Enum.at(0) |> Map.get(:type) == :if
+      assert if_action.conditional_blocks |> Enum.at(1) |> Map.get(:type) == :else
+    end
+  end
+
+  describe "IfAction.execute/2" do
+    test "executes first true condition" do
+      assign_action1 = AssignAction.new("result", "'first'")
+      assign_action2 = AssignAction.new("result", "'second'")
+      
+      blocks = [
+        %{type: :if, cond: "true", actions: [assign_action1]},
+        %{type: :else, cond: nil, actions: [assign_action2]}
+      ]
+      
+      if_action = IfAction.new(blocks)
+      
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{}
+      }
+      
+      result = IfAction.execute(if_action, state_chart)
+      
+      # Should execute the first block and assign "first" to result
+      assert result.datamodel["result"] == "first"
+    end
+
+    test "executes else block when if condition is false" do
+      assign_action1 = AssignAction.new("result", "'first'")
+      assign_action2 = AssignAction.new("result", "'second'")
+      
+      blocks = [
+        %{type: :if, cond: "false", actions: [assign_action1]},
+        %{type: :else, cond: nil, actions: [assign_action2]}
+      ]
+      
+      if_action = IfAction.new(blocks)
+      
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{}
+      }
+      
+      result = IfAction.execute(if_action, state_chart)
+      
+      # Should execute the else block and assign "second" to result
+      assert result.datamodel["result"] == "second"
+    end
+
+    test "handles elseif conditions" do
+      assign_action1 = AssignAction.new("result", "'first'")
+      assign_action2 = AssignAction.new("result", "'second'")
+      assign_action3 = AssignAction.new("result", "'third'")
+      
+      blocks = [
+        %{type: :if, cond: "false", actions: [assign_action1]},
+        %{type: :elseif, cond: "true", actions: [assign_action2]},
+        %{type: :else, cond: nil, actions: [assign_action3]}
+      ]
+      
+      if_action = IfAction.new(blocks)
+      
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{}
+      }
+      
+      result = IfAction.execute(if_action, state_chart)
+      
+      # Should execute the elseif block and assign "second" to result
+      assert result.datamodel["result"] == "second"
+    end
+  end
+end

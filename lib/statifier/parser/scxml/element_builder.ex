@@ -8,6 +8,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
 
   alias Statifier.{
     Actions.AssignAction,
+    Actions.IfAction,
     Actions.LogAction,
     Actions.RaiseAction,
     Evaluator

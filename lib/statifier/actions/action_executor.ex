@@ -8,6 +8,7 @@ defmodule Statifier.Actions.ActionExecutor do
 
   alias Statifier.{
     Actions.AssignAction,
+    Actions.IfAction,
     Actions.LogAction,
     Actions.RaiseAction,
     Document,
@@ -101,6 +102,16 @@ defmodule Statifier.Actions.ActionExecutor do
 
     # Use the AssignAction's execute method which handles all the logic
     AssignAction.execute(assign_action, state_chart)
+  end
+
+  defp execute_single_action(%IfAction{} = if_action, state_id, phase, state_chart) do
+    # Execute if action by evaluating conditions and executing the first true block
+    Logger.debug(
+      "Executing if action with #{length(if_action.conditional_blocks)} blocks (state: #{state_id}, phase: #{phase})"
+    )
+
+    # Use the IfAction's execute method which handles all the conditional logic
+    IfAction.execute(if_action, state_chart)
   end
 
   defp execute_single_action(unknown_action, state_id, phase, state_chart) do
