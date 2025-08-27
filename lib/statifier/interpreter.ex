@@ -31,7 +31,7 @@ defmodule Statifier.Interpreter do
 
         # Initialize data model from datamodel_elements
         datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
-        state_chart = StateChart.update_data_model(state_chart, datamodel)
+        state_chart = StateChart.update_datamodel(state_chart, datamodel)
 
         # Execute onentry actions for initial states and queue any raised events
         initial_states = MapSet.to_list(Configuration.active_states(initial_config))
@@ -271,13 +271,8 @@ defmodule Statifier.Interpreter do
     # Get all currently active states (including ancestors)
     active_states_with_ancestors = StateChart.active_states(state_chart)
 
-    # Build evaluation context for conditions using Datamodel
-    evaluation_context =
-      Datamodel.build_condition_context(state_chart.data_model, %{
-        "configuration" => state_chart.configuration,
-        "current_event" => event_or_nil,
-        "In" => fn state_id -> Configuration.active?(state_chart.configuration, state_id) end
-      })
+    # Update the state chart with current event for context building
+    state_chart_with_event = %{state_chart | current_event: event_or_nil}
 
     # Find transitions from all active states (including ancestors) that match the event/NULL and condition
     active_states_with_ancestors
@@ -288,7 +283,7 @@ defmodule Statifier.Interpreter do
       transitions
       |> Enum.filter(fn transition ->
         matches_event_or_eventless?(transition, event_or_nil) and
-          transition_condition_enabled?(transition, evaluation_context)
+          transition_condition_enabled?(transition, state_chart_with_event)
       end)
     end)
     # Process in document order

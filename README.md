@@ -273,7 +273,7 @@ xml = """
 {:ok, state_chart} = Statifier.interpret(document)
 
 # Check the data model after onentry execution
-data_model = state_chart.data_model
+datamodel = state_chart.datamodel
 # Returns: %{
 #   "userName" => "John Doe",
 #   "counter" => 43,  # incremented to 43 in working state

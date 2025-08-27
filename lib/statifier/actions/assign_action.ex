@@ -91,18 +91,16 @@ defmodule Statifier.Actions.AssignAction do
   """
   @spec execute(t(), StateChart.t()) :: StateChart.t()
   def execute(%__MODULE__{} = assign_action, %StateChart{} = state_chart) do
-    context = build_evaluation_context(state_chart)
-
     # Use ValueEvaluator.evaluate_and_assign with pre-compiled expression if available
     case ValueEvaluator.evaluate_and_assign(
            assign_action.location,
            assign_action.expr,
-           context,
+           state_chart,
            assign_action.compiled_expr
          ) do
-      {:ok, updated_data_model} ->
-        # Update the state chart with the new data model
-        %{state_chart | data_model: updated_data_model}
+      {:ok, updated_datamodel} ->
+        # Update the state chart with the new datamodel
+        %{state_chart | datamodel: updated_datamodel}
 
       {:error, reason} ->
         # Log the error and continue without modification
@@ -113,14 +111,5 @@ defmodule Statifier.Actions.AssignAction do
 
         state_chart
     end
-  end
-
-  # Build evaluation context for assign action execution
-  defp build_evaluation_context(%StateChart{} = state_chart) do
-    %{
-      configuration: state_chart.configuration,
-      current_event: state_chart.current_event,
-      data_model: state_chart.data_model || %{}
-    }
   end
 end

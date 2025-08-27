@@ -42,9 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### StateChart Data Model Enhancement
 
-- **Data Model Storage**: Added `data_model` field to `Statifier.StateChart` for variable persistence
+- **Datamodel Storage**: Added `datamodel` field to `Statifier.StateChart` for variable persistence
 - **Current Event Context**: Added `current_event` field for expression evaluation context
-- **Helper Methods**: `update_data_model/2` and `set_current_event/2` for state management
+- **Helper Methods**: `update_datamodel/2` and `set_current_event/2` for state management
 - **SCXML Context Building**: Enhanced context building for comprehensive expression evaluation
 
 #### Parser Extensions

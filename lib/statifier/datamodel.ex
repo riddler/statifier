@@ -92,39 +92,63 @@ defmodule Statifier.Datamodel do
   end
 
   @doc """
-  Build an evaluation context for expressions and conditions.
+  Build evaluation context for Predicator expressions.
 
-  Creates a context map with:
-  - All datamodel variables as top-level keys
-  - SCXML built-in variables (_event, _sessionid, etc.)
-  - The In() function for state checks
+  Takes the datamodel and state_chart, returns a context ready for evaluation.
+  This is the single source of truth for context preparation.
   """
-  @spec build_context(t(), Statifier.StateChart.t()) :: map()
-  def build_context(datamodel, state_chart) do
-    context = %{}
+  @spec build_evaluation_context(t(), Statifier.StateChart.t()) :: map()
+  def build_evaluation_context(datamodel, state_chart) do
+    %{}
+    # Start with datamodel variables as base
+    |> Map.merge(datamodel)
+    # Add event data both as _event and top-level for direct access
+    |> add_event_context(state_chart.current_event)
+    # Add configuration for internal use
+    |> Map.put("_configuration", state_chart.configuration)
+    # Add SCXML built-ins
+    |> add_scxml_builtins(state_chart.document)
+  end
 
-    # Add all datamodel variables
-    context = Map.merge(context, datamodel)
+  @doc """
+  Prepare Predicator functions for evaluation (In() function for state checks).
+  Returns the functions map needed for Predicator.evaluate/3.
+  """
+  @spec build_predicator_functions(Statifier.Configuration.t()) :: map()
+  def build_predicator_functions(configuration) do
+    %{
+      "In" =>
+        {1,
+         fn [state_id], _ctx ->
+           {:ok, Configuration.active?(configuration, state_id)}
+         end}
+    }
+  end
 
-    # Add current event if present
-    context =
-      if state_chart.current_event do
-        Map.put(context, "_event", %{
-          "name" => state_chart.current_event.name || "",
-          "data" => state_chart.current_event.data || %{}
-        })
-      else
-        Map.put(context, "_event", nil)
-      end
+  # Private functions
 
-    # Add In() function for state checks
-    context =
-      Map.put(context, "In", fn state_id ->
-        Configuration.active?(state_chart.configuration, state_id)
-      end)
+  # Add event context both as _event and merge data as top-level variables
+  defp add_event_context(context, nil) do
+    Map.put(context, "_event", %{"name" => "", "data" => %{}})
+  end
 
-    # Add other SCXML built-ins
-    document_name = if state_chart.document, do: state_chart.document.name || "", else: ""
+  defp add_event_context(context, event) do
+    context
+    # Add structured _event
+    |> Map.put("_event", %{
+      "name" => event.name || "",
+      "data" => event.data || %{}
+    })
+    # Merge event data as top-level variables for direct access
+    |> merge_event_data(event.data)
+  end
+
+  defp merge_event_data(context, nil), do: context
+  defp merge_event_data(context, data) when is_map(data), do: Map.merge(context, data)
+  defp merge_event_data(context, _data), do: context
+
+  defp add_scxml_builtins(context, document) do
+    document_name = if document, do: document.name || "", else: ""
 
     context
     |> Map.put("_sessionid", generate_session_id())
@@ -132,74 +156,14 @@ defmodule Statifier.Datamodel do
     |> Map.put("_ioprocessors", [])
   end
 
-  @doc """
-  Build a context for condition evaluation.
-
-  This is used by the ConditionEvaluator to provide proper context
-  for evaluating transition conditions.
-  """
-  @spec build_condition_context(t(), map()) :: map()
-  def build_condition_context(datamodel, interpreter_context) do
-    # Start with the datamodel variables
-    context = Map.merge(%{}, datamodel)
-
-    # Add configuration for state checks
-    context =
-      if config = interpreter_context["configuration"] do
-        Map.put(context, "_configuration", config)
-      else
-        context
-      end
-
-    # Add current event and merge event data as top-level variables
-    context =
-      if event = interpreter_context["current_event"] do
-        # Add structured _event
-        context =
-          Map.put(context, "_event", %{
-            "name" => event.name || "",
-            "data" => event.data || %{}
-          })
-
-        # Merge event data as top-level variables for direct access
-        if event.data && is_map(event.data) do
-          Map.merge(context, event.data)
-        else
-          context
-        end
-      else
-        context
-      end
-
-    # Add In() function if provided
-    context =
-      if in_fn = interpreter_context["In"] do
-        Map.put(context, "In", in_fn)
-      else
-        context
-      end
-
-    context
-  end
-
-  # Private functions
-
   defp initialize_variable(%{id: id, expr: expr}, model, state_chart)
        when is_binary(id) do
-    # Build context for expression evaluation with current model state
-    context = %{
-      "datamodel" => model,
-      "_event" => nil,
-      "In" => fn state_id ->
-        Configuration.active?(state_chart.configuration, state_id)
-      end
-    }
-
-    # Merge the current model variables into context for referencing
-    context = Map.merge(context, model)
+    # Build context for expression evaluation using the simplified approach
+    # Create a temporary state chart with current datamodel for evaluation
+    temp_state_chart = %{state_chart | datamodel: model}
 
     # Evaluate the expression or use nil as default
-    value = evaluate_initial_expression(expr, context)
+    value = evaluate_initial_expression(expr, temp_state_chart)
 
     # Store in model
     Map.put(model, id, value)
@@ -210,13 +174,13 @@ defmodule Statifier.Datamodel do
     model
   end
 
-  defp evaluate_initial_expression(nil, _context), do: nil
-  defp evaluate_initial_expression("", _context), do: nil
+  defp evaluate_initial_expression(nil, _state_chart), do: nil
+  defp evaluate_initial_expression("", _state_chart), do: nil
 
-  defp evaluate_initial_expression(expr_string, context) do
+  defp evaluate_initial_expression(expr_string, state_chart) do
     case ValueEvaluator.compile_expression(expr_string) do
       {:ok, compiled} ->
-        case ValueEvaluator.evaluate_value(compiled, context) do
+        case ValueEvaluator.evaluate_value(compiled, state_chart) do
           {:ok, val} ->
             val
 

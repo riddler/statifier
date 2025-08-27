@@ -52,8 +52,8 @@ defmodule Statifier.DatamodelTest do
 
       {:ok, state_chart} = initialize_from_xml(xml)
 
-      assert state_chart.data_model["counter"] == 0
-      assert state_chart.data_model["limit"] == 10
+      assert state_chart.datamodel["counter"] == 0
+      assert state_chart.datamodel["limit"] == 10
     end
 
     test "initializes data variables with nil when no expr" do
@@ -65,8 +65,8 @@ defmodule Statifier.DatamodelTest do
 
       {:ok, state_chart} = initialize_from_xml(xml)
 
-      assert state_chart.data_model["result"] == nil
-      assert state_chart.data_model["user"] == nil
+      assert state_chart.datamodel["result"] == nil
+      assert state_chart.datamodel["user"] == nil
     end
 
     test "initializes string data variables" do
@@ -78,8 +78,8 @@ defmodule Statifier.DatamodelTest do
 
       {:ok, state_chart} = initialize_from_xml(xml)
 
-      assert state_chart.data_model["message"] == "hello"
-      assert state_chart.data_model["name"] == "world"
+      assert state_chart.datamodel["message"] == "hello"
+      assert state_chart.datamodel["name"] == "world"
     end
 
     test "initializes boolean data variables" do
@@ -91,8 +91,8 @@ defmodule Statifier.DatamodelTest do
 
       {:ok, state_chart} = initialize_from_xml(xml)
 
-      assert state_chart.data_model["active"] == true
-      assert state_chart.data_model["completed"] == false
+      assert state_chart.datamodel["active"] == true
+      assert state_chart.datamodel["completed"] == false
     end
 
     test "expressions can reference previously defined variables" do
@@ -105,9 +105,9 @@ defmodule Statifier.DatamodelTest do
 
       {:ok, state_chart} = initialize_from_xml(xml)
 
-      assert state_chart.data_model["base"] == 10
-      assert state_chart.data_model["multiplier"] == 2
-      assert state_chart.data_model["result"] == 20
+      assert state_chart.datamodel["base"] == 10
+      assert state_chart.datamodel["multiplier"] == 2
+      assert state_chart.datamodel["result"] == 20
     end
   end
 
@@ -216,60 +216,48 @@ defmodule Statifier.DatamodelTest do
       assert Datamodel.get(merged, "name") == "test"
     end
 
-    test "build_context creates proper evaluation context" do
+    test "build_evaluation_context creates proper evaluation context" do
       # Create a mock state chart with document
       state_chart = %StateChart{
-        data_model: %{"counter" => 5, "name" => "test"},
         current_event: %Event{name: "click", data: %{"x" => 10}},
         configuration: Configuration.new(["active_state"]),
         document: %Document{name: "test_chart"}
       }
 
-      context = Datamodel.build_context(state_chart.data_model, state_chart)
+      datamodel = %{"counter" => 5, "name" => "test"}
+      context = Datamodel.build_evaluation_context(datamodel, state_chart)
 
       # Should have datamodel variables
       assert context["counter"] == 5
       assert context["name"] == "test"
 
-      # Should have event data
+      # Should have event data both as _event and top-level
       assert context["_event"]["name"] == "click"
       assert context["_event"]["data"]["x"] == 10
+      # Direct access from event data
+      assert context["x"] == 10
 
-      # Should have In function
-      assert is_function(context["In"], 1)
+      # Should have configuration for internal use
+      assert context["_configuration"] == state_chart.configuration
 
       # Should have session ID
       assert is_binary(context["_sessionid"])
       assert String.starts_with?(context["_sessionid"], "statifier_")
     end
 
-    test "build_condition_context merges event data as top-level variables" do
-      datamodel = %{"counter" => 5}
-
-      interpreter_context = %{
-        "configuration" => Configuration.new(["active"]),
-        "current_event" => %Event{
-          name: "submit",
-          data: %{"score" => 85, "user" => "alice"}
-        },
-        "In" => fn _state -> true end
-      }
-
-      context = Datamodel.build_condition_context(datamodel, interpreter_context)
-
-      # Should have datamodel variable
-      assert context["counter"] == 5
-
-      # Should have event data as top-level
-      assert context["score"] == 85
-      assert context["user"] == "alice"
-
-      # Should have _event structure
-      assert context["_event"]["name"] == "submit"
-      assert context["_event"]["data"]["score"] == 85
+    test "build_predicator_functions creates In() function" do
+      configuration = Configuration.new(["active", "processing"])
+      functions = Datamodel.build_predicator_functions(configuration)
 
       # Should have In function
-      assert is_function(context["In"], 1)
+      assert Map.has_key?(functions, "In")
+      {arity, in_function} = functions["In"]
+      assert arity == 1
+
+      # Should work correctly
+      assert {:ok, true} == in_function.(["active"], %{})
+      assert {:ok, true} == in_function.(["processing"], %{})
+      assert {:ok, false} == in_function.(["inactive"], %{})
     end
   end
 
@@ -284,7 +272,7 @@ defmodule Statifier.DatamodelTest do
       """
 
       {:ok, state_chart} = initialize_from_xml(xml)
-      assert state_chart.data_model == %{}
+      assert state_chart.datamodel == %{}
     end
 
     test "handles missing datamodel" do
@@ -296,7 +284,7 @@ defmodule Statifier.DatamodelTest do
       """
 
       {:ok, state_chart} = initialize_from_xml(xml)
-      assert state_chart.data_model == %{}
+      assert state_chart.datamodel == %{}
     end
 
     test "handles invalid expressions gracefully" do
@@ -308,9 +296,9 @@ defmodule Statifier.DatamodelTest do
 
       {:ok, state_chart} = initialize_from_xml(xml)
 
-      assert state_chart.data_model["valid"] == 42
+      assert state_chart.datamodel["valid"] == 42
       # Invalid expressions should fall back to the literal string
-      assert state_chart.data_model["invalid"] == "this is not valid"
+      assert state_chart.datamodel["invalid"] == "this is not valid"
     end
   end
 end

@@ -25,7 +25,7 @@ defmodule Statifier.ValueEvaluator do
 
   """
 
-  alias Statifier.ConditionEvaluator
+  alias Statifier.Datamodel
   require Logger
 
   @doc """
@@ -49,30 +49,18 @@ defmodule Statifier.ValueEvaluator do
   @doc """
   Evaluate a compiled expression to extract its value (not just boolean result).
 
-  Context includes:
-  - Current state configuration
-  - Current event
-  - Data model variables
-
+  Takes a StateChart to build evaluation context.
   Returns `{:ok, value}` on success, `{:error, reason}` on failure.
   """
-  @spec evaluate_value(term() | nil, map()) :: {:ok, term()} | {:error, term()}
-  def evaluate_value(nil, _context), do: {:ok, nil}
+  @spec evaluate_value(term() | nil, Statifier.StateChart.t()) :: {:ok, term()} | {:error, term()}
+  def evaluate_value(nil, _state_chart), do: {:ok, nil}
 
-  def evaluate_value(compiled_expr, context) when is_map(context) do
-    # Build evaluation context similar to ConditionEvaluator but for value extraction
-    eval_context =
-      if has_scxml_context?(context) do
-        ConditionEvaluator.build_scxml_context(context)
-      else
-        context
-      end
+  def evaluate_value(compiled_expr, state_chart) do
+    # Build context once using the unified approach
+    context = Datamodel.build_evaluation_context(state_chart.datamodel, state_chart)
+    functions = Datamodel.build_predicator_functions(state_chart.configuration)
 
-    # Provide SCXML functions via v3.0 functions option
-    # Handle In() function like ConditionEvaluator
-    functions = ConditionEvaluator.build_functions_with_in_support(context)
-
-    case Predicator.evaluate(compiled_expr, eval_context, functions: functions) do
+    case Predicator.evaluate(compiled_expr, context, functions: functions) do
       {:ok, value} -> {:ok, value}
       {:error, reason} -> {:error, reason}
     end
@@ -88,19 +76,14 @@ defmodule Statifier.ValueEvaluator do
 
   Returns `{:ok, path_list}` on success, `{:error, reason}` on failure.
   """
-  @spec resolve_location(String.t(), map()) :: {:ok, [String.t()]} | {:error, term()}
-  def resolve_location(location_expr, context)
-      when is_binary(location_expr) and is_map(context) do
+  @spec resolve_location(String.t(), Statifier.StateChart.t()) ::
+          {:ok, [String.t()]} | {:error, term()}
+  def resolve_location(location_expr, state_chart) when is_binary(location_expr) do
     # Build evaluation context for location resolution
-    eval_context =
-      if has_scxml_context?(context) do
-        ConditionEvaluator.build_scxml_context(context)
-      else
-        context
-      end
+    context = Datamodel.build_evaluation_context(state_chart.datamodel, state_chart)
 
-    # Note: context_location doesn't need functions parameter, so no need to handle In() here
-    case Predicator.context_location(location_expr, eval_context) do
+    # Note: context_location doesn't need functions parameter
+    case Predicator.context_location(location_expr, context) do
       {:ok, path_components} -> {:ok, path_components}
       {:error, reason} -> {:error, reason}
     end
@@ -131,17 +114,18 @@ defmodule Statifier.ValueEvaluator do
 
   This performs the actual assignment operation after location validation.
   """
-  @spec assign_value([String.t()], term(), map()) :: {:ok, map()} | {:error, term()}
-  def assign_value(path_components, value, data_model) when is_list(path_components) do
-    if is_map(data_model) do
+  @spec assign_value([String.t()], term(), Statifier.Datamodel.t()) ::
+          {:ok, Statifier.Datamodel.t()} | {:error, term()}
+  def assign_value(path_components, value, datamodel) when is_list(path_components) do
+    if is_map(datamodel) do
       try do
-        updated_model = put_in_path(data_model, path_components, value)
+        updated_model = put_in_path(datamodel, path_components, value)
         {:ok, updated_model}
       rescue
         error -> {:error, error}
       end
     else
-      {:error, "Data model must be a map"}
+      {:error, "Datamodel must be a map"}
     end
   end
 
@@ -151,21 +135,22 @@ defmodule Statifier.ValueEvaluator do
   This combines expression evaluation with location-based assignment.
   If a pre-compiled expression is provided, it will be used for better performance.
   """
-  @spec evaluate_and_assign(String.t(), String.t(), map()) :: {:ok, map()} | {:error, term()}
-  def evaluate_and_assign(location_expr, value_expr, context)
-      when is_binary(location_expr) and is_binary(value_expr) and is_map(context) do
-    evaluate_and_assign(location_expr, value_expr, context, nil)
+  @spec evaluate_and_assign(String.t(), String.t(), Statifier.StateChart.t()) ::
+          {:ok, Statifier.Datamodel.t()} | {:error, term()}
+  def evaluate_and_assign(location_expr, value_expr, state_chart)
+      when is_binary(location_expr) and is_binary(value_expr) do
+    evaluate_and_assign(location_expr, value_expr, state_chart, nil)
   end
 
-  @spec evaluate_and_assign(String.t(), String.t(), map(), term() | nil) ::
-          {:ok, map()} | {:error, term()}
-  def evaluate_and_assign(location_expr, value_expr, context, compiled_expr)
-      when is_binary(location_expr) and is_binary(value_expr) and is_map(context) do
-    with {:ok, path} <- resolve_location(location_expr, context),
+  @spec evaluate_and_assign(String.t(), String.t(), Statifier.StateChart.t(), term() | nil) ::
+          {:ok, Statifier.Datamodel.t()} | {:error, term()}
+  def evaluate_and_assign(location_expr, value_expr, state_chart, compiled_expr)
+      when is_binary(location_expr) and is_binary(value_expr) do
+    with {:ok, path} <- resolve_location(location_expr, state_chart),
          {:ok, evaluated_value} <-
-           evaluate_expression_optimized(value_expr, compiled_expr, context),
-         data_model <- extract_data_model(context),
-         {:ok, updated_model} <- assign_value(path, evaluated_value, data_model) do
+           evaluate_expression_optimized(value_expr, compiled_expr, state_chart),
+         datamodel = state_chart.datamodel,
+         {:ok, updated_model} <- assign_value(path, evaluated_value, datamodel) do
       {:ok, updated_model}
     else
       error -> error
@@ -173,30 +158,23 @@ defmodule Statifier.ValueEvaluator do
   end
 
   # Use pre-compiled expression if available, otherwise use the string
-  defp evaluate_expression_optimized(_value_expr, compiled_expr, context)
+  defp evaluate_expression_optimized(_value_expr, compiled_expr, state_chart)
        when not is_nil(compiled_expr) do
     # Pass compiled instructions directly to predicator
-    evaluate_with_predicator(compiled_expr, context)
+    evaluate_with_predicator(compiled_expr, state_chart)
   end
 
-  defp evaluate_expression_optimized(value_expr, nil, context) do
+  defp evaluate_expression_optimized(value_expr, nil, state_chart) do
     # Pass string directly to predicator for compilation and evaluation
-    evaluate_with_predicator(value_expr, context)
+    evaluate_with_predicator(value_expr, state_chart)
   end
 
   # Evaluate using predicator with proper SCXML context and functions
-  defp evaluate_with_predicator(expression_or_instructions, context) do
-    eval_context =
-      if has_scxml_context?(context) do
-        ConditionEvaluator.build_scxml_context(context)
-      else
-        context
-      end
+  defp evaluate_with_predicator(expression_or_instructions, state_chart) do
+    context = Datamodel.build_evaluation_context(state_chart.datamodel, state_chart)
+    functions = Datamodel.build_predicator_functions(state_chart.configuration)
 
-    # Handle In() function like in evaluate_value
-    functions = ConditionEvaluator.build_functions_with_in_support(context)
-
-    case Predicator.evaluate(expression_or_instructions, eval_context, functions: functions) do
+    case Predicator.evaluate(expression_or_instructions, context, functions: functions) do
       {:ok, value} -> {:ok, value}
       {:error, reason} -> {:error, reason}
     end
@@ -205,15 +183,6 @@ defmodule Statifier.ValueEvaluator do
   end
 
   # Private functions
-
-  # Check if context has SCXML-specific keys
-  defp has_scxml_context?(context) do
-    Map.has_key?(context, :configuration) or Map.has_key?(context, :current_event)
-  end
-
-  # Extract data model from SCXML context or return context as-is
-  defp extract_data_model(%{data_model: data_model}) when is_map(data_model), do: data_model
-  defp extract_data_model(context) when is_map(context), do: context
 
   # Safely put a value at a nested path in a map
   defp put_in_path(map, [key], value) when is_map(map) do

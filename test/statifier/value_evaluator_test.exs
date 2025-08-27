@@ -1,7 +1,7 @@
 defmodule Statifier.ValueEvaluatorTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.{Configuration, Event, ValueEvaluator}
+  alias Statifier.{Configuration, Event, StateChart, ValueEvaluator}
 
   doctest Statifier.ValueEvaluator
 
@@ -39,57 +39,81 @@ defmodule Statifier.ValueEvaluatorTest do
 
   describe "evaluate_value/2" do
     test "evaluates simple property access" do
-      context = %{"user" => %{"name" => "John Doe"}}
-      {:ok, compiled} = ValueEvaluator.compile_expression("user.name")
-
-      assert {:ok, "John Doe"} = ValueEvaluator.evaluate_value(compiled, context)
-    end
-
-    test "evaluates nested property access" do
-      context = %{"user" => %{"profile" => %{"settings" => %{"theme" => "dark"}}}}
-      {:ok, compiled} = ValueEvaluator.compile_expression("user.profile.settings.theme")
-
-      assert {:ok, "dark"} = ValueEvaluator.evaluate_value(compiled, context)
-    end
-
-    test "evaluates mixed notation" do
-      context = %{"users" => %{"john" => %{"active" => true}}}
-      {:ok, compiled} = ValueEvaluator.compile_expression("users['john'].active")
-
-      assert {:ok, true} = ValueEvaluator.evaluate_value(compiled, context)
-    end
-
-    test "evaluates arithmetic expressions" do
-      context = %{"count" => 5}
-      {:ok, compiled} = ValueEvaluator.compile_expression("count + 3")
-
-      assert {:ok, 8} = ValueEvaluator.evaluate_value(compiled, context)
-    end
-
-    test "handles nil compiled expression" do
-      assert {:ok, nil} = ValueEvaluator.evaluate_value(nil, %{})
-    end
-
-    test "works with SCXML context" do
-      configuration = %Configuration{active_states: MapSet.new(["state1"])}
-      event = %Event{name: "test_event", data: %{"value" => "test"}}
-
-      context = %{
-        configuration: configuration,
-        current_event: event,
-        data_model: %{"user" => %{"name" => "Jane"}}
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{"user" => %{"name" => "John Doe"}}
       }
 
       {:ok, compiled} = ValueEvaluator.compile_expression("user.name")
-      assert {:ok, "Jane"} = ValueEvaluator.evaluate_value(compiled, context)
+
+      assert {:ok, "John Doe"} = ValueEvaluator.evaluate_value(compiled, state_chart)
+    end
+
+    test "evaluates nested property access" do
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{"user" => %{"profile" => %{"settings" => %{"theme" => "dark"}}}}
+      }
+
+      {:ok, compiled} = ValueEvaluator.compile_expression("user.profile.settings.theme")
+
+      assert {:ok, "dark"} = ValueEvaluator.evaluate_value(compiled, state_chart)
+    end
+
+    test "evaluates mixed notation" do
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{"users" => %{"john" => %{"active" => true}}}
+      }
+
+      {:ok, compiled} = ValueEvaluator.compile_expression("users['john'].active")
+
+      assert {:ok, true} = ValueEvaluator.evaluate_value(compiled, state_chart)
+    end
+
+    test "evaluates arithmetic expressions" do
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{"count" => 5}
+      }
+
+      {:ok, compiled} = ValueEvaluator.compile_expression("count + 3")
+
+      assert {:ok, 8} = ValueEvaluator.evaluate_value(compiled, state_chart)
+    end
+
+    test "handles nil compiled expression" do
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{}
+      }
+
+      assert {:ok, nil} = ValueEvaluator.evaluate_value(nil, state_chart)
+    end
+
+    test "works with SCXML context" do
+      event = %Event{name: "test_event", data: %{"value" => "test"}}
+
+      state_chart = %StateChart{
+        configuration: Configuration.new(["state1"]),
+        current_event: event,
+        datamodel: %{"user" => %{"name" => "Jane"}}
+      }
+
+      {:ok, compiled} = ValueEvaluator.compile_expression("user.name")
+      assert {:ok, "Jane"} = ValueEvaluator.evaluate_value(compiled, state_chart)
     end
 
     test "returns :undefined for missing properties" do
-      context = %{}
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{}
+      }
+
       {:ok, compiled} = ValueEvaluator.compile_expression("nonexistent.property")
 
       # Predicator v3.0 returns :undefined for missing properties instead of error
-      assert {:ok, :undefined} = ValueEvaluator.evaluate_value(compiled, context)
+      assert {:ok, :undefined} = ValueEvaluator.evaluate_value(compiled, state_chart)
     end
   end
 
@@ -115,62 +139,64 @@ defmodule Statifier.ValueEvaluatorTest do
 
   describe "resolve_location/2" do
     test "resolves location with context validation" do
-      context = %{"user" => %{"name" => "John"}}
-      assert {:ok, ["user", "name"]} = ValueEvaluator.resolve_location("user.name", context)
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{"user" => %{"name" => "John"}}
+      }
+
+      assert {:ok, ["user", "name"]} = ValueEvaluator.resolve_location("user.name", state_chart)
     end
 
     test "works with SCXML context" do
-      configuration = %Configuration{active_states: MapSet.new(["state1"])}
-
-      context = %{
-        configuration: configuration,
-        data_model: %{"user" => %{"settings" => %{}}}
+      state_chart = %StateChart{
+        configuration: Configuration.new(["state1"]),
+        datamodel: %{"user" => %{"settings" => %{}}}
       }
 
       assert {:ok, ["user", "settings", "theme"]} =
-               ValueEvaluator.resolve_location("user.settings.theme", context)
+               ValueEvaluator.resolve_location("user.settings.theme", state_chart)
     end
   end
 
   describe "assign_value/3" do
     test "assigns to simple path" do
-      data_model = %{}
+      datamodel = %{}
 
       assert {:ok, %{"user" => "John"}} =
-               ValueEvaluator.assign_value(["user"], "John", data_model)
+               ValueEvaluator.assign_value(["user"], "John", datamodel)
     end
 
     test "assigns to nested path" do
-      data_model = %{}
+      datamodel = %{}
 
       assert {:ok, %{"user" => %{"name" => "John"}}} =
-               ValueEvaluator.assign_value(["user", "name"], "John", data_model)
+               ValueEvaluator.assign_value(["user", "name"], "John", datamodel)
     end
 
     test "assigns to deeply nested path" do
-      data_model = %{}
+      datamodel = %{}
 
       assert {:ok, %{"user" => %{"profile" => %{"settings" => %{"theme" => "dark"}}}}} =
                ValueEvaluator.assign_value(
                  ["user", "profile", "settings", "theme"],
                  "dark",
-                 data_model
+                 datamodel
                )
     end
 
     test "updates existing nested path" do
-      data_model = %{"user" => %{"name" => "Old", "age" => 30}}
+      datamodel = %{"user" => %{"name" => "Old", "age" => 30}}
 
       assert {:ok, %{"user" => %{"name" => "New", "age" => 30}}} =
-               ValueEvaluator.assign_value(["user", "name"], "New", data_model)
+               ValueEvaluator.assign_value(["user", "name"], "New", datamodel)
     end
 
     test "assigns complex values" do
-      data_model = %{}
+      datamodel = %{}
       complex_value = %{"id" => 1, "active" => true, "tags" => ["admin", "user"]}
 
       assert {:ok, %{"profile" => ^complex_value}} =
-               ValueEvaluator.assign_value(["profile"], complex_value, data_model)
+               ValueEvaluator.assign_value(["profile"], complex_value, datamodel)
     end
 
     test "returns error for non-map data model" do
@@ -180,49 +206,61 @@ defmodule Statifier.ValueEvaluatorTest do
 
   describe "evaluate_and_assign/3" do
     test "evaluates expression and assigns result" do
-      context = %{"counter" => 5, "data_model" => %{}}
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{"counter" => 5}
+      }
 
       assert {:ok, %{"result" => 10}} =
-               ValueEvaluator.evaluate_and_assign("result", "counter * 2", context)
+               ValueEvaluator.evaluate_and_assign("result", "counter * 2", state_chart)
     end
 
     test "works with nested assignments" do
-      context = %{"name" => "John", "data_model" => %{}}
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{"name" => "John"}
+      }
 
       assert {:ok, %{"user" => %{"profile" => %{"name" => "John"}}}} =
-               ValueEvaluator.evaluate_and_assign("user.profile.name", "name", context)
+               ValueEvaluator.evaluate_and_assign("user.profile.name", "name", state_chart)
     end
 
     test "works with SCXML context" do
-      configuration = %Configuration{active_states: MapSet.new(["active"])}
       event = %Event{name: "update", data: %{"value" => "new_value"}}
 
-      context = %{
-        configuration: configuration,
+      state_chart = %StateChart{
+        configuration: Configuration.new(["active"]),
         current_event: event,
-        data_model: %{"settings" => %{}}
+        datamodel: %{"settings" => %{}}
       }
 
       assert {:ok, %{"settings" => %{"last_update" => "new_value"}}} =
                ValueEvaluator.evaluate_and_assign(
                  "settings.last_update",
-                 "_event.data.value",
-                 context
+                 # Event data is accessible directly
+                 "value",
+                 state_chart
                )
     end
 
     test "returns error for invalid location" do
-      context = %{"value" => 42}
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{"value" => 42}
+      }
 
       assert {:error, _reason} =
-               ValueEvaluator.evaluate_and_assign("invalid [[ syntax", "value", context)
+               ValueEvaluator.evaluate_and_assign("invalid [[ syntax", "value", state_chart)
     end
 
     test "returns error for invalid expression" do
-      context = %{"data_model" => %{}}
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{}
+      }
 
       assert {:error, _reason} =
-               ValueEvaluator.evaluate_and_assign("result", "invalid [[ syntax", context)
+               ValueEvaluator.evaluate_and_assign("result", "invalid [[ syntax", state_chart)
     end
   end
 end

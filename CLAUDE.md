@@ -124,7 +124,7 @@ Also use this initial Elixir implementation as reference: <https://github.com/ca
 - **`Statifier.StateChart`** - Runtime container for SCXML state machines
   - Combines document, configuration, event queues, and data model
   - Maintains internal and external event queues per SCXML specification
-  - **Data model storage**: Persistent variable storage with `data_model` field
+  - **Datamodel storage**: Persistent variable storage with `datamodel` field
   - **Current event context**: Tracks current event for expression evaluation
 - **`Statifier.Configuration`** - Active state configuration management
   - Stores only leaf states for efficient memory usage

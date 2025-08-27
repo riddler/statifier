@@ -12,7 +12,7 @@ defmodule Statifier.StateChart do
     :document,
     :configuration,
     :current_event,
-    data_model: %{},
+    datamodel: %{},
     internal_queue: [],
     external_queue: []
   ]
@@ -21,7 +21,7 @@ defmodule Statifier.StateChart do
           document: Document.t(),
           configuration: Configuration.t(),
           current_event: Event.t() | nil,
-          data_model: map(),
+          datamodel: Statifier.Datamodel.t(),
           internal_queue: [Event.t()],
           external_queue: [Event.t()]
         }
@@ -35,7 +35,7 @@ defmodule Statifier.StateChart do
       document: document,
       configuration: %Statifier.Configuration{},
       current_event: nil,
-      data_model: %{},
+      datamodel: %{},
       internal_queue: [],
       external_queue: []
     }
@@ -50,7 +50,7 @@ defmodule Statifier.StateChart do
       document: document,
       configuration: configuration,
       current_event: nil,
-      data_model: %{},
+      datamodel: %{},
       internal_queue: [],
       external_queue: []
     }
@@ -112,11 +112,11 @@ defmodule Statifier.StateChart do
   end
 
   @doc """
-  Update the data model of the state chart.
+  Update the datamodel of the state chart.
   """
-  @spec update_data_model(t(), map()) :: t()
-  def update_data_model(%__MODULE__{} = state_chart, data_model) when is_map(data_model) do
-    %{state_chart | data_model: data_model}
+  @spec update_datamodel(t(), Statifier.Datamodel.t()) :: t()
+  def update_datamodel(%__MODULE__{} = state_chart, datamodel) when is_map(datamodel) do
+    %{state_chart | datamodel: datamodel}
   end
 
   @doc """
