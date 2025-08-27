@@ -10,7 +10,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
     Actions.AssignAction,
     Actions.LogAction,
     Actions.RaiseAction,
-    ConditionEvaluator
+    Evaluator
   }
 
   alias Statifier.Parser.SCXML.LocationTracker
@@ -182,7 +182,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
 
     # Compile condition if present
     compiled_cond =
-      case ConditionEvaluator.compile_condition(cond_attr) do
+      case Evaluator.compile_expression(cond_attr) do
         {:ok, compiled} ->
           compiled
 

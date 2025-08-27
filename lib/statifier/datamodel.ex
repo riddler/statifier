@@ -27,7 +27,7 @@ defmodule Statifier.Datamodel do
       datamodel = Statifier.Datamodel.set(datamodel, "counter", 1)
   """
 
-  alias Statifier.{Configuration, ValueEvaluator}
+  alias Statifier.{Configuration, Evaluator}
   require Logger
 
   @type t :: map()
@@ -89,6 +89,43 @@ defmodule Statifier.Datamodel do
   @spec merge(t(), map()) :: t()
   def merge(datamodel, updates) when is_map(updates) do
     Map.merge(datamodel, updates)
+  end
+
+  @doc """
+  Set a value at a nested path in the datamodel.
+
+  Takes a datamodel, a list of path components (keys), and a value.
+  Creates intermediate maps as needed for nested assignment.
+
+  ## Examples
+
+      iex> datamodel = %{}
+      iex> Statifier.Datamodel.put_in_path(datamodel, ["user", "name"], "John")
+      {:ok, %{"user" => %{"name" => "John"}}}
+
+      iex> datamodel = %{"user" => %{"age" => 30}}
+      iex> Statifier.Datamodel.put_in_path(datamodel, ["user", "name"], "Jane")
+      {:ok, %{"user" => %{"age" => 30, "name" => "Jane"}}}
+
+  """
+  @spec put_in_path(t(), list(String.t()), any()) :: {:ok, t()} | {:error, String.t()}
+  def put_in_path(datamodel, path_components, value)
+
+  def put_in_path(map, [key], value) when is_map(map) do
+    {:ok, Map.put(map, key, value)}
+  end
+
+  def put_in_path(map, [key | rest], value) when is_map(map) do
+    nested_map = Map.get(map, key, %{})
+
+    case put_in_path(nested_map, rest, value) do
+      {:ok, updated_nested} -> {:ok, Map.put(map, key, updated_nested)}
+      error -> error
+    end
+  end
+
+  def put_in_path(_non_map, _path, _value) do
+    {:error, "Cannot assign to non-map structure"}
   end
 
   @doc """
@@ -178,9 +215,9 @@ defmodule Statifier.Datamodel do
   defp evaluate_initial_expression("", _state_chart), do: nil
 
   defp evaluate_initial_expression(expr_string, state_chart) do
-    case ValueEvaluator.compile_expression(expr_string) do
+    case Evaluator.compile_expression(expr_string) do
       {:ok, compiled} ->
-        case ValueEvaluator.evaluate_value(compiled, state_chart) do
+        case Evaluator.evaluate_value(compiled, state_chart) do
           {:ok, val} ->
             val
 

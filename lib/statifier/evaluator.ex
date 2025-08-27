@@ -1,35 +1,43 @@
-defmodule Statifier.ValueEvaluator do
+defmodule Statifier.Evaluator do
   @moduledoc """
-  Handles compilation and evaluation of SCXML value expressions using Predicator v3.0.
+  Unified expression evaluation for SCXML using Predicator.
 
-  This module extends beyond boolean conditions to evaluate actual values from expressions,
-  supporting nested property access, assignments, and complex data model operations.
+  This module handles both condition evaluation (boolean results) and value evaluation 
+  (extracting actual values) for SCXML expressions. It supports:
 
-  Key features:
-  - Value evaluation (not just boolean conditions)
-  - Nested property access (user.profile.name)
-  - Location path validation for assignments
-  - Mixed access patterns (dot and bracket notation)
-  - Type-safe value extraction
+  - Conditional expressions for transitions and guards
+  - Value expressions for assignments and data manipulation
+  - Location path resolution for assignments
+  - Assignment operations with type-safe updates
+  - Nested property access and mixed notation
+  - SCXML built-in functions (In() for state checks)
+  - Event data access and datamodel variables
 
   ## Examples
 
-      # Value evaluation
-      {:ok, compiled} = Statifier.ValueEvaluator.compile_expression("user.profile.name")
-      {:ok, value} = Statifier.ValueEvaluator.evaluate_value(compiled, context)
+      # Condition evaluation
+      {:ok, compiled} = Statifier.Evaluator.compile_expression("score > 80")
+      result = Statifier.Evaluator.evaluate_condition(compiled, state_chart)
+      # => true or false
+
+      # Value evaluation  
+      {:ok, compiled} = Statifier.Evaluator.compile_expression("user.name")
+      {:ok, value} = Statifier.Evaluator.evaluate_value(compiled, state_chart)
       # => {:ok, "John Doe"}
 
-      # Location path validation for assignments
-      {:ok, path} = Statifier.ValueEvaluator.resolve_location("user.settings.theme", context)
-      # => {:ok, ["user", "settings", "theme"]}
-
+      # Assignment operations
+      {:ok, updated_datamodel} = Statifier.Evaluator.evaluate_and_assign(
+        "user.profile.name", 
+        "'Jane Smith'", 
+        state_chart
+      )
   """
 
   alias Statifier.Datamodel
   require Logger
 
   @doc """
-  Compile a value expression string into predicator instructions.
+  Compile an expression string into predicator instructions for reuse.
 
   Returns `{:ok, compiled}` on success, `{:error, reason}` on failure.
   """
@@ -44,6 +52,29 @@ defmodule Statifier.ValueEvaluator do
     end
   rescue
     error -> {:error, error}
+  end
+
+  @doc """
+  Evaluate a compiled condition with SCXML context.
+
+  Takes a StateChart to build evaluation context.
+  Returns boolean result. On error, returns false per SCXML spec.
+  """
+  @spec evaluate_condition(term() | nil, Statifier.StateChart.t()) :: boolean()
+  def evaluate_condition(nil, _state_chart), do: true
+
+  def evaluate_condition(compiled_cond, state_chart) do
+    # Build context once using the unified approach
+    context = Datamodel.build_evaluation_context(state_chart.datamodel, state_chart)
+    functions = Datamodel.build_predicator_functions(state_chart.configuration)
+
+    case Predicator.evaluate(compiled_cond, context, functions: functions) do
+      {:ok, result} when is_boolean(result) -> result
+      {:ok, _non_boolean} -> false
+      {:error, _reason} -> false
+    end
+  rescue
+    _error -> false
   end
 
   @doc """
@@ -62,6 +93,24 @@ defmodule Statifier.ValueEvaluator do
 
     case Predicator.evaluate(compiled_expr, context, functions: functions) do
       {:ok, value} -> {:ok, value}
+      {:error, reason} -> {:error, reason}
+    end
+  rescue
+    error -> {:error, error}
+  end
+
+  @doc """
+  Resolve a location path from a string expression only (without context validation).
+
+  This is useful when you need to determine the assignment path structure
+  before evaluating against a specific context.
+
+  Returns `{:ok, path_list}` on success, `{:error, reason}` on failure.
+  """
+  @spec resolve_location(String.t()) :: {:ok, [String.t()]} | {:error, term()}
+  def resolve_location(location_expr) when is_binary(location_expr) do
+    case Predicator.context_location(location_expr) do
+      {:ok, path_components} -> {:ok, path_components}
       {:error, reason} -> {:error, reason}
     end
   rescue
@@ -92,24 +141,6 @@ defmodule Statifier.ValueEvaluator do
   end
 
   @doc """
-  Resolve a location path from a string expression only (without context validation).
-
-  This is useful when you need to determine the assignment path structure
-  before evaluating against a specific context.
-
-  Returns `{:ok, path_list}` on success, `{:error, reason}` on failure.
-  """
-  @spec resolve_location(String.t()) :: {:ok, [String.t()]} | {:error, term()}
-  def resolve_location(location_expr) when is_binary(location_expr) do
-    case Predicator.context_location(location_expr) do
-      {:ok, path_components} -> {:ok, path_components}
-      {:error, reason} -> {:error, reason}
-    end
-  rescue
-    error -> {:error, error}
-  end
-
-  @doc """
   Assign a value to a location in the data model using the resolved path.
 
   This performs the actual assignment operation after location validation.
@@ -117,16 +148,7 @@ defmodule Statifier.ValueEvaluator do
   @spec assign_value([String.t()], term(), Statifier.Datamodel.t()) ::
           {:ok, Statifier.Datamodel.t()} | {:error, term()}
   def assign_value(path_components, value, datamodel) when is_list(path_components) do
-    if is_map(datamodel) do
-      try do
-        updated_model = put_in_path(datamodel, path_components, value)
-        {:ok, updated_model}
-      rescue
-        error -> {:error, error}
-      end
-    else
-      {:error, "Datamodel must be a map"}
-    end
+    Datamodel.put_in_path(datamodel, path_components, value)
   end
 
   @doc """
@@ -157,6 +179,8 @@ defmodule Statifier.ValueEvaluator do
     end
   end
 
+  # Private functions
+
   # Use pre-compiled expression if available, otherwise use the string
   defp evaluate_expression_optimized(_value_expr, compiled_expr, state_chart)
        when not is_nil(compiled_expr) do
@@ -180,22 +204,5 @@ defmodule Statifier.ValueEvaluator do
     end
   rescue
     error -> {:error, error}
-  end
-
-  # Private functions
-
-  # Safely put a value at a nested path in a map
-  defp put_in_path(map, [key], value) when is_map(map) do
-    Map.put(map, key, value)
-  end
-
-  defp put_in_path(map, [key | rest], value) when is_map(map) do
-    nested_map = Map.get(map, key, %{})
-    updated_nested = put_in_path(nested_map, rest, value)
-    Map.put(map, key, updated_nested)
-  end
-
-  defp put_in_path(_non_map, _path, _value) do
-    raise ArgumentError, "Cannot assign to non-map structure"
   end
 end

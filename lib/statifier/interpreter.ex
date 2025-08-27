@@ -8,10 +8,10 @@ defmodule Statifier.Interpreter do
 
   alias Statifier.{
     Actions.ActionExecutor,
-    ConditionEvaluator,
     Configuration,
     Datamodel,
     Document,
+    Evaluator,
     Event,
     StateChart,
     Validator
@@ -254,7 +254,7 @@ defmodule Statifier.Interpreter do
   defp transition_condition_enabled?(%{compiled_cond: nil}, _context), do: true
 
   defp transition_condition_enabled?(%{compiled_cond: compiled_cond}, context) do
-    ConditionEvaluator.evaluate_condition(compiled_cond, context)
+    Evaluator.evaluate_condition(compiled_cond, context)
   end
 
   defp find_enabled_transitions(%StateChart{} = state_chart, %Event{} = event) do
