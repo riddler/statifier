@@ -16,6 +16,7 @@ defmodule Statifier.Interpreter do
     StateChart,
     Validator
   }
+
   alias Statifier.Logging.LogManager
 
   @doc """
