@@ -57,9 +57,9 @@ defmodule Statifier.FeatureDetector do
       conditional_transitions: :supported,
       eventless_transitions: :supported,
 
-      # Data model features (partially supported)
-      datamodel: :unsupported,
-      data_elements: :unsupported,
+      # Data model features (supported)
+      datamodel: :supported,
+      data_elements: :supported,
       script_elements: :unsupported,
       assign_elements: :supported,
 

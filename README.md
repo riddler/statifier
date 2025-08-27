@@ -107,7 +107,6 @@ The next major areas for development focus on expanding SCXML feature support:
 ### **High Priority Features**
 
 - **Executable Content** - `<script>` elements (`<onentry>`, `<onexit>`, `<assign>` now supported!)
-- **Datamodel Support** - `<data>` elements with expression evaluation
 - **History States** - Shallow and deep history state support
 
 ### **Medium Priority Features**  
@@ -306,7 +305,7 @@ The project maintains high code quality through automated checks:
 mix format              # Auto-fix formatting
 mix test.regression     # Run critical regression tests (22 tests)
 mix credo --strict      # Static code analysis
-mix dialyzer           # Type checking
+mix dialyzer            # Type checking
 ```
 
 ### Regression Testing
@@ -486,7 +485,7 @@ git push origin feature-branch
 - All code is formatted with `mix format`
 - Static analysis with Credo (strict mode)
 - Type checking with Dialyzer
-- Comprehensive test coverage (95%+ maintained)
+- Comprehensive test coverage (90%+ maintained)
 - Detailed documentation with `@moduledoc` and `@doc`
 - Pattern matching preferred over multiple assertions in tests
 - Git pre-push hook enforces validation workflow automatically
@@ -500,5 +499,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [W3C SCXML Specification](https://www.w3.org/TR/scxml/) - Official specification
 - [SCION Test Suite](https://github.com/jbeard4/SCION) - Comprehensive test cases
-- [ex_statechart](https://github.com/camshaft/ex_statechart) - Reference implementation
-
