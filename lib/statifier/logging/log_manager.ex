@@ -44,7 +44,7 @@ defmodule Statifier.Logging.LogManager do
   """
 
   alias Statifier.{Configuration, StateChart}
-  alias Statifier.Logging.{Adapter, ElixirLoggerAdapter, TestAdapter}
+  alias Statifier.Logging.{Adapter, ElixirLoggerAdapter}
 
   @levels [:trace, :debug, :info, :warn, :error]
 
@@ -286,25 +286,16 @@ defmodule Statifier.Logging.LogManager do
     {:error, "Invalid adapter configuration: #{inspect(invalid)}"}
   end
 
-  # Environment-specific defaults using application environment
+  # Default configuration - ElixirLoggerAdapter is always the default
   defp get_default_adapter_config do
-    case Application.get_env(:statifier, :environment, :prod) do
-      :test -> {TestAdapter, [max_entries: 100]}
-      _other -> {ElixirLoggerAdapter, []}
-    end
+    {ElixirLoggerAdapter, []}
   end
 
   defp get_default_adapter do
-    case Application.get_env(:statifier, :environment, :prod) do
-      :test -> %TestAdapter{max_entries: 100}
-      _other -> %ElixirLoggerAdapter{}
-    end
+    %ElixirLoggerAdapter{}
   end
 
   defp get_default_log_level do
-    case Application.get_env(:statifier, :environment, :prod) do
-      :test -> :debug
-      _other -> :info
-    end
+    :info
   end
 end

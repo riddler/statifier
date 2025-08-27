@@ -20,17 +20,10 @@ defmodule Statifier.Interpreter.LoggingConfigurationTest do
     test "uses default configuration when no options provided" do
       {:ok, state_chart} = Interpreter.initialize(@test_document)
 
-      # Should be configured with environment-specific defaults
-      case Mix.env() do
-        :test ->
-          assert state_chart.log_adapter.__struct__ == TestAdapter
-          assert state_chart.log_adapter.max_entries == 100
-          assert state_chart.log_level == :debug
-
-        _other ->
-          assert state_chart.log_adapter.__struct__ == ElixirLoggerAdapter
-          assert state_chart.log_level == :info
-      end
+      # Should use TestAdapter in test environment due to test_helper.exs config
+      assert state_chart.log_adapter.__struct__ == TestAdapter
+      assert state_chart.log_adapter.max_entries == 100
+      assert state_chart.log_level == :debug
     end
 
     test "accepts log_adapter as struct" do
@@ -38,7 +31,7 @@ defmodule Statifier.Interpreter.LoggingConfigurationTest do
       {:ok, state_chart} = Interpreter.initialize(@test_document, log_adapter: adapter)
 
       assert state_chart.log_adapter == adapter
-      # Default for test env
+      # Default log level from application config in test_helper.exs
       assert state_chart.log_level == :debug
     end
 
@@ -85,14 +78,8 @@ defmodule Statifier.Interpreter.LoggingConfigurationTest do
           log_adapter: {NonExistentModule, []}
         )
 
-      # Should fall back to default adapter
-      case Mix.env() do
-        :test ->
-          assert state_chart.log_adapter.__struct__ == TestAdapter
-
-        _other ->
-          assert state_chart.log_adapter.__struct__ == ElixirLoggerAdapter
-      end
+      # Should fall back to hardcoded ElixirLoggerAdapter (most robust fallback)
+      assert state_chart.log_adapter.__struct__ == ElixirLoggerAdapter
     end
 
     test "falls back to default adapter on invalid struct options" do
@@ -102,14 +89,8 @@ defmodule Statifier.Interpreter.LoggingConfigurationTest do
           log_adapter: {TestAdapter, [invalid_option: 123]}
         )
 
-      # Should fall back to default adapter
-      case Mix.env() do
-        :test ->
-          assert state_chart.log_adapter.__struct__ == TestAdapter
-
-        _other ->
-          assert state_chart.log_adapter.__struct__ == ElixirLoggerAdapter
-      end
+      # Should fall back to hardcoded ElixirLoggerAdapter (most robust fallback)
+      assert state_chart.log_adapter.__struct__ == ElixirLoggerAdapter
     end
   end
 
@@ -182,16 +163,14 @@ defmodule Statifier.Interpreter.LoggingConfigurationTest do
     end
   end
 
-  describe "environment-specific defaults" do
-    test "test environment uses TestAdapter with debug level by default" do
-      # This test only runs in test environment
-      if Mix.env() == :test do
-        {:ok, state_chart} = Interpreter.initialize(@test_document)
+  describe "test environment configuration" do
+    test "uses TestAdapter in test environment due to application config" do
+      {:ok, state_chart} = Interpreter.initialize(@test_document)
 
-        assert state_chart.log_adapter.__struct__ == TestAdapter
-        assert state_chart.log_adapter.max_entries == 100
-        assert state_chart.log_level == :debug
-      end
+      # Should use TestAdapter due to test_helper.exs application configuration
+      assert state_chart.log_adapter.__struct__ == TestAdapter
+      assert state_chart.log_adapter.max_entries == 100
+      assert state_chart.log_level == :debug
     end
   end
 
@@ -209,14 +188,8 @@ defmodule Statifier.Interpreter.LoggingConfigurationTest do
       Enum.each(invalid_configs, fn invalid_config ->
         {:ok, state_chart} = Interpreter.initialize(@test_document, log_adapter: invalid_config)
 
-        # Should fall back to default adapter
-        case Mix.env() do
-          :test ->
-            assert state_chart.log_adapter.__struct__ == TestAdapter
-
-          _other ->
-            assert state_chart.log_adapter.__struct__ == ElixirLoggerAdapter
-        end
+        # Should fall back to hardcoded ElixirLoggerAdapter (most robust fallback)
+        assert state_chart.log_adapter.__struct__ == ElixirLoggerAdapter
       end)
     end
 
