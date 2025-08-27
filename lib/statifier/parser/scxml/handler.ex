@@ -56,6 +56,9 @@ defmodule Statifier.Parser.SCXML.Handler do
   def handle_event(:end_element, "log", state), do: StateStack.handle_log_end(state)
   def handle_event(:end_element, "raise", state), do: StateStack.handle_raise_end(state)
   def handle_event(:end_element, "assign", state), do: StateStack.handle_assign_end(state)
+  def handle_event(:end_element, "if", state), do: StateStack.handle_if_end(state)
+  def handle_event(:end_element, "elseif", state), do: StateStack.handle_elseif_end(state)
+  def handle_event(:end_element, "else", state), do: StateStack.handle_else_end(state)
 
   def handle_event(:end_element, state_type, state)
       when state_type in ["state", "parallel", "final", "initial"],
@@ -262,8 +265,67 @@ defmodule Statifier.Parser.SCXML.Handler do
     {:ok, StateStack.push_element(updated_state, "assign", assign_action)}
   end
 
+  defp dispatch_element_start("if", attributes, location, state) do
+    # Start a conditional block container
+    if_block = %{
+      type: :if,
+      cond: get_attribute(attributes, "cond"),
+      actions: [],
+      location: location
+    }
+
+    updated_state = %{
+      state
+      | current_element: {:if, :if_container}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "if", if_block)}
+  end
+
+  defp dispatch_element_start("elseif", attributes, location, state) do
+    # Switch to new conditional block within current if container
+    elseif_block = %{
+      type: :elseif,
+      cond: get_attribute(attributes, "cond"),
+      actions: [],
+      location: location
+    }
+
+    updated_state = %{
+      state
+      | current_element: {:elseif, :elseif_marker}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "elseif", elseif_block)}
+  end
+
+  defp dispatch_element_start("else", _attributes, location, state) do
+    # Switch to final conditional block within current if container
+    else_block = %{
+      type: :else,
+      cond: nil,
+      actions: [],
+      location: location
+    }
+
+    updated_state = %{
+      state
+      | current_element: {:else, :else_marker}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "else", else_block)}
+  end
+
   defp dispatch_element_start(unknown_element_name, _attributes, _location, state) do
     # Skip unknown elements but track them in stack
     {:ok, StateStack.push_element(state, unknown_element_name, nil)}
+  end
+
+  # Helper function to extract attribute value from attributes list
+  defp get_attribute(attributes, name) do
+    case List.keyfind(attributes, name, 0) do
+      {^name, value} -> value
+      nil -> nil
+    end
   end
 end

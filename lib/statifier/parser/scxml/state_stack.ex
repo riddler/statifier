@@ -431,4 +431,34 @@ defmodule Statifier.Parser.SCXML.StateStack do
     # Assign element not in an onentry/onexit context, just pop it
     {:ok, pop_element(state)}
   end
+
+  @doc """
+  Handle the end of an if element by creating an IfAction from collected conditional blocks.
+  """
+  @spec handle_if_end(map()) :: {:ok, map()}
+  def handle_if_end(state) do
+    # For now, just pop the if element - full implementation follows
+    # TODO: Collect all conditional blocks and create IfAction
+    {:ok, pop_element(state)}
+  end
+
+  @doc """
+  Handle the end of an elseif element by switching to new conditional block.
+  """
+  @spec handle_elseif_end(map()) :: {:ok, map()}
+  def handle_elseif_end(state) do
+    # For now, just pop the elseif element
+    # TODO: Switch conditional block context
+    {:ok, pop_element(state)}
+  end
+
+  @doc """
+  Handle the end of an else element by switching to final conditional block.
+  """
+  @spec handle_else_end(map()) :: {:ok, map()}
+  def handle_else_end(state) do
+    # For now, just pop the else element
+    # TODO: Switch to else block context
+    {:ok, pop_element(state)}
+  end
 end
