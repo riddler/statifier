@@ -39,6 +39,8 @@ When verifying code changes, always follow this sequence (also automated via pre
 - `mix test test/statifier/parser/scxml_test.exs` - Run specific SCXML parser tests (uses pattern matching)
 - `mix test test/statifier/interpreter/compound_state_test.exs` - Run compound state tests
 - `mix test test/statifier/interpreter/eventless_transitions_test.exs` - Run eventless transition tests
+- `mix test test/statifier/logging/` - Run comprehensive logging infrastructure tests (30 tests)
+- `mix test test/statifier/actions/` - Run action execution tests with integrated StateChart logging
 
 **Development:**
 
@@ -151,6 +153,18 @@ Also use this initial Elixir implementation as reference: <https://github.com/ca
   - **Predicator v3.0**: Upgraded from v2.0 with enhanced nested property access capabilities
   - **SCXML functions**: Maintains `In()` function and SCXML-specific context building
   - **Type-safe operations**: Improved type coercion and graceful fallback for missing properties
+
+### Logging Infrastructure
+
+- **`Statifier.Logging.Adapter`** - Protocol-based logging system for extensible backend integration
+  - **ElixirLoggerAdapter**: Production logging adapter integrating with Elixir's Logger system
+  - **TestAdapter**: In-memory log storage adapter for clean test environments with circular buffer support
+  - **LogManager**: Central coordination module with automatic StateChart metadata extraction
+- **Structured Logging**: All logging includes contextual metadata (action_type, state_id, phase, event context)
+- **StateChart Integration**: Logging operations thread StateChart state through all calls
+- **Test Environment Configuration**: Automatic TestAdapter setup in `test/test_helper.exs` for clean test output
+- **Log Helpers**: Comprehensive test helpers in `Statifier.Case` (`assert_log_entry`, `assert_log_order`)
+- **Chronological Storage**: Logs stored in chronological order (oldest first) for intuitive debugging
 
 ### Actions and Executable Content
 
