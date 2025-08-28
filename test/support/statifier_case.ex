@@ -12,7 +12,18 @@ defmodule Statifier.Case do
   use ExUnit.CaseTemplate, async: true
 
   alias ExUnit.Assertions
-  alias Statifier.{Event, FeatureDetector, Interpreter, Parser.SCXML}
+
+  alias Statifier.{
+    Configuration,
+    Document,
+    Event,
+    FeatureDetector,
+    Interpreter,
+    Parser.SCXML,
+    StateChart
+  }
+
+  alias Statifier.Logging.LogManager
 
   using do
     quote do
@@ -95,5 +106,100 @@ defmodule Statifier.Case do
 
     assert expected == actual,
            "Expected active states #{inspect(expected_list)}, but got #{inspect(actual_list)}"
+  end
+
+  @doc """
+  Create a test StateChart with default logging configuration.
+
+  This helper creates a StateChart with the TestAdapter properly configured,
+  which is needed for tests that directly test actions without going through
+  the full Interpreter.initialize process.
+  """
+  @spec test_state_chart() :: StateChart.t()
+  def test_state_chart do
+    document = %Document{
+      name: "test",
+      states: [],
+      datamodel_elements: [],
+      state_lookup: %{},
+      transitions_by_source: %{}
+    }
+
+    configuration = %Configuration{active_states: MapSet.new(["test_state"])}
+
+    state_chart = %StateChart{
+      document: document,
+      configuration: configuration,
+      current_event: nil,
+      datamodel: %{},
+      internal_queue: [],
+      external_queue: []
+    }
+
+    # Configure with default logging from environment
+    LogManager.configure_from_options(state_chart, [])
+  end
+
+  @doc """
+  Assert that a state chart contains a log entry matching the given criteria.
+
+  Returns the matching log entry for further assertions.
+  """
+  @spec assert_log_entry(StateChart.t(), keyword()) :: map()
+  def assert_log_entry(state_chart, criteria) do
+    level = criteria[:level]
+    message_contains = criteria[:message_contains]
+    action_type = criteria[:action_type]
+
+    matching_log =
+      Enum.find(state_chart.logs, fn log ->
+        level_match = level == nil or log.level == level
+        message_match = message_contains == nil or String.contains?(log.message, message_contains)
+        action_type_match = action_type == nil or log.metadata[:action_type] == action_type
+
+        level_match and message_match and action_type_match
+      end)
+
+    assert matching_log != nil, """
+    Expected to find log entry matching criteria: #{inspect(criteria)}
+
+    Available logs:
+    #{Enum.map_join(state_chart.logs, "\n", &"  - #{&1.level}: #{&1.message} (#{inspect(&1.metadata)})")}
+    """
+
+    matching_log
+  end
+
+  @doc """
+  Assert that logs appear in the expected order within the logs list.
+
+  Since logs are stored in reverse chronological order (newest first),
+  we verify that the expected logs appear in descending index order
+  within the logs list, which corresponds to ascending chronological order.
+  """
+  @spec assert_log_order(StateChart.t(), [keyword()]) :: :ok
+  def assert_log_order(state_chart, criteria_list) do
+    logs = Enum.map(criteria_list, &assert_log_entry(state_chart, &1))
+
+    # Find the index of each log in the logs list
+    log_indices =
+      Enum.map(logs, fn log ->
+        Enum.find_index(state_chart.logs, &(&1 == log))
+      end)
+
+    # Since logs are stored in reverse chronological order (newest first),
+    # we need to check that indices are in descending order for chronological execution order
+    log_indices
+    |> Enum.zip(criteria_list)
+    |> Enum.reduce(nil, fn {current_index, criteria}, previous_index ->
+      if previous_index do
+        assert current_index <= previous_index,
+               "Expected log matching #{inspect(criteria)} to appear after previous log in execution order"
+      end
+
+      current_index
+    end)
+
+    :ok
   end
 end

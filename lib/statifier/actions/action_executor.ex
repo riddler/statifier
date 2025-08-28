@@ -14,7 +14,7 @@ defmodule Statifier.Actions.ActionExecutor do
     Document
   }
 
-  require Logger
+  alias Statifier.Logging.LogManager
 
   @doc """
   Execute onentry actions for a list of states being entered.
@@ -75,7 +75,12 @@ defmodule Statifier.Actions.ActionExecutor do
 
   defp execute_single_action(%LogAction{} = log_action, state_id, phase, state_chart) do
     # Log context information for debugging
-    Logger.debug("Executing log action (state: #{state_id}, phase: #{phase})")
+    state_chart =
+      LogManager.debug(state_chart, "Executing log action", %{
+        action_type: "log_action",
+        state_id: state_id,
+        phase: phase
+      })
 
     # Delegate to LogAction's own execute method
     LogAction.execute(log_action, state_chart)
@@ -83,36 +88,55 @@ defmodule Statifier.Actions.ActionExecutor do
 
   defp execute_single_action(%RaiseAction{} = raise_action, state_id, phase, state_chart) do
     # Log context information for debugging
-    Logger.debug("Executing raise action (state: #{state_id}, phase: #{phase})")
+    state_chart =
+      LogManager.debug(state_chart, "Executing raise action", %{
+        action_type: "raise_action",
+        state_id: state_id,
+        phase: phase
+      })
 
     # Delegate to RaiseAction's own execute method
     RaiseAction.execute(raise_action, state_chart)
   end
 
   defp execute_single_action(%AssignAction{} = assign_action, state_id, phase, state_chart) do
-    # Execute assign action by evaluating expression and updating data model
-    Logger.debug(
-      "Executing assign action: #{assign_action.location} = #{assign_action.expr} (state: #{state_id}, phase: #{phase})"
-    )
+    # Log context information for debugging
+    state_chart =
+      LogManager.debug(state_chart, "Executing assign action", %{
+        action_type: "assign_action",
+        state_id: state_id,
+        phase: phase,
+        location: assign_action.location,
+        expr: assign_action.expr
+      })
 
     # Use the AssignAction's execute method which handles all the logic
     AssignAction.execute(assign_action, state_chart)
   end
 
   defp execute_single_action(%IfAction{} = if_action, state_id, phase, state_chart) do
-    # Execute if action by evaluating conditions and executing the first true block
-    Logger.debug(
-      "Executing if action with #{length(if_action.conditional_blocks)} blocks (state: #{state_id}, phase: #{phase})"
-    )
+    # Log context information for debugging
+    state_chart =
+      LogManager.debug(state_chart, "Executing if action", %{
+        action_type: "if_action",
+        state_id: state_id,
+        phase: phase,
+        conditional_blocks_count: length(if_action.conditional_blocks)
+      })
 
     # Use the IfAction's execute method which handles all the conditional logic
     IfAction.execute(if_action, state_chart)
   end
 
   defp execute_single_action(unknown_action, state_id, phase, state_chart) do
-    Logger.debug(
-      "Unknown action type #{inspect(unknown_action)} in state #{state_id} during #{phase}"
-    )
+    # Log unknown action type for debugging
+    state_chart =
+      LogManager.debug(state_chart, "Unknown action type encountered", %{
+        action_type: "unknown_action",
+        state_id: state_id,
+        phase: phase,
+        unknown_action: inspect(unknown_action)
+      })
 
     # Unknown actions don't modify the state chart
     state_chart

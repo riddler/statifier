@@ -8,7 +8,7 @@ defmodule Statifier.Actions.RaiseAction do
   """
 
   alias Statifier.{Event, StateChart}
-  require Logger
+  alias Statifier.Logging.LogManager
 
   @type t :: %__MODULE__{
           event: String.t() | nil,
@@ -26,8 +26,6 @@ defmodule Statifier.Actions.RaiseAction do
   @spec execute(t(), Statifier.StateChart.t()) :: Statifier.StateChart.t()
   def execute(%__MODULE__{} = raise_action, state_chart) do
     event_name = raise_action.event || "anonymous_event"
-    Logger.info("Raising event '#{event_name}'")
-
     # Create internal event and enqueue it
     internal_event = %Event{
       name: event_name,
@@ -36,6 +34,12 @@ defmodule Statifier.Actions.RaiseAction do
     }
 
     # Add to internal event queue
-    StateChart.enqueue_event(state_chart, internal_event)
+    state_chart = StateChart.enqueue_event(state_chart, internal_event)
+
+    # Log with structured metadata
+    LogManager.info(state_chart, "Raising event '#{event_name}'", %{
+      action_type: "raise_action",
+      event_name: event_name
+    })
   end
 end

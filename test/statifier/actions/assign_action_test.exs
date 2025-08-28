@@ -1,12 +1,10 @@
 defmodule Statifier.Actions.AssignActionTest do
-  use ExUnit.Case, async: true
+  use Statifier.Case, async: true
 
   alias Statifier.Actions.AssignAction
-  alias Statifier.{Configuration, Document, Event, StateChart}
+  alias Statifier.{Configuration, Event, StateChart}
 
   doctest Statifier.Actions.AssignAction
-
-  @moduletag capture_log: true
 
   describe "new/3" do
     test "creates assign action with location and expression" do
@@ -33,26 +31,7 @@ defmodule Statifier.Actions.AssignActionTest do
 
   describe "execute/2" do
     setup do
-      document = %Document{
-        name: "test",
-        states: [],
-        datamodel_elements: [],
-        state_lookup: %{},
-        transitions_by_source: %{}
-      }
-
-      configuration = %Configuration{active_states: MapSet.new(["state1"])}
-
-      state_chart = %StateChart{
-        document: document,
-        configuration: configuration,
-        current_event: nil,
-        datamodel: %{},
-        internal_queue: [],
-        external_queue: []
-      }
-
-      %{state_chart: state_chart}
+      %{state_chart: test_state_chart()}
     end
 
     test "executes simple assignment", %{state_chart: state_chart} do
@@ -144,21 +123,33 @@ defmodule Statifier.Actions.AssignActionTest do
     test "handles assignment errors gracefully", %{state_chart: state_chart} do
       action = AssignAction.new("invalid [[ syntax", "'value'")
 
-      # Should not crash, should log error and return original state chart
+      # Should not crash, should log error and return state chart with log entry
       result = AssignAction.execute(action, state_chart)
 
-      # State chart should be unchanged
-      assert result == state_chart
+      # Datamodel should be unchanged, but logs should contain error entry
+      assert result.datamodel == state_chart.datamodel
+      assert length(result.logs) == 1
+      [log_entry] = result.logs
+      assert log_entry.level == :error
+      assert String.contains?(log_entry.message, "Assign action failed")
+      assert log_entry.metadata.action_type == "assign_action"
+      assert log_entry.metadata.location == "invalid [[ syntax"
     end
 
     test "handles expression evaluation errors gracefully", %{state_chart: state_chart} do
       action = AssignAction.new("result", "undefined_variable + 1")
 
-      # Should not crash, should log error and return original state chart
+      # Should not crash, should log error and return state chart with log entry
       result = AssignAction.execute(action, state_chart)
 
-      # State chart should be unchanged
-      assert result == state_chart
+      # Datamodel should be unchanged, but logs should contain error entry
+      assert result.datamodel == state_chart.datamodel
+      assert length(result.logs) == 1
+      [log_entry] = result.logs
+      assert log_entry.level == :error
+      assert String.contains?(log_entry.message, "Assign action failed")
+      assert log_entry.metadata.action_type == "assign_action"
+      assert log_entry.metadata.location == "result"
     end
 
     test "assigns complex data structures", %{state_chart: state_chart} do

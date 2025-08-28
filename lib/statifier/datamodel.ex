@@ -28,7 +28,7 @@ defmodule Statifier.Datamodel do
   """
 
   alias Statifier.{Configuration, Evaluator}
-  require Logger
+  alias Statifier.Logging.LogManager
 
   @type t :: map()
 
@@ -223,9 +223,11 @@ defmodule Statifier.Datamodel do
 
           {:error, reason} ->
             # Log the error but continue with fallback
-            Logger.debug(
-              "Failed to evaluate datamodel expression '#{expr_string}': #{inspect(reason)}"
-            )
+            LogManager.debug(state_chart, "Failed to evaluate datamodel expression", %{
+              action_type: "datamodel_evaluation",
+              expr_string: expr_string,
+              error: inspect(reason)
+            })
 
             # For now, default to the literal string if evaluation fails
             # This handles cases like object literals that Predicator can't parse
@@ -233,9 +235,11 @@ defmodule Statifier.Datamodel do
         end
 
       {:error, reason} ->
-        Logger.debug(
-          "Failed to compile datamodel expression '#{expr_string}': #{inspect(reason)}"
-        )
+        LogManager.debug(state_chart, "Failed to compile datamodel expression", %{
+          action_type: "datamodel_compilation",
+          expr_string: expr_string,
+          error: inspect(reason)
+        })
 
         # Default to literal string if compilation fails
         expr_string

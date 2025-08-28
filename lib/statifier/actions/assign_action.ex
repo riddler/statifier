@@ -28,8 +28,7 @@ defmodule Statifier.Actions.AssignAction do
   """
 
   alias Statifier.{Evaluator, StateChart}
-
-  require Logger
+  alias Statifier.Logging.LogManager
 
   @enforce_keys [:location, :expr]
   defstruct [:location, :expr, :compiled_expr, :source_location]
@@ -104,12 +103,16 @@ defmodule Statifier.Actions.AssignAction do
 
       {:error, reason} ->
         # Log the error and continue without modification
-        Logger.error(
-          "Assign action failed: #{inspect(reason)} " <>
-            "(location: #{assign_action.location}, expr: #{assign_action.expr})"
+        LogManager.error(
+          state_chart,
+          "Assign action failed: #{inspect(reason)}",
+          %{
+            action_type: "assign_action",
+            location: assign_action.location,
+            expr: assign_action.expr,
+            error: inspect(reason)
+          }
         )
-
-        state_chart
     end
   end
 end
