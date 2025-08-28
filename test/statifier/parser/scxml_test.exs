@@ -328,4 +328,118 @@ defmodule Statifier.Parser.SCXMLTest do
               }} = SCXML.parse(xml)
     end
   end
+
+  describe "history elements" do
+    test "parses shallow history element with default transition" do
+      xml = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+        <state id="main" initial="sub1">
+          <history id="hist" type="shallow">
+            <transition target="sub1"/>
+          </history>
+          <state id="sub1"/>
+          <state id="sub2"/>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+
+      # Find the main state
+      main_state = Enum.find(document.states, &(&1.id == "main"))
+
+      # Find the history state within main
+      history_state = Enum.find(main_state.states, &(&1.id == "hist"))
+
+      assert history_state.type == :history
+      assert history_state.history_type == :shallow
+
+      # Note: transition parsing for history states will be verified when the transition handling is completed
+    end
+
+    test "parses deep history element" do
+      xml = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+        <state id="main" initial="sub1">
+          <history id="deepHist" type="deep">
+            <transition target="sub1"/>
+          </history>
+          <state id="sub1"/>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      main_state = Enum.find(document.states, &(&1.id == "main"))
+      history_state = Enum.find(main_state.states, &(&1.id == "deepHist"))
+
+      assert history_state.type == :history
+      assert history_state.history_type == :deep
+    end
+
+    test "parses history element without type attribute (defaults to shallow)" do
+      xml = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+        <state id="main">
+          <history id="defaultHist">
+            <transition target="sub1"/>
+          </history>
+          <state id="sub1"/>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      main_state = Enum.find(document.states, &(&1.id == "main"))
+      history_state = Enum.find(main_state.states, &(&1.id == "defaultHist"))
+
+      assert history_state.type == :history
+      assert history_state.history_type == :shallow
+    end
+
+    test "parses history element with empty type attribute (defaults to shallow)" do
+      xml = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+        <state id="main">
+          <history id="emptyTypeHist" type="">
+            <transition target="sub1"/>
+          </history>
+          <state id="sub1"/>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      main_state = Enum.find(document.states, &(&1.id == "main"))
+      history_state = Enum.find(main_state.states, &(&1.id == "emptyTypeHist"))
+
+      assert history_state.type == :history
+      assert history_state.history_type == :shallow
+    end
+
+    test "includes location tracking for history elements" do
+      xml = """
+      <?xml version="1.0" encoding="UTF-8"?>
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+        <state id="main">
+          <history id="hist" type="deep"/>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      main_state = Enum.find(document.states, &(&1.id == "main"))
+      history_state = Enum.find(main_state.states, &(&1.id == "hist"))
+
+      assert history_state.type == :history
+      assert history_state.history_type == :deep
+      assert history_state.source_location != nil
+      assert history_state.id_location != nil
+      assert history_state.history_type_location != nil
+    end
+  end
 end
