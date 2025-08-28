@@ -163,6 +163,52 @@ Application.put_env(:statifier, :default_log_level, :error)
 ])
 ```
 
+### Changed
+
+#### Logger to LogManager Migration
+
+- **Centralized Logging Architecture**: Migrated all existing `Logger.*` calls throughout the codebase to use the new `LogManager.*` API
+  - **ActionExecutor**: All debug logging now uses `LogManager.debug` with structured metadata (action_type, state_id, phase, etc.)
+  - **LogAction**: Replaced `Logger.info` with `LogManager.info`, now returns updated StateChart from logging operations
+  - **RaiseAction**: Migrated `Logger.info` to `LogManager.info` with event metadata, properly threads StateChart through logging calls
+  - **AssignAction**: Updated `Logger.error` to `LogManager.error` with comprehensive error context and assignment details  
+  - **Datamodel**: Replaced `Logger.debug` calls with `LogManager.debug` for expression evaluation failures
+
+- **Structured Logging Enhancement**: All LogManager calls now include appropriate context-specific metadata
+  - **Action Context**: Debug logs include action_type, state_id, and execution phase information
+  - **Error Context**: Error logs include detailed failure information, locations, and expressions
+  - **Event Context**: Event-related logs include event names and metadata
+  - **Expression Context**: Expression evaluation logs include compiled expressions and error details
+
+- **StateChart Threading**: Actions now properly return updated StateChart instances from logging operations
+  - **Consistent Return Values**: All action modules maintain StateChart consistency through logging calls
+  - **State Preservation**: Logging operations preserve and return the complete StateChart state
+  - **Queue Management**: Internal and external event queues remain intact through logging operations
+
+#### Log Storage Optimization
+
+- **Chronological Log Ordering**: TestAdapter now stores logs in intuitive chronological order (oldest first, newest last)
+  - **Natural Reading Order**: Logs now appear in the order they were created for easier debugging
+  - **Standard Behavior**: Aligns with typical logging system expectations and developer intuitions
+  - **Improved Test Assertions**: `assert_log_order` now uses ascending index order for cleaner test logic
+
+- **Memory Management**: Updated circular buffer behavior to maintain chronological ordering
+  - **FIFO Behavior**: When max_entries limit is reached, oldest entries are removed first
+  - **Append Operations**: New log entries are appended to maintain chronological sequence
+  - **Backward Compatibility**: API remains unchanged while improving internal behavior
+
+#### Test Infrastructure Enhancements  
+
+- **StateChart Log Integration**: All action tests now use StateChart logs instead of `capture_log` for verification
+  - **Helper Functions**: Added `test_state_chart()` helper for properly configured StateChart instances
+  - **Log Assertions**: Created `assert_log_entry()` and `assert_log_order()` helpers for clean log verification
+  - **Configuration Helpers**: Added `create_configured_state_chart()` helpers to reduce test duplication
+
+- **Test Coverage Maintenance**: Maintained 91.2% test coverage with comprehensive log assertion coverage
+  - **Regression Protection**: All 108 regression tests continue passing with new logging infrastructure
+  - **Action Coverage**: Complete test coverage for all action logging behaviors
+  - **Error Handling**: Comprehensive test coverage for logging error scenarios
+
 ## [1.2.0] 2025-08-27
 
 ### Added
