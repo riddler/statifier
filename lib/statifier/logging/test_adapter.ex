@@ -91,25 +91,25 @@ defmodule Statifier.Logging.TestAdapter do
 
     # Private helper for managing circular buffer behavior
     defp add_log_entry(logs, entry, nil) do
-      # No max_entries - just prepend (newest first)
-      [entry | logs]
+      # No max_entries - just append (chronological order)
+      logs ++ [entry]
     end
 
     defp add_log_entry(logs, entry, max_entries) when length(logs) < max_entries do
-      # Haven't reached max - just prepend
-      [entry | logs]
+      # Haven't reached max - just append
+      logs ++ [entry]
     end
 
-    defp add_log_entry(logs, entry, max_entries) do
-      # At max capacity - prepend new and drop oldest
-      [entry | Enum.take(logs, max_entries - 1)]
+    defp add_log_entry(logs, entry, _max_entries) do
+      # At max capacity - drop oldest and append new
+      Enum.drop(logs, 1) ++ [entry]
     end
   end
 
   @doc """
   Returns all captured log entries from a StateChart.
 
-  Entries are returned in reverse chronological order (newest first).
+  Entries are returned in chronological order (oldest first).
 
   ## Examples
 

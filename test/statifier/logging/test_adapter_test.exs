@@ -19,7 +19,7 @@ defmodule Statifier.Logging.TestAdapterTest do
       assert %DateTime{} = log_entry.timestamp
     end
 
-    test "prepends new entries (newest first)" do
+    test "appends new entries (chronological order)" do
       adapter = %TestAdapter{}
       state_chart = %StateChart{logs: []}
 
@@ -29,9 +29,9 @@ defmodule Statifier.Logging.TestAdapterTest do
       # Add second entry
       result2 = Adapter.log(adapter, result1, :info, "Second", %{})
 
-      assert [second_entry, first_entry] = result2.logs
-      assert second_entry.message == "Second"
+      assert [first_entry, second_entry] = result2.logs
       assert first_entry.message == "First"
+      assert second_entry.message == "Second"
     end
 
     test "respects max_entries limit with circular buffer" do
@@ -44,9 +44,9 @@ defmodule Statifier.Logging.TestAdapterTest do
       result3 = Adapter.log(adapter, result2, :info, "Third", %{})
 
       # Should only have the 2 most recent entries
-      assert [third_entry, second_entry] = result3.logs
-      assert third_entry.message == "Third"
+      assert [second_entry, third_entry] = result3.logs
       assert second_entry.message == "Second"
+      assert third_entry.message == "Third"
     end
 
     test "handles unlimited entries when max_entries is nil" do
@@ -63,9 +63,9 @@ defmodule Statifier.Logging.TestAdapterTest do
       # All 5 entries should be present
       assert length(result.logs) == 5
 
-      # Verify order (newest first)
+      # Verify order (chronological)
       messages = Enum.map(result.logs, & &1.message)
-      assert messages == ["Message 5", "Message 4", "Message 3", "Message 2", "Message 1"]
+      assert messages == ["Message 1", "Message 2", "Message 3", "Message 4", "Message 5"]
     end
   end
 
@@ -143,7 +143,7 @@ defmodule Statifier.Logging.TestAdapterTest do
 
       assert length(final_result.logs) == 3
       messages = Enum.map(final_result.logs, & &1.message)
-      assert messages == ["Message 4", "Message 3", "Message 2"]
+      assert messages == ["Message 2", "Message 3", "Message 4"]
     end
 
     test "handles max_entries of 1" do

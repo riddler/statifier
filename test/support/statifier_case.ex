@@ -173,9 +173,9 @@ defmodule Statifier.Case do
   @doc """
   Assert that logs appear in the expected order within the logs list.
 
-  Since logs are stored in reverse chronological order (newest first),
-  we verify that the expected logs appear in descending index order
-  within the logs list, which corresponds to ascending chronological order.
+  Since logs are stored in chronological order (oldest first),
+  we verify that the expected logs appear in ascending index order
+  within the logs list.
   """
   @spec assert_log_order(StateChart.t(), [keyword()]) :: :ok
   def assert_log_order(state_chart, criteria_list) do
@@ -187,18 +187,19 @@ defmodule Statifier.Case do
         Enum.find_index(state_chart.logs, &(&1 == log))
       end)
 
-    # Since logs are stored in reverse chronological order (newest first),
-    # we need to check that indices are in descending order for chronological execution order
-    log_indices
-    |> Enum.zip(criteria_list)
-    |> Enum.reduce(nil, fn {current_index, criteria}, previous_index ->
-      if previous_index do
-        assert current_index <= previous_index,
-               "Expected log matching #{inspect(criteria)} to appear after previous log in execution order"
-      end
+    # Since logs are stored in chronological order (oldest first),
+    # we check that indices are in ascending order for chronological execution order
+    _final_index =
+      log_indices
+      |> Enum.zip(criteria_list)
+      |> Enum.reduce(nil, fn {current_index, criteria}, previous_index ->
+        if previous_index do
+          assert current_index >= previous_index,
+                 "Expected log matching #{inspect(criteria)} to appear after previous log in execution order"
+        end
 
-      current_index
-    end)
+        current_index
+      end)
 
     :ok
   end
