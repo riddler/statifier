@@ -5,8 +5,6 @@ defmodule Statifier.EvaluatorTest do
 
   doctest Statifier.Evaluator
 
-  @moduletag capture_log: true
-
   describe "compile_expression/1" do
     test "returns {:ok, nil} for nil expression" do
       assert {:ok, nil} = Evaluator.compile_expression(nil)

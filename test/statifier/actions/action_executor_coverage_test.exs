@@ -1,6 +1,5 @@
 defmodule Statifier.Actions.ActionExecutorCoverageTest do
-  use ExUnit.Case
-  import ExUnit.CaptureLog
+  use Statifier.Case
   alias Statifier.Actions.{ActionExecutor, LogAction, RaiseAction}
   alias Statifier.{Configuration, Document, State, StateChart}
 
@@ -114,89 +113,85 @@ defmodule Statifier.Actions.ActionExecutorCoverageTest do
     end
 
     test "execute_single_action with nil state_chart context" do
-      # Test public execute_single_action function with minimal context
+      # Test public execute_single_action function with properly configured state chart
       log_action = %LogAction{label: "test", expr: "'hello'"}
+      state_chart = test_state_chart()
 
-      minimal_state_chart = %StateChart{
-        document: %Document{states: []},
-        configuration: Configuration.new([]),
-        datamodel: %{}
-      }
+      result = ActionExecutor.execute_single_action(log_action, state_chart)
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_single_action(log_action, minimal_state_chart)
-          assert result == minimal_state_chart
-        end)
+      # Should have logged to the state chart's logs
+      # One from ActionExecutor debug, one from LogAction
+      assert length(result.logs) == 2
+      debug_log = Enum.find(result.logs, &(&1.metadata.action_type == "log_action"))
+      info_log = Enum.find(result.logs, &(&1.message =~ "test: hello"))
 
-      assert log_output =~ "test: hello"
+      assert debug_log != nil
+      assert info_log != nil
+      assert info_log.message == "test: hello"
     end
 
     test "execute_single_action with public interface handles unknown actions" do
       # Test public execute_single_action with unknown action type
       unknown_action = %{unknown: "action", data: "test"}
+      state_chart = test_state_chart()
 
-      minimal_state_chart = %StateChart{
-        document: %Document{states: []},
-        configuration: Configuration.new([]),
-        datamodel: %{}
-      }
+      result = ActionExecutor.execute_single_action(unknown_action, state_chart)
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_single_action(unknown_action, minimal_state_chart)
-          assert result == minimal_state_chart
-        end)
-
-      # Should log unknown action type with default context
-      assert log_output =~ "Unknown action type"
-      assert log_output =~ "unknown"
-      assert log_output =~ "action"
+      # Should have logged to the state chart's logs
+      assert length(result.logs) == 1
+      [log_entry] = result.logs
+      assert log_entry.level == :debug
+      assert log_entry.message == "Unknown action type encountered"
+      assert log_entry.metadata.action_type == "unknown_action"
+      assert String.contains?(log_entry.metadata.unknown_action, "unknown")
     end
 
     test "execute_single_action handles RaiseAction with nil event" do
       # Test raise action with nil event (edge case)
       raise_action = %RaiseAction{event: nil}
+      state_chart = test_state_chart()
 
-      state_chart = %StateChart{
-        document: %Document{states: []},
-        configuration: Configuration.new([]),
-        datamodel: %{},
-        internal_queue: []
-      }
+      result = ActionExecutor.execute_single_action(raise_action, state_chart)
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_single_action(raise_action, state_chart)
+      # Should have enqueued an event with default name
+      assert length(result.internal_queue) == 1
+      event = hd(result.internal_queue)
+      assert event.name == "anonymous_event"
+      assert event.origin == :internal
 
-          # Should have enqueued an event with default name
-          assert length(result.internal_queue) == 1
-          event = hd(result.internal_queue)
-          assert event.name == "anonymous_event"
-          assert event.origin == :internal
-        end)
+      # Should have logged to the state chart's logs
+      # One from ActionExecutor debug, one from RaiseAction
+      assert length(result.logs) == 2
 
-      assert log_output =~ "Raising event 'anonymous_event'"
+      debug_log =
+        Enum.find(
+          result.logs,
+          &(&1.metadata.action_type == "raise_action" and &1.level == :debug)
+        )
+
+      info_log = Enum.find(result.logs, &(&1.message =~ "Raising event 'anonymous_event'"))
+
+      assert debug_log != nil
+      assert info_log != nil
     end
 
     test "execute_single_action handles LogAction with nil expr and nil label" do
       # Test log action with both nil expr and nil label (edge case)
       log_action = %LogAction{label: nil, expr: nil}
+      state_chart = test_state_chart()
 
-      state_chart = %StateChart{
-        document: %Document{states: []},
-        configuration: Configuration.new([]),
-        datamodel: %{}
-      }
+      result = ActionExecutor.execute_single_action(log_action, state_chart)
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_single_action(log_action, state_chart)
-          assert result == state_chart
-        end)
+      # Should have logged to the state chart's logs
+      # One from ActionExecutor debug, one from LogAction
+      assert length(result.logs) == 2
+      debug_log = Enum.find(result.logs, &(&1.metadata.action_type == "log_action"))
+      info_log = Enum.find(result.logs, &(&1.message =~ "Log: Log"))
 
-      # Should use defaults for both label and message
-      assert log_output =~ "Log: Log"
+      assert debug_log != nil
+      assert info_log != nil
+      # Default label and message
+      assert info_log.message == "Log: Log"
     end
   end
 end

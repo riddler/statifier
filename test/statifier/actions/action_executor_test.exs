@@ -1,6 +1,5 @@
 defmodule Statifier.Actions.ActionExecutorTest do
-  use ExUnit.Case
-  import ExUnit.CaptureLog
+  use Statifier.Case
 
   alias Statifier.{
     Actions.ActionExecutor,
@@ -12,6 +11,17 @@ defmodule Statifier.Actions.ActionExecutorTest do
     Parser.SCXML,
     StateChart
   }
+
+  alias Statifier.Logging.LogManager
+
+  # Helper function to create a properly configured StateChart from SCXML
+  defp create_configured_state_chart(xml_string) do
+    {:ok, document} = SCXML.parse(xml_string)
+    optimized_document = Document.build_lookup_maps(document)
+    state_chart = StateChart.new(optimized_document, %Configuration{})
+    # Configure logging with TestAdapter
+    LogManager.configure_from_options(state_chart, [])
+  end
 
   describe "execute_onentry_actions/2 with StateChart" do
     test "executes actions for states with onentry actions" do
@@ -26,25 +36,21 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      optimized_document = Document.build_lookup_maps(document)
-      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = create_configured_state_chart(xml)
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-          # Verify state chart is returned and has events queued
-          assert %StateChart{} = result
-          assert length(result.internal_queue) == 1
+      # Verify state chart is returned and has events queued
+      assert %StateChart{} = result
+      assert length(result.internal_queue) == 1
 
-          event = hd(result.internal_queue)
-          assert event.name == "internal_event"
-          assert event.origin == :internal
-        end)
+      event = hd(result.internal_queue)
+      assert event.name == "internal_event"
+      assert event.origin == :internal
 
-      assert log_output =~ "Log: entering s1"
-      assert log_output =~ "Raising event 'internal_event'"
+      # Check logs in StateChart
+      assert_log_entry(result, message_contains: "Log: entering s1")
+      assert_log_entry(result, message_contains: "Raising event 'internal_event'")
     end
 
     test "skips states without onentry actions" do
@@ -56,9 +62,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      optimized_document = Document.build_lookup_maps(document)
-      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = create_configured_state_chart(xml)
 
       result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
@@ -86,21 +90,17 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      optimized_document = Document.build_lookup_maps(document)
-      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = create_configured_state_chart(xml)
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_onentry_actions(["s1", "s2", "s3"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(["s1", "s2", "s3"], state_chart)
 
-          # Should have one event from s2
-          assert length(result.internal_queue) == 1
-          assert hd(result.internal_queue).name == "s2_event"
-        end)
+      # Should have one event from s2
+      assert length(result.internal_queue) == 1
+      assert hd(result.internal_queue).name == "s2_event"
 
-      assert log_output =~ "Log: s1 entry"
-      assert log_output =~ "Raising event 's2_event'"
+      # Check logs in StateChart
+      assert_log_entry(result, message_contains: "Log: s1 entry")
+      assert_log_entry(result, message_contains: "Raising event 's2_event'")
     end
 
     test "handles invalid state IDs gracefully" do
@@ -114,9 +114,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      optimized_document = Document.build_lookup_maps(document)
-      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = create_configured_state_chart(xml)
 
       # Include valid and invalid state IDs
       result = ActionExecutor.execute_onentry_actions(["s1", "invalid_state"], state_chart)
@@ -139,21 +137,19 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      optimized_document = Document.build_lookup_maps(document)
-      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = create_configured_state_chart(xml)
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_onexit_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onexit_actions(["s1"], state_chart)
 
-          assert %StateChart{} = result
-          assert length(result.internal_queue) == 1
-          assert hd(result.internal_queue).name == "exit_event"
-        end)
+      assert %StateChart{} = result
+      assert length(result.internal_queue) == 1
+      assert hd(result.internal_queue).name == "exit_event"
 
-      assert log_output =~ "Log: exiting s1"
-      assert log_output =~ "state: s1, phase: onexit"
+      # Check logs in StateChart
+      assert_log_entry(result, message_contains: "Log: exiting s1")
+      debug_log = assert_log_entry(result, level: :debug, action_type: "log_action")
+      assert debug_log.metadata.state_id == "s1"
+      assert debug_log.metadata.phase == :onexit
     end
 
     test "skips states without onexit actions" do
@@ -165,9 +161,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      optimized_document = Document.build_lookup_maps(document)
-      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = create_configured_state_chart(xml)
 
       result = ActionExecutor.execute_onexit_actions(["s1"], state_chart)
 
@@ -191,9 +185,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      optimized_document = Document.build_lookup_maps(document)
-      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = create_configured_state_chart(xml)
 
       result = ActionExecutor.execute_onexit_actions(["s1", "s2"], state_chart)
 
@@ -222,22 +214,18 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      optimized_document = Document.build_lookup_maps(document)
-      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = create_configured_state_chart(xml)
 
-      log_output =
-        capture_log(fn ->
-          ActionExecutor.execute_onentry_actions(["s1"], state_chart)
-        end)
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-      assert log_output =~ "Log: quoted string"
-      assert log_output =~ "Log: double quoted"
-      assert log_output =~ "Log: unquoted_literal"
-      assert log_output =~ "Log: 123"
-      assert log_output =~ "Custom Label: test"
-      # Empty expression
-      assert log_output =~ "Log: "
+      # Check each expected log entry
+      assert_log_entry(result, message_contains: "Log: quoted string")
+      assert_log_entry(result, message_contains: "Log: double quoted")
+      assert_log_entry(result, message_contains: "Log: unquoted_literal")
+      assert_log_entry(result, message_contains: "Log: 123")
+      assert_log_entry(result, message_contains: "Custom Label: test")
+      # Empty expression should produce some log output
+      assert_log_entry(result, message_contains: "Log:")
     end
 
     test "executes raise actions with various event names" do
@@ -254,29 +242,25 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      optimized_document = Document.build_lookup_maps(document)
-      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = create_configured_state_chart(xml)
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-          # Should have 4 events queued
-          assert length(result.internal_queue) == 4
+      # Should have 4 events queued
+      assert length(result.internal_queue) == 4
 
-          event_names = Enum.map(result.internal_queue, & &1.name)
-          assert "normal_event" in event_names
-          assert "event.with.dots" in event_names
-          assert "event_with_underscores" in event_names
-          # For raise without event attribute
-          assert "anonymous_event" in event_names
-        end)
+      event_names = Enum.map(result.internal_queue, & &1.name)
+      assert "normal_event" in event_names
+      assert "event.with.dots" in event_names
+      assert "event_with_underscores" in event_names
+      # For raise without event attribute
+      assert "anonymous_event" in event_names
 
-      assert log_output =~ "Raising event 'normal_event'"
-      assert log_output =~ "Raising event 'event.with.dots'"
-      assert log_output =~ "Raising event 'event_with_underscores'"
-      assert log_output =~ "Raising event 'anonymous_event'"
+      # Check logs for each raised event
+      assert_log_entry(result, message_contains: "Raising event 'normal_event'")
+      assert_log_entry(result, message_contains: "Raising event 'event.with.dots'")
+      assert_log_entry(result, message_contains: "Raising event 'event_with_underscores'")
+      assert_log_entry(result, message_contains: "Raising event 'anonymous_event'")
     end
 
     test "handles unknown action types gracefully" do
@@ -306,18 +290,17 @@ defmodule Statifier.Actions.ActionExecutorTest do
       modified_document = Map.put(optimized_document, :state_lookup, updated_state_lookup)
 
       state_chart = StateChart.new(modified_document, %Configuration{})
+      # Configure logging with TestAdapter
+      state_chart = LogManager.configure_from_options(state_chart, [])
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-          # Should continue processing despite unknown action
-          assert %StateChart{} = result
-        end)
+      # Should continue processing despite unknown action
+      assert %StateChart{} = result
 
-      # Should log unknown action and continue with known action
-      assert log_output =~ "Unknown action type"
-      assert log_output =~ "Log: after unknown"
+      # Check logs in StateChart
+      assert_log_entry(result, message_contains: "Unknown action type encountered")
+      assert_log_entry(result, message_contains: "Log: after unknown")
     end
   end
 
@@ -338,38 +321,25 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      optimized_document = Document.build_lookup_maps(document)
-      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = create_configured_state_chart(xml)
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-          # Events should be in the queue in order
-          assert length(result.internal_queue) == 2
-          [first_event, second_event] = result.internal_queue
-          assert first_event.name == "event1"
-          assert second_event.name == "event2"
-        end)
+      # Events should be in the queue in order
+      assert length(result.internal_queue) == 2
+      [first_event, second_event] = result.internal_queue
+      assert first_event.name == "event1"
+      assert second_event.name == "event2"
 
-      # Verify log order
-      log_lines = String.split(log_output, "\n") |> Enum.filter(&(&1 != ""))
-      log_messages = Enum.map(log_lines, &String.trim/1)
-
-      action1_pos = Enum.find_index(log_messages, &String.contains?(&1, "action 1"))
-      action2_pos = Enum.find_index(log_messages, &String.contains?(&1, "action 2"))
-      event1_pos = Enum.find_index(log_messages, &String.contains?(&1, "Raising event 'event1'"))
-      action3_pos = Enum.find_index(log_messages, &String.contains?(&1, "action 3"))
-      event2_pos = Enum.find_index(log_messages, &String.contains?(&1, "Raising event 'event2'"))
-      action4_pos = Enum.find_index(log_messages, &String.contains?(&1, "action 4"))
-
-      # Verify execution order
-      assert action1_pos < action2_pos
-      assert action2_pos < event1_pos
-      assert event1_pos < action3_pos
-      assert action3_pos < event2_pos
-      assert event2_pos < action4_pos
+      # Verify log order using chronological assertion
+      assert_log_order(result, [
+        [message_contains: "action 1"],
+        [message_contains: "action 2"],
+        [message_contains: "Raising event 'event1'"],
+        [message_contains: "action 3"],
+        [message_contains: "Raising event 'event2'"],
+        [message_contains: "action 4"]
+      ])
     end
 
     test "properly accumulates events across multiple state entries" do
@@ -394,6 +364,8 @@ defmodule Statifier.Actions.ActionExecutorTest do
       # Start with a state chart that already has some events
       initial_event = %Event{name: "existing_event", data: %{}, origin: :internal}
       state_chart = StateChart.new(optimized_document, %Configuration{})
+      # Configure logging with TestAdapter
+      state_chart = LogManager.configure_from_options(state_chart, [])
       state_chart = StateChart.enqueue_event(state_chart, initial_event)
 
       result = ActionExecutor.execute_onentry_actions(["s1", "s2"], state_chart)
@@ -445,20 +417,15 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      optimized_document = Document.build_lookup_maps(document)
-      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = create_configured_state_chart(xml)
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_onentry_actions([], state_chart)
+      result = ActionExecutor.execute_onentry_actions([], state_chart)
 
-          # Should return unchanged state chart
-          assert result == state_chart
-        end)
+      # Should return unchanged state chart
+      assert result == state_chart
 
-      # No logs should be generated
-      refute log_output =~ "should not execute"
+      # No logs should be generated (empty states list means no actions executed)
+      assert Enum.empty?(result.logs)
     end
 
     test "handles actions with nil expressions" do
@@ -486,22 +453,20 @@ defmodule Statifier.Actions.ActionExecutorTest do
       modified_document = Map.put(optimized_document, :state_lookup, updated_state_lookup)
 
       state_chart = StateChart.new(modified_document, %Configuration{})
+      # Configure logging with TestAdapter
+      state_chart = LogManager.configure_from_options(state_chart, [])
 
-      log_output =
-        capture_log(fn ->
-          result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-          # Should handle nil values gracefully
-          assert %StateChart{} = result
-          # One event from raise action
-          assert length(result.internal_queue) == 1
-          assert hd(result.internal_queue).name == "anonymous_event"
-        end)
+      # Should handle nil values gracefully
+      assert %StateChart{} = result
+      # One event from raise action
+      assert length(result.internal_queue) == 1
+      assert hd(result.internal_queue).name == "anonymous_event"
 
-      # Should handle nil expr and nil event gracefully
-      # Empty expression
-      assert log_output =~ "Test: "
-      assert log_output =~ "Raising event 'anonymous_event'"
+      # Check logs in StateChart - should handle nil expr and nil event gracefully
+      assert_log_entry(result, message_contains: "Test:")
+      assert_log_entry(result, message_contains: "Raising event 'anonymous_event'")
     end
   end
 end

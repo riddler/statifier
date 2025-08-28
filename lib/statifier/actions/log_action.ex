@@ -11,7 +11,7 @@ defmodule Statifier.Actions.LogAction do
   """
 
   alias Statifier.Evaluator
-  require Logger
+  alias Statifier.Logging.LogManager
 
   defstruct [:label, :expr, :source_location]
 
@@ -55,10 +55,11 @@ defmodule Statifier.Actions.LogAction do
           inspect(other)
       end
 
-    Logger.info("#{label}: #{safe_message}")
-
-    # Log actions don't modify the state chart
-    state_chart
+    # Use LogManager for structured logging with action metadata
+    LogManager.info(state_chart, "#{label}: #{safe_message}", %{
+      action_type: "log_action",
+      label: label
+    })
   end
 
   # Evaluate log expression using the Evaluator for consistent handling

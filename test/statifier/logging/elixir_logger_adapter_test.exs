@@ -50,7 +50,11 @@ defmodule Statifier.Logging.ElixirLoggerAdapterTest do
 
       Enum.each(levels_to_test, fn level ->
         # This should not crash
-        result = Adapter.log(adapter, state_chart, level, "#{level} message", %{})
+        {result, _log} =
+          with_log(fn ->
+            Adapter.log(adapter, state_chart, level, "#{level} message", %{})
+          end)
+
         assert result == state_chart
       end)
     end

@@ -1,6 +1,5 @@
 defmodule Statifier.Actions.LogActionTest do
-  use ExUnit.Case
-  import ExUnit.CaptureLog
+  use Statifier.Case
 
   alias Statifier.{
     Actions.ActionExecutor,
@@ -10,6 +9,8 @@ defmodule Statifier.Actions.LogActionTest do
     Parser.SCXML,
     StateChart
   }
+
+  alias Statifier.Logging.LogManager
 
   # Helper function to reduce duplicate code
   defp create_test_state_chart_with_actions(actions) do
@@ -27,7 +28,9 @@ defmodule Statifier.Actions.LogActionTest do
     updated_state_lookup = Map.put(optimized_document.state_lookup, "s1", updated_state)
     modified_document = Map.put(optimized_document, :state_lookup, updated_state_lookup)
 
-    StateChart.new(modified_document, %Configuration{})
+    state_chart = StateChart.new(modified_document, %Configuration{})
+    # Configure logging with TestAdapter
+    LogManager.configure_from_options(state_chart, [])
   end
 
   # Helper function for testing multiple cases with expected output
@@ -40,13 +43,10 @@ defmodule Statifier.Actions.LogActionTest do
         end
 
       state_chart = create_test_state_chart_with_actions([log_action])
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-      log_output =
-        capture_log(fn ->
-          ActionExecutor.execute_onentry_actions(["s1"], state_chart)
-        end)
-
-      assert log_output =~ "Log: #{expected_output}"
+      # Check that the StateChart contains the expected log message
+      assert_log_entry(result, message_contains: "Log: #{expected_output}")
     end)
   end
 
@@ -59,15 +59,14 @@ defmodule Statifier.Actions.LogActionTest do
       }
 
       state_chart = create_test_state_chart_with_actions([log_action])
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-      log_output =
-        capture_log(fn ->
-          ActionExecutor.execute_onentry_actions(["s1"], state_chart)
-        end)
+      # Should have debug log from ActionExecutor and info log from LogAction
+      debug_log = assert_log_entry(result, level: :debug, action_type: "log_action")
+      assert debug_log.metadata.state_id == "s1"
+      assert debug_log.metadata.phase == :onentry
 
-      assert log_output =~ "Log: Hello World"
-      assert log_output =~ "state: s1"
-      assert log_output =~ "phase: onentry"
+      assert_log_entry(result, message_contains: "Log: Hello World")
     end
 
     test "executes log action with custom label" do
@@ -78,14 +77,13 @@ defmodule Statifier.Actions.LogActionTest do
       }
 
       state_chart = create_test_state_chart_with_actions([log_action])
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-      log_output =
-        capture_log(fn ->
-          ActionExecutor.execute_onentry_actions(["s1"], state_chart)
-        end)
+      # Check that the StateChart contains the expected log message with custom label
+      assert_log_entry(result, message_contains: "CustomLabel: Custom message")
 
-      assert log_output =~ "CustomLabel: Custom message"
-      refute log_output =~ "Log: Custom message"
+      # Ensure it doesn't use the default "Log:" label
+      refute Enum.any?(result.logs, &String.contains?(&1.message, "Log: Custom message"))
     end
 
     test "handles different expression formats" do
@@ -136,15 +134,15 @@ defmodule Statifier.Actions.LogActionTest do
       }
 
       original_state_chart = create_test_state_chart_with_actions([log_action])
+      result = ActionExecutor.execute_onentry_actions(["s1"], original_state_chart)
 
-      capture_log(fn ->
-        result = ActionExecutor.execute_onentry_actions(["s1"], original_state_chart)
+      # Log actions should not modify the state chart (no events queued)
+      assert result.internal_queue == original_state_chart.internal_queue
+      assert result.external_queue == original_state_chart.external_queue
+      assert result.configuration == original_state_chart.configuration
 
-        # Log actions should not modify the state chart (no events queued)
-        assert result.internal_queue == original_state_chart.internal_queue
-        assert result.external_queue == original_state_chart.external_queue
-        assert result.configuration == original_state_chart.configuration
-      end)
+      # Should have logged to the StateChart
+      assert length(result.logs) > 0
     end
 
     test "multiple log actions in sequence" do
@@ -155,29 +153,14 @@ defmodule Statifier.Actions.LogActionTest do
       ]
 
       state_chart = create_test_state_chart_with_actions(log_actions)
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-      log_output =
-        capture_log(fn ->
-          ActionExecutor.execute_onentry_actions(["s1"], state_chart)
-        end)
-
-      # Verify all logs appear in order
-      assert log_output =~ "Step1: first log"
-      assert log_output =~ "Step2: second log"
-      assert log_output =~ "Log: third log"
-
-      # Verify order by finding positions
-      log_lines = String.split(log_output, "\n") |> Enum.filter(&(&1 != ""))
-
-      first_pos = Enum.find_index(log_lines, &String.contains?(&1, "Step1: first log"))
-      second_pos = Enum.find_index(log_lines, &String.contains?(&1, "Step2: second log"))
-      third_pos = Enum.find_index(log_lines, &String.contains?(&1, "Log: third log"))
-
-      assert first_pos != nil
-      assert second_pos != nil
-      assert third_pos != nil
-      assert first_pos < second_pos
-      assert second_pos < third_pos
+      # Verify all logs appear in correct chronological order
+      assert_log_order(result, [
+        [message_contains: "Step1: first log"],
+        [message_contains: "Step2: second log"],
+        [message_contains: "Log: third log"]
+      ])
     end
   end
 
@@ -186,14 +169,10 @@ defmodule Statifier.Actions.LogActionTest do
       long_expr = "'#{String.duplicate("very long string ", 1000)}'"
       log_action = %LogAction{expr: long_expr, label: nil}
       state_chart = create_test_state_chart_with_actions([log_action])
-
-      log_output =
-        capture_log(fn ->
-          ActionExecutor.execute_onentry_actions(["s1"], state_chart)
-        end)
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
       # Should handle long expressions without crashing
-      assert log_output =~ "Log: "
+      assert_log_entry(result, message_contains: "Log: ")
     end
 
     test "handles special characters in expressions" do
@@ -208,14 +187,10 @@ defmodule Statifier.Actions.LogActionTest do
       Enum.each(special_expressions, fn expr ->
         log_action = %LogAction{expr: expr, label: nil}
         state_chart = create_test_state_chart_with_actions([log_action])
+        result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-        log_output =
-          capture_log(fn ->
-            ActionExecutor.execute_onentry_actions(["s1"], state_chart)
-          end)
-
-        # Should not crash and should produce some log output
-        assert log_output =~ "Log: "
+        # Should not crash and should produce log entries
+        assert_log_entry(result, message_contains: "Log: ")
       end)
     end
   end

@@ -1,8 +1,8 @@
 defmodule Statifier.Actions.ActionExecutorRaiseTest do
-  use ExUnit.Case
-  import ExUnit.CaptureLog
+  use Statifier.Case
 
   alias Statifier.{Actions.ActionExecutor, Configuration, Document, Parser.SCXML, StateChart}
+  alias Statifier.Logging.LogManager
 
   describe "raise action execution" do
     test "executes raise action during onentry" do
@@ -20,14 +20,17 @@ defmodule Statifier.Actions.ActionExecutorRaiseTest do
       optimized_document = Document.build_lookup_maps(document)
       state_chart = StateChart.new(optimized_document, %Configuration{})
 
-      log_output =
-        capture_log(fn ->
-          ActionExecutor.execute_onentry_actions(["s1"], state_chart)
-        end)
+      # Configure logging with TestAdapter
+      state_chart = LogManager.configure_from_options(state_chart, [])
 
-      assert log_output =~ "Raising event 'test_event'"
-      assert log_output =~ "state: s1"
-      assert log_output =~ "phase: onentry"
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+
+      # Should have logged both debug (from ActionExecutor) and info (from RaiseAction)
+      debug_log = assert_log_entry(result, level: :debug, action_type: "raise_action")
+      assert debug_log.metadata.state_id == "s1"
+      assert debug_log.metadata.phase == :onentry
+
+      assert_log_entry(result, message_contains: "Raising event 'test_event'")
     end
 
     test "executes raise action during onexit" do
@@ -45,14 +48,17 @@ defmodule Statifier.Actions.ActionExecutorRaiseTest do
       optimized_document = Document.build_lookup_maps(document)
       state_chart = StateChart.new(optimized_document, %Configuration{})
 
-      log_output =
-        capture_log(fn ->
-          ActionExecutor.execute_onexit_actions(["s1"], state_chart)
-        end)
+      # Configure logging with TestAdapter
+      state_chart = LogManager.configure_from_options(state_chart, [])
 
-      assert log_output =~ "Raising event 'cleanup_event'"
-      assert log_output =~ "state: s1"
-      assert log_output =~ "phase: onexit"
+      result = ActionExecutor.execute_onexit_actions(["s1"], state_chart)
+
+      # Should have logged both debug (from ActionExecutor) and info (from RaiseAction)
+      debug_log = assert_log_entry(result, level: :debug, action_type: "raise_action")
+      assert debug_log.metadata.state_id == "s1"
+      assert debug_log.metadata.phase == :onexit
+
+      assert_log_entry(result, message_contains: "Raising event 'cleanup_event'")
     end
 
     test "executes mixed raise and log actions in correct order" do
@@ -72,28 +78,17 @@ defmodule Statifier.Actions.ActionExecutorRaiseTest do
       optimized_document = Document.build_lookup_maps(document)
       state_chart = StateChart.new(optimized_document, %Configuration{})
 
-      log_output =
-        capture_log(fn ->
-          ActionExecutor.execute_onentry_actions(["s1"], state_chart)
-        end)
+      # Configure logging with TestAdapter
+      state_chart = LogManager.configure_from_options(state_chart, [])
 
-      # Verify the order of execution by finding the positions
-      before_pos =
-        String.split(log_output, "\n") |> Enum.find_index(&String.contains?(&1, "before raise"))
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
-      raise_pos =
-        String.split(log_output, "\n")
-        |> Enum.find_index(&String.contains?(&1, "Raising event 'middle_event'"))
-
-      after_pos =
-        String.split(log_output, "\n") |> Enum.find_index(&String.contains?(&1, "after raise"))
-
-      # All should be found and in correct order
-      assert before_pos != nil
-      assert raise_pos != nil
-      assert after_pos != nil
-      assert before_pos < raise_pos
-      assert raise_pos < after_pos
+      # Assert that the logs appear in correct chronological order
+      assert_log_order(result, [
+        [message_contains: "before raise"],
+        [message_contains: "Raising event 'middle_event'"],
+        [message_contains: "after raise"]
+      ])
     end
 
     test "handles raise action without event attribute" do
@@ -111,15 +106,17 @@ defmodule Statifier.Actions.ActionExecutorRaiseTest do
       optimized_document = Document.build_lookup_maps(document)
       state_chart = StateChart.new(optimized_document, %Configuration{})
 
-      log_output =
-        capture_log(fn ->
-          ActionExecutor.execute_onentry_actions(["s1"], state_chart)
-        end)
+      # Configure logging with TestAdapter
+      state_chart = LogManager.configure_from_options(state_chart, [])
+
+      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
 
       # Should use default "anonymous_event" when event attribute is missing
-      assert log_output =~ "Raising event 'anonymous_event'"
-      assert log_output =~ "state: s1"
-      assert log_output =~ "phase: onentry"
+      debug_log = assert_log_entry(result, level: :debug, action_type: "raise_action")
+      assert debug_log.metadata.state_id == "s1"
+      assert debug_log.metadata.phase == :onentry
+
+      assert_log_entry(result, message_contains: "Raising event 'anonymous_event'")
     end
   end
 end
