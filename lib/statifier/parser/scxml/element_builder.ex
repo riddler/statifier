@@ -166,6 +166,47 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
   end
 
   @doc """
+  Build an Statifier.State from history XML attributes and location info.
+
+  History states are represented as Statifier.State with type: :history.
+  They contain a default transition that specifies the target when no history exists.
+  """
+  @spec build_history_state(list(), map(), String.t(), map()) :: Statifier.State.t()
+  def build_history_state(attributes, location, xml_string, element_counts) do
+    attrs_map = attributes_to_map(attributes)
+    document_order = LocationTracker.document_order(element_counts)
+
+    # Calculate attribute-specific locations
+    id_location = LocationTracker.attribute_location(xml_string, "id", location)
+    type_location = LocationTracker.attribute_location(xml_string, "type", location)
+
+    # Parse history type, defaulting to shallow
+    history_type_value = get_attr_value(attrs_map, "type")
+
+    history_type =
+      case history_type_value do
+        "deep" -> :deep
+        # Default to shallow, includes nil and "shallow"
+        _other -> :shallow
+      end
+
+    %Statifier.State{
+      id: get_attr_value(attrs_map, "id"),
+      initial: nil,
+      type: :history,
+      history_type: history_type,
+      states: [],
+      transitions: [],
+      document_order: document_order,
+      # Location information
+      source_location: location,
+      id_location: id_location,
+      initial_location: nil,
+      history_type_location: type_location
+    }
+  end
+
+  @doc """
   Build an Statifier.Transition from XML attributes and location info.
   """
   @spec build_transition(list(), map(), String.t(), map()) :: Statifier.Transition.t()

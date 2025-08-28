@@ -61,7 +61,7 @@ defmodule Statifier.Parser.SCXML.Handler do
   def handle_event(:end_element, "else", state), do: StateStack.handle_else_end(state)
 
   def handle_event(:end_element, state_type, state)
-      when state_type in ["state", "parallel", "final", "initial"],
+      when state_type in ["state", "parallel", "final", "initial", "history"],
       do: StateStack.handle_state_end(state)
 
   # Pop unknown element from stack
@@ -166,6 +166,23 @@ defmodule Statifier.Parser.SCXML.Handler do
     }
 
     {:ok, StateStack.push_element(updated_state, "initial", initial_element)}
+  end
+
+  defp dispatch_element_start("history", attributes, location, state) do
+    history_element =
+      ElementBuilder.build_history_state(
+        attributes,
+        location,
+        state.xml_string,
+        state.element_counts
+      )
+
+    updated_state = %{
+      state
+      | current_element: {:history, history_element}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "history", history_element)}
   end
 
   defp dispatch_element_start("transition", attributes, location, state) do
