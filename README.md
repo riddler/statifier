@@ -24,7 +24,8 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - ✅ **Feature Detection** - Automatic SCXML feature detection for test validation
 - ✅ **Regression Testing** - Automated tracking of passing tests to prevent regressions
 - ✅ **Git Hooks** - Pre-push validation workflow to catch issues early
-- ✅ **Test Infrastructure** - Compatible with SCION and W3C test suites
+- ✅ **Logging Infrastructure** - Protocol-based logging system with TestAdapter for clean test environments
+- ✅ **Test Infrastructure** - Compatible with SCION and W3C test suites with integrated logging
 - ✅ **Code Quality** - Full Credo compliance with proper module aliasing
 
 ## Current Status
@@ -47,6 +48,7 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - ✅ **SAX-based XML parsing** with accurate location tracking for error reporting
 - ✅ **Performance optimizations** - O(1) state/transition lookups, optimized active configuration
 - ✅ **Source field optimization** - Transitions include source state for faster event processing
+- ✅ **Comprehensive logging** - Protocol-based logging system with structured metadata and test environment integration
 
 ### Planned Features
 
@@ -123,7 +125,7 @@ Add `statifier` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:statifier, "~> 1.2"}
+    {:statifier, "~> 1.3"}
   ]
 end
 ```
@@ -281,6 +283,64 @@ datamodel = state_chart.datamodel
 #   "status" => "processing"
 # }
 ```
+
+### Logging and Test Environment
+
+Statifier includes a comprehensive logging system designed for both production use and clean test environments:
+
+```elixir
+# Production logging with Elixir Logger integration
+{:ok, document} = Statifier.parse(xml)
+{:ok, state_chart} = Statifier.interpret(document, [
+  log_adapter: {Statifier.Logging.ElixirLoggerAdapter, []},
+  log_level: :info
+])
+
+# Test environment automatically uses TestAdapter (configured in test/test_helper.exs)
+# for clean output and log inspection
+
+# Using log helpers in tests
+defmodule MyStateMachineTest do
+  use Statifier.Case  # Provides logging test helpers
+
+  test "action execution with logging" do
+    xml = """
+    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <state id="start">
+        <onentry>
+          <log expr="'Starting process'"/>
+          <assign location="status" expr="'active'"/>
+        </onentry>
+        <transition event="go" target="done"/>
+      </state>
+      <state id="done"/>
+    </scxml>
+    """
+    
+    {:ok, state_chart} = test_scxml(xml, "logging test", ["start"], [
+      {%{"name" => "go"}, ["done"]}
+    ])
+    
+    # Assert specific log entries were created
+    assert_log_entry(state_chart, message_contains: "Starting process")
+    assert_log_entry(state_chart, level: :debug, action_type: "assign_action")
+    
+    # Verify logs appear in chronological order
+    assert_log_order(state_chart, [
+      [message_contains: "Starting process"],
+      [action_type: "assign_action"]
+    ])
+  end
+end
+```
+
+**Key logging features:**
+
+- **Clean test output**: No log pollution in test console
+- **Structured metadata**: All logs include contextual information (state_id, action_type, phase)
+- **Chronological storage**: Logs stored oldest-first for intuitive debugging
+- **Test helpers**: `assert_log_entry()` and `assert_log_order()` for easy log verification
+- **Production integration**: ElixirLoggerAdapter integrates seamlessly with existing Logger setup
 
 ## Development
 
