@@ -5,5 +5,8 @@
     "output_dir": "cover/",
     "minimum_coverage": 90,
     "html_filter_full_covered": true
+  },
+  "terminal_options": {
+    "file_column_width": 50
   }
 }

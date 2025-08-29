@@ -26,7 +26,7 @@
   },
   "list-indent": true,
   "blanks-around-fences": true,
-  "fenced-code-language": false,
+  "fenced-code-language": true,
   "first-line-h1": false,
   "heading-start-left": true,
   "single-trailing-newline": true
