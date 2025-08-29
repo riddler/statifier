@@ -2,7 +2,7 @@ defmodule Statifier.MixProject do
   use Mix.Project
 
   @app :statifier
-  @version "1.3.0"
+  @version "1.4.0"
   @description "StateCharts for Elixir with W3C compliance"
   @source_url "https://github.com/riddler/statifier"
   @deps [
