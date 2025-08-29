@@ -142,4 +142,192 @@ defmodule Statifier.DocumentTest do
       assert transitions == []
     end
   end
+
+  describe "get_history_default_targets/2" do
+    setup do
+      document =
+        %Document{
+          states: [
+            %State{
+              id: "main",
+              type: :compound,
+              states: [
+                %State{
+                  id: "hist_shallow",
+                  type: :history,
+                  history_type: :shallow,
+                  transitions: [
+                    %Transition{target: "sub1"},
+                    %Transition{target: "sub2"}
+                  ]
+                },
+                %State{
+                  id: "hist_deep",
+                  type: :history,
+                  history_type: :deep,
+                  transitions: [
+                    %Transition{target: "sub1"}
+                  ]
+                },
+                %State{
+                  id: "hist_no_defaults",
+                  type: :history,
+                  history_type: :shallow,
+                  transitions: []
+                },
+                %State{
+                  id: "hist_with_nil",
+                  type: :history,
+                  history_type: :shallow,
+                  transitions: [
+                    %Transition{target: nil},
+                    %Transition{target: "sub1"}
+                  ]
+                },
+                %State{id: "sub1", type: :atomic},
+                %State{id: "sub2", type: :atomic}
+              ]
+            },
+            %State{id: "regular_state", type: :atomic, transitions: [%Transition{target: "main"}]}
+          ]
+        }
+        |> Document.build_lookup_maps()
+
+      {:ok, document: document}
+    end
+
+    test "returns list of targets for history state with transitions", %{document: document} do
+      targets = Document.get_history_default_targets(document, "hist_shallow")
+      assert targets == ["sub1", "sub2"]
+    end
+
+    test "returns single target for history state with one transition", %{document: document} do
+      targets = Document.get_history_default_targets(document, "hist_deep")
+      assert targets == ["sub1"]
+    end
+
+    test "returns empty list for history state without transitions", %{document: document} do
+      targets = Document.get_history_default_targets(document, "hist_no_defaults")
+      assert targets == []
+    end
+
+    test "filters out nil targets", %{document: document} do
+      targets = Document.get_history_default_targets(document, "hist_with_nil")
+      assert targets == ["sub1"]
+    end
+
+    test "returns empty list for non-history state", %{document: document} do
+      targets = Document.get_history_default_targets(document, "regular_state")
+      assert targets == []
+    end
+
+    test "returns empty list for non-existent state", %{document: document} do
+      targets = Document.get_history_default_targets(document, "missing_state")
+      assert targets == []
+    end
+  end
+
+  describe "is_history_state?/2" do
+    setup do
+      document =
+        %Document{
+          states: [
+            %State{
+              id: "main",
+              type: :compound,
+              states: [
+                %State{id: "hist", type: :history, history_type: :shallow},
+                %State{id: "regular", type: :atomic}
+              ]
+            },
+            %State{id: "parallel_state", type: :parallel}
+          ]
+        }
+        |> Document.build_lookup_maps()
+
+      {:ok, document: document}
+    end
+
+    test "returns true for history state", %{document: document} do
+      assert Document.is_history_state?(document, "hist") == true
+    end
+
+    test "returns false for atomic state", %{document: document} do
+      assert Document.is_history_state?(document, "regular") == false
+    end
+
+    test "returns false for compound state", %{document: document} do
+      assert Document.is_history_state?(document, "main") == false
+    end
+
+    test "returns false for parallel state", %{document: document} do
+      assert Document.is_history_state?(document, "parallel_state") == false
+    end
+
+    test "returns false for non-existent state", %{document: document} do
+      assert Document.is_history_state?(document, "missing") == false
+    end
+  end
+
+  describe "find_history_states/2" do
+    setup do
+      document =
+        %Document{
+          states: [
+            %State{
+              id: "main",
+              type: :compound,
+              states: [
+                %State{id: "hist1", type: :history, history_type: :shallow},
+                %State{id: "hist2", type: :history, history_type: :deep},
+                %State{id: "regular", type: :atomic}
+              ]
+            },
+            %State{
+              id: "no_history",
+              type: :compound,
+              states: [
+                %State{id: "child1", type: :atomic},
+                %State{id: "child2", type: :atomic}
+              ]
+            },
+            %State{id: "atomic_state", type: :atomic}
+          ]
+        }
+        |> Document.build_lookup_maps()
+
+      {:ok, document: document}
+    end
+
+    test "returns list of history states for parent with history", %{document: document} do
+      history_states = Document.find_history_states(document, "main")
+
+      assert length(history_states) == 2
+      assert Enum.any?(history_states, &(&1.id == "hist1"))
+      assert Enum.any?(history_states, &(&1.id == "hist2"))
+      assert Enum.all?(history_states, &(&1.type == :history))
+    end
+
+    test "returns empty list for parent with no history", %{document: document} do
+      history_states = Document.find_history_states(document, "no_history")
+      assert history_states == []
+    end
+
+    test "returns empty list for atomic state", %{document: document} do
+      history_states = Document.find_history_states(document, "atomic_state")
+      assert history_states == []
+    end
+
+    test "returns empty list for non-existent parent", %{document: document} do
+      history_states = Document.find_history_states(document, "missing_parent")
+      assert history_states == []
+    end
+
+    test "filters out non-history children", %{document: document} do
+      history_states = Document.find_history_states(document, "main")
+
+      # Should only return history states, not the regular atomic child
+      refute Enum.any?(history_states, &(&1.id == "regular"))
+    end
+  end
 end

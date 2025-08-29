@@ -74,6 +74,57 @@ defmodule Statifier.Document do
     Map.get(lookup, state_id, [])
   end
 
+  @doc """
+  Check if a state is a history state.
+
+  Returns true if the state exists and has type :history, false otherwise.
+  """
+  @spec is_history_state?(t(), String.t()) :: boolean()
+  def is_history_state?(%__MODULE__{} = document, state_id) when is_binary(state_id) do
+    case find_state(document, state_id) do
+      %Statifier.State{type: :history} -> true
+      _other -> false
+    end
+  end
+
+  @doc """
+  Find all history states within a parent state.
+
+  Returns a list of history states that are direct children of the specified parent.
+  Returns an empty list if the parent is not found or has no history children.
+  """
+  @spec find_history_states(t(), String.t()) :: [Statifier.State.t()]
+  def find_history_states(%__MODULE__{} = document, parent_state_id)
+      when is_binary(parent_state_id) do
+    case find_state(document, parent_state_id) do
+      %Statifier.State{states: children} ->
+        Enum.filter(children, &(&1.type == :history))
+
+      _other ->
+        []
+    end
+  end
+
+  @doc """
+  Get the default transition targets for a history state.
+
+  Returns a list of target state IDs from the history state's default transitions.
+  Returns an empty list if the state is not found, not a history state, or has no transitions.
+  """
+  @spec get_history_default_targets(t(), String.t()) :: [String.t()]
+  def get_history_default_targets(%__MODULE__{} = document, history_state_id)
+      when is_binary(history_state_id) do
+    case find_state(document, history_state_id) do
+      %Statifier.State{type: :history, transitions: transitions} ->
+        transitions
+        |> Enum.map(& &1.target)
+        |> Enum.filter(&(&1 != nil))
+
+      _other ->
+        []
+    end
+  end
+
   # Private helper functions
 
   # Build a flat map of state_id -> state for O(1) lookups
