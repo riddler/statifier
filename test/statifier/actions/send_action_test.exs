@@ -73,12 +73,16 @@ defmodule Statifier.Actions.SendActionTest do
       result = SendAction.execute(send_action, state_chart)
 
       # Phase 1: External targets are not yet supported, should be logged
-      assert length(result.external_queue) == 0
-      assert length(result.internal_queue) == 0
-      
+      assert Enum.empty?(result.external_queue)
+      assert Enum.empty?(result.internal_queue)
+
       # Should contain log message about unsupported external target
       log_messages = Enum.map(result.logs, & &1.message)
-      assert Enum.any?(log_messages, &String.contains?(&1, "External send targets not yet supported"))
+
+      assert Enum.any?(
+               log_messages,
+               &String.contains?(&1, "External send targets not yet supported")
+             )
     end
 
     test "defaults to internal target when no target specified" do

@@ -17,7 +17,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       parsing_state = %{
         stack: [
           {"state", leaf_state},
-          {"state", child_state}, 
+          {"state", child_state},
           {"state", parent_state},
           {"scxml", document}
         ],
@@ -29,24 +29,25 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Leaf state should be added to child state with proper hierarchy
       [{"state", updated_child} | _rest] = result.stack
       assert length(updated_child.states) == 1
-      
+
       added_leaf = hd(updated_child.states)
       assert added_leaf.id == "leaf"
       assert added_leaf.parent == "child"
-      assert added_leaf.depth == 2  # scxml(0) -> parent(0) -> child(1) -> leaf(2)
+      # scxml(0) -> parent(0) -> child(1) -> leaf(2)
+      assert added_leaf.depth == 2
     end
 
     test "handle_state_end with parallel state nesting" do
       # Test parallel state being handled
       child1 = %State{id: "branch1", type: :atomic}
       child2 = %State{id: "branch2", type: :atomic}
-      
+
       parallel_state = %State{
-        id: "parallel_root", 
-        type: :parallel, 
+        id: "parallel_root",
+        type: :parallel,
         states: [child1, child2]
       }
-      
+
       document = %Document{states: []}
 
       parsing_state = %{
@@ -63,7 +64,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Parallel should be added to document
       [{"scxml", updated_document} | _rest] = result.stack
       assert length(updated_document.states) == 1
-      
+
       added_parallel = hd(updated_document.states)
       assert added_parallel.id == "parallel_root"
       assert added_parallel.type == :parallel
@@ -82,6 +83,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       }
 
       final_document = %Document{states: []}
+
       parsing_state = %{
         stack: [
           {"final", final_state},
@@ -96,7 +98,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Final state should be properly added to document
       [{"scxml", updated_document} | _rest] = result.stack
       assert length(updated_document.states) == 1
-      
+
       added_final = hd(updated_document.states)
       assert added_final.id == "final_success"
       assert added_final.type == :final
@@ -114,8 +116,8 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
 
       # Nested in deeply nested state
       leaf_state = %State{
-        id: "deep_leaf", 
-        type: :atomic, 
+        id: "deep_leaf",
+        type: :atomic,
         transitions: []
       }
 
@@ -132,7 +134,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Transition should be added to the leaf state
       [{"state", updated_leaf} | _rest] = result.stack
       assert length(updated_leaf.transitions) == 1
-      
+
       added_transition = hd(updated_leaf.transitions)
       assert added_transition.event == "complex_event"
       assert length(added_transition.targets) == 3
@@ -167,10 +169,11 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       assert length(updated_state.onentry_actions) == 3
 
       # Verify action types are preserved
-      action_types = updated_state.onentry_actions
-                   |> Enum.map(&(&1.__struct__))
-                   |> Enum.sort()
-      
+      action_types =
+        updated_state.onentry_actions
+        |> Enum.map(& &1.__struct__)
+        |> Enum.sort()
+
       expected_types = [AssignAction, LogAction, RaiseAction] |> Enum.sort()
       assert action_types == expected_types
     end
@@ -201,7 +204,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Actions should be added to state's onexit
       [{"state", updated_state} | _rest] = result.stack
       assert length(updated_state.onexit_actions) == 2
-      
+
       # Verify specific action properties
       [log_action, raise_action] = updated_state.onexit_actions
       assert log_action.expr == "'Exiting state'"
@@ -229,7 +232,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Log action should be added to onentry actions list
       [{"onentry", updated_actions} | _rest] = result.stack
       assert length(updated_actions) == 1
-      
+
       [added_log] = updated_actions
       assert added_log.__struct__ == LogAction
       assert added_log.label == "TestLog"
@@ -244,7 +247,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
         params: []
       }
 
-      # In onentry context  
+      # In onentry context
       parsing_state = %{
         stack: [
           {"send", send_action},
@@ -259,7 +262,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Send action should be added to onentry actions
       [{"onentry", updated_actions} | _rest] = result.stack
       assert length(updated_actions) == 1
-      
+
       [added_send] = updated_actions
       assert added_send.__struct__ == SendAction
       assert added_send.event == "test_send"
@@ -274,6 +277,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       root_state = %State{id: "level1", type: :compound, states: []}
 
       depth_document = %Document{states: []}
+
       parsing_state = %{
         stack: [
           {"state", deepest_state},
@@ -290,10 +294,11 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Deepest state should have correct depth
       [{"state", updated_level3} | _rest] = result.stack
       added_deepest = hd(updated_level3.states)
-      
+
       assert added_deepest.id == "level4"
       assert added_deepest.parent == "level3"
-      assert added_deepest.depth == 3  # 0-indexed: scxml(0) -> level1(0) -> level2(1) -> level3(2) -> level4(3)
+      # 0-indexed: scxml(0) -> level1(0) -> level2(1) -> level3(2) -> level4(3)
+      assert added_deepest.depth == 3
     end
   end
 
@@ -314,7 +319,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Test with minimal valid stack structure
       minimal_state = %State{id: "minimal", type: :atomic}
       minimal_document = %Document{states: []}
-      
+
       parsing_state = %{
         stack: [
           {"state", minimal_state},
@@ -353,7 +358,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Source location should be preserved
       [{"onentry", updated_actions} | _rest] = result.stack
       [preserved_action] = updated_actions
-      
+
       assert preserved_action.source_location != nil
       assert preserved_action.source_location.expr.line == 5
       assert preserved_action.source_location.expr.column == 10
@@ -361,9 +366,10 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
 
     test "handles large numbers of actions efficiently" do
       # Test with many actions to ensure no performance issues
-      many_actions = for i <- 1..50 do
-        %LogAction{expr: "'Action #{i}'", label: "Action#{i}"}
-      end
+      many_actions =
+        for i <- 1..50 do
+          %LogAction{expr: "'Action #{i}'", label: "Action#{i}"}
+        end
 
       state_with_many_actions = %State{
         id: "busy_state",
@@ -396,7 +402,7 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
     test "handles nested container elements" do
       # Test nested container processing
       actions = [%LogAction{expr: "'nested'"}]
-      
+
       parsing_state = %{
         stack: [
           {"onentry", actions},
@@ -411,15 +417,17 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Should properly handle nested structure
       [{"state", updated_state} | rest] = result.stack
       assert length(updated_state.onentry_actions) == 1
-      assert length(rest) == 2  # parent state and scxml document still in stack
+      # parent state and scxml document still in stack
+      assert length(rest) == 2
     end
 
     test "handles document order and hierarchy correctly" do
       # Test that parent-child relationships are established correctly
       child_state = %State{id: "child", type: :atomic}
       parent_state = %State{id: "parent", type: :compound, states: []}
-      
+
       hierarchy_document = %Document{states: []}
+
       parsing_state = %{
         stack: [
           {"state", child_state},
@@ -434,11 +442,12 @@ defmodule Statifier.Parser.SCXML.StateStackAdvancedTest do
       # Child should be added to parent with correct hierarchy
       [{"state", updated_parent} | _rest] = result.stack
       assert length(updated_parent.states) == 1
-      
+
       added_child = hd(updated_parent.states)
       assert added_child.id == "child"
       assert added_child.parent == "parent"
-      assert added_child.depth == 1  # parent is at depth 0, child at depth 1
+      # parent is at depth 0, child at depth 1
+      assert added_child.depth == 1
     end
   end
 end

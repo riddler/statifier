@@ -15,6 +15,7 @@ defmodule Statifier.Interpreter do
     Event,
     State,
     StateChart,
+    StateHierarchy,
     Validator
   }
 
@@ -64,6 +65,7 @@ defmodule Statifier.Interpreter do
 
         # Initialize data model from datamodel_elements
         datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
+
         state_chart =
           state_chart
           |> StateChart.update_datamodel(datamodel)
@@ -385,7 +387,7 @@ defmodule Statifier.Interpreter do
         source_states
         |> Enum.filter(fn other_source ->
           other_source != source_state and
-            descendant_of?(document, other_source, source_state)
+            StateHierarchy.descendant_of?(document, other_source, source_state)
         end)
 
       # Keep this source state's transitions only if no descendants have transitions
@@ -394,27 +396,6 @@ defmodule Statifier.Interpreter do
     |> Enum.flat_map(fn source_state ->
       Map.get(transitions_by_source, source_state, [])
     end)
-  end
-
-  # Check if state_id is a descendant of ancestor_id in the state hierarchy
-  defp descendant_of?(document, state_id, ancestor_id) do
-    case Document.find_state(document, state_id) do
-      nil -> false
-      state -> ancestor_in_parent_chain?(state, ancestor_id, document)
-    end
-  end
-
-  # Recursively check if ancestor_id appears in the parent chain, walking up the hierarchy
-  defp ancestor_in_parent_chain?(%{parent: nil}, _ancestor_id, _document), do: false
-  defp ancestor_in_parent_chain?(%{parent: ancestor_id}, ancestor_id, _document), do: true
-
-  defp ancestor_in_parent_chain?(%{parent: parent_id}, ancestor_id, document)
-       when is_binary(parent_id) do
-    # Look up parent state and continue walking up the chain
-    case Document.find_state(document, parent_id) do
-      nil -> false
-      parent_state -> ancestor_in_parent_chain?(parent_state, ancestor_id, document)
-    end
   end
 
   # Execute optimal transition set (microstep) with proper SCXML semantics
@@ -548,167 +529,26 @@ defmodule Statifier.Interpreter do
 
   # Check if we should exit descendants of the source state
   defp should_exit_source_descendant?(active_state, source_state, document) do
-    descendant_of?(document, active_state, source_state)
+    StateHierarchy.descendant_of?(document, active_state, source_state)
   end
 
   # Check if we should exit parallel siblings
   defp should_exit_parallel_sibling?(active_state, source_state, target_state, document) do
-    exits_parallel_region?(source_state, target_state, document) &&
-      are_in_parallel_regions?(document, active_state, source_state)
+    StateHierarchy.exits_parallel_region?(source_state, target_state, document) &&
+      StateHierarchy.are_in_parallel_regions?(document, active_state, source_state)
   end
 
   # Check if we should exit LCCA descendants (but not target ancestors/descendants)
   defp should_exit_lcca_descendant?(active_state, target_state, lcca, document) do
-    lcca && descendant_of?(document, active_state, lcca) &&
+    lcca && StateHierarchy.descendant_of?(document, active_state, lcca) &&
       active_state != lcca &&
-      not descendant_of?(document, target_state, active_state) &&
-      not descendant_of?(document, active_state, target_state)
+      not StateHierarchy.descendant_of?(document, target_state, active_state) &&
+      not StateHierarchy.descendant_of?(document, active_state, target_state)
   end
 
   # Compute the Least Common Compound Ancestor (LCCA) of source and target states
   defp compute_lcca(source_state_id, target_state_id, document) do
-    source_ancestors = get_ancestor_path(source_state_id, document)
-    target_ancestors = get_ancestor_path(target_state_id, document)
-
-    # Find the deepest common ancestor
-    find_deepest_common_ancestor(source_ancestors, target_ancestors, document)
-  end
-
-  # Get the path from a state to the root, including the state itself
-  defp get_ancestor_path(state_id, document) do
-    case Document.find_state(document, state_id) do
-      nil -> []
-      state -> build_ancestor_path(state, document, [])
-    end
-  end
-
-  # Build ancestor path recursively
-  defp build_ancestor_path(%{parent: nil} = state, _document, acc) do
-    [state.id | acc]
-  end
-
-  defp build_ancestor_path(%{parent: parent_id} = state, document, acc) do
-    case Document.find_state(document, parent_id) do
-      nil -> [state.id | acc]
-      parent_state -> build_ancestor_path(parent_state, document, [state.id | acc])
-    end
-  end
-
-  # Find the deepest state that appears in both ancestor paths
-  defp find_deepest_common_ancestor(source_path, target_path, document) do
-    source_set = MapSet.new(source_path)
-
-    # Find the first state in target path that also appears in source path
-    # This gives us the deepest common ancestor
-    target_path
-    # Start from deepest and work up
-    |> Enum.reverse()
-    |> Enum.find(fn state_id -> MapSet.member?(source_set, state_id) end)
-    |> case do
-      # No common ancestor (shouldn't happen in valid SCXML)
-      nil ->
-        nil
-
-      lcca_id ->
-        case Document.find_state(document, lcca_id) do
-          # Must be compound to be LCCA
-          %{type: :compound} ->
-            lcca_id
-
-          _non_compound_state ->
-            # Find the nearest compound ancestor
-            find_nearest_compound_ancestor(lcca_id, document)
-        end
-    end
-  end
-
-  # Find the nearest compound ancestor of a given state
-  defp find_nearest_compound_ancestor(state_id, document) do
-    case Document.find_state(document, state_id) do
-      nil -> nil
-      %{type: :compound} -> state_id
-      # Root state, no compound ancestor
-      %{parent: nil} -> nil
-      %{parent: parent_id} -> find_nearest_compound_ancestor(parent_id, document)
-    end
-  end
-
-  # Check if a transition exits a parallel region (target is outside the parallel region)
-  defp exits_parallel_region?(source_state, target_state, document) do
-    # Get all parallel ancestors of the source state
-    source_parallel_ancestors = get_parallel_ancestors(document, source_state)
-
-    # Check if the transition exits any of these parallel ancestors
-    Enum.any?(source_parallel_ancestors, fn parallel_ancestor_id ->
-      # Target is outside this parallel region if it's not a descendant and not the region itself
-      not descendant_of?(document, target_state, parallel_ancestor_id) and
-        target_state != parallel_ancestor_id
-    end)
-  end
-
-  # Check if two states are siblings within the same parallel region
-  # Check if two states are in different regions of the same parallel state
-  # This handles cases where states are descendants of parallel siblings, not just direct siblings
-  defp are_in_parallel_regions?(document, active_state, source_state) do
-    # Get all parallel ancestors of the source state
-    source_parallel_ancestors = get_parallel_ancestors(document, source_state)
-
-    # For each parallel ancestor, check if active_state is in a different region
-    Enum.any?(source_parallel_ancestors, fn parallel_parent_id ->
-      # Get the child of this parallel parent that contains the source
-      source_region =
-        get_parallel_region_for_descendant(document, parallel_parent_id, source_state)
-
-      # Get the child of this parallel parent that contains the active state
-      active_region =
-        get_parallel_region_for_descendant(document, parallel_parent_id, active_state)
-
-      # They are in parallel regions if they're in different regions of the same parallel parent
-      source_region != nil && active_region != nil && source_region != active_region
-    end)
-  end
-
-  # Get all parallel ancestors of a state
-  defp get_parallel_ancestors(document, state_id) do
-    case Document.find_state(document, state_id) do
-      nil -> []
-      state -> collect_parallel_ancestors(document, state, [])
-    end
-  end
-
-  defp collect_parallel_ancestors(_document, %{parent: nil}, acc), do: acc
-
-  defp collect_parallel_ancestors(document, %{parent: parent_id}, acc) do
-    case Document.find_state(document, parent_id) do
-      nil ->
-        acc
-
-      %{type: :parallel} = parent_state ->
-        collect_parallel_ancestors(document, parent_state, [parent_id | acc])
-
-      parent_state ->
-        collect_parallel_ancestors(document, parent_state, acc)
-    end
-  end
-
-  # Get which child of a parallel parent contains the given descendant state
-  defp get_parallel_region_for_descendant(document, parallel_parent_id, descendant_id) do
-    case Document.find_state(document, parallel_parent_id) do
-      %{type: :parallel, states: child_states} ->
-        find_containing_child(child_states, descendant_id, document)
-
-      _other ->
-        nil
-    end
-  end
-
-  defp find_containing_child(child_states, descendant_id, document) do
-    Enum.find_value(child_states, fn child_state ->
-      if descendant_id == child_state.id ||
-           descendant_of?(document, descendant_id, child_state.id) do
-        child_state.id
-      end
-    end)
+    StateHierarchy.compute_lcca(source_state_id, target_state_id, document)
   end
 
   # Execute a single transition and return target leaf states
@@ -741,35 +581,7 @@ defmodule Statifier.Interpreter do
 
   # Find parent states that have history children and need history recorded
   defp find_parents_with_history(exiting_states, document) do
-    exiting_states
-    |> Enum.flat_map(fn state_id ->
-      # Get all ancestors of this exiting state
-      case Document.find_state(document, state_id) do
-        nil -> []
-        state -> get_ancestors_with_history(state, document)
-      end
-    end)
-    |> Enum.uniq()
-  end
-
-  # Get all ancestor states of a given state that have history children
-  defp get_ancestors_with_history(state, document) do
-    get_all_ancestors(state, document)
-    |> Enum.filter(fn parent_id ->
-      # Check if this parent has any history children
-      history_children = Document.find_history_states(document, parent_id)
-      length(history_children) > 0
-    end)
-  end
-
-  # Get all ancestor state IDs for a given state
-  defp get_all_ancestors(%State{parent: nil}, _document), do: []
-
-  defp get_all_ancestors(%State{parent: parent_id}, document) do
-    case Document.find_state(document, parent_id) do
-      nil -> []
-      parent_state -> [parent_id | get_all_ancestors(parent_state, document)]
-    end
+    StateHierarchy.find_parents_with_history(exiting_states, document)
   end
 
   # Restore stored history configuration by recursively entering the stored states
