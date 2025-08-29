@@ -226,4 +226,108 @@ defmodule Statifier.DocumentTest do
       assert targets == []
     end
   end
+
+  describe "is_history_state?/2" do
+    setup do
+      document =
+        %Document{
+          states: [
+            %State{
+              id: "main",
+              type: :compound,
+              states: [
+                %State{id: "hist", type: :history, history_type: :shallow},
+                %State{id: "regular", type: :atomic}
+              ]
+            },
+            %State{id: "parallel_state", type: :parallel}
+          ]
+        }
+        |> Document.build_lookup_maps()
+
+      {:ok, document: document}
+    end
+
+    test "returns true for history state", %{document: document} do
+      assert Document.is_history_state?(document, "hist") == true
+    end
+
+    test "returns false for atomic state", %{document: document} do
+      assert Document.is_history_state?(document, "regular") == false
+    end
+
+    test "returns false for compound state", %{document: document} do
+      assert Document.is_history_state?(document, "main") == false
+    end
+
+    test "returns false for parallel state", %{document: document} do
+      assert Document.is_history_state?(document, "parallel_state") == false
+    end
+
+    test "returns false for non-existent state", %{document: document} do
+      assert Document.is_history_state?(document, "missing") == false
+    end
+  end
+
+  describe "find_history_states/2" do
+    setup do
+      document =
+        %Document{
+          states: [
+            %State{
+              id: "main",
+              type: :compound,
+              states: [
+                %State{id: "hist1", type: :history, history_type: :shallow},
+                %State{id: "hist2", type: :history, history_type: :deep},
+                %State{id: "regular", type: :atomic}
+              ]
+            },
+            %State{
+              id: "no_history",
+              type: :compound,
+              states: [
+                %State{id: "child1", type: :atomic},
+                %State{id: "child2", type: :atomic}
+              ]
+            },
+            %State{id: "atomic_state", type: :atomic}
+          ]
+        }
+        |> Document.build_lookup_maps()
+
+      {:ok, document: document}
+    end
+
+    test "returns list of history states for parent with history", %{document: document} do
+      history_states = Document.find_history_states(document, "main")
+
+      assert length(history_states) == 2
+      assert Enum.any?(history_states, &(&1.id == "hist1"))
+      assert Enum.any?(history_states, &(&1.id == "hist2"))
+      assert Enum.all?(history_states, &(&1.type == :history))
+    end
+
+    test "returns empty list for parent with no history", %{document: document} do
+      history_states = Document.find_history_states(document, "no_history")
+      assert history_states == []
+    end
+
+    test "returns empty list for atomic state", %{document: document} do
+      history_states = Document.find_history_states(document, "atomic_state")
+      assert history_states == []
+    end
+
+    test "returns empty list for non-existent parent", %{document: document} do
+      history_states = Document.find_history_states(document, "missing_parent")
+      assert history_states == []
+    end
+
+    test "filters out non-history children", %{document: document} do
+      history_states = Document.find_history_states(document, "main")
+
+      # Should only return history states, not the regular atomic child
+      refute Enum.any?(history_states, &(&1.id == "regular"))
+    end
+  end
 end
