@@ -58,21 +58,21 @@ defmodule Statifier.Interpreter do
     case Validator.validate(document) do
       {:ok, optimized_document, warnings} ->
         initial_config = get_initial_configuration(optimized_document)
+        initial_states = MapSet.to_list(Configuration.active_states(initial_config))
+
         state_chart = StateChart.new(optimized_document, initial_config)
 
         # Initialize data model from datamodel_elements
         datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
-        state_chart = StateChart.update_datamodel(state_chart, datamodel)
-
-        # Configure logging based on options or defaults
-        state_chart = LogManager.configure_from_options(state_chart, opts)
-
-        # Execute onentry actions for initial states and queue any raised events
-        initial_states = MapSet.to_list(Configuration.active_states(initial_config))
-        state_chart = ActionExecutor.execute_onentry_actions(initial_states, state_chart)
-
-        # Execute microsteps (eventless transitions and internal events) after initialization
-        state_chart = execute_microsteps(state_chart)
+        state_chart =
+          state_chart
+          |> StateChart.update_datamodel(datamodel)
+          # Configure logging based on options or defaults
+          |> LogManager.configure_from_options(opts)
+          # Execute onentry actions for initial states and queue any raised events
+          |> ActionExecutor.execute_onentry_actions(initial_states)
+          # Execute microsteps (eventless transitions and internal events) after initialization
+          |> execute_microsteps()
 
         # Log warnings if any (TODO: Use proper logging)
         if warnings != [], do: :ok
@@ -107,11 +107,12 @@ defmodule Statifier.Interpreter do
         {:ok, state_chart}
 
       transitions ->
-        # Execute optimal transition set as a microstep
-        state_chart = execute_transitions(state_chart, transitions)
-
-        # Execute any eventless transitions (complete the macrostep)
-        state_chart = execute_microsteps(state_chart)
+        state_chart =
+          state_chart
+          # Execute optimal transition set as a microstep
+          |> execute_transitions(transitions)
+          # Execute any eventless transitions (complete the macrostep)
+          |> execute_microsteps()
 
         {:ok, state_chart}
     end
@@ -178,10 +179,11 @@ defmodule Statifier.Interpreter do
         end
 
       transitions ->
+        state_chart
         # Execute microstep with these eventless transitions (higher priority than internal events)
-        new_state_chart = execute_transitions(state_chart, transitions)
+        |> execute_transitions(transitions)
         # Continue executing microsteps until stable (recursive call)
-        execute_microsteps(new_state_chart, iterations + 1)
+        |> execute_microsteps(iterations + 1)
     end
   end
 
@@ -470,20 +472,20 @@ defmodule Statifier.Interpreter do
     # Determine which states are actually being entered
     new_target_set = MapSet.new(new_target_states)
     entering_states = MapSet.difference(new_target_set, current_active)
+    entering_states_list = MapSet.to_list(entering_states)
 
     # Record history BEFORE executing onexit actions (per W3C SCXML specification)
     exiting_states = MapSet.to_list(exit_set)
-    state_chart = record_history_for_exiting_states(state_chart, exiting_states)
 
-    # Execute onexit actions for states being exited (with proper event queueing)
-    state_chart = ActionExecutor.execute_onexit_actions(exiting_states, state_chart)
-
-    # Execute transition actions (per SCXML spec: after exit actions, before entry actions)
-    state_chart = execute_transition_actions(transitions, state_chart)
-
-    # Execute onentry actions for states being entered (with proper event queueing)
-    entering_states_list = MapSet.to_list(entering_states)
-    state_chart = ActionExecutor.execute_onentry_actions(entering_states_list, state_chart)
+    state_chart =
+      state_chart
+      |> record_history_for_exiting_states(exiting_states)
+      # Execute onexit actions for states being exited (with proper event queueing)
+      |> ActionExecutor.execute_onexit_actions(exiting_states)
+      # Execute transition actions (per SCXML spec: after exit actions, before entry actions)
+      |> ActionExecutor.execute_transition_actions(transitions)
+      # Execute onentry actions for states being entered (with proper event queueing)
+      |> ActionExecutor.execute_onentry_actions(entering_states_list)
 
     # Keep active states that are not being exited
     preserved_states = MapSet.difference(current_active, exit_set)
@@ -818,28 +820,5 @@ defmodule Statifier.Interpreter do
         target_state -> enter_state(target_state, state_chart)
       end
     end)
-  end
-
-  # Execute transition actions for all transitions being taken
-  defp execute_transition_actions(transitions, state_chart) do
-    transitions
-    |> Enum.reduce(state_chart, fn transition, acc_state_chart ->
-      execute_single_transition_actions(transition, acc_state_chart)
-    end)
-  end
-
-  # Execute actions for a single transition
-  defp execute_single_transition_actions(transition, state_chart) do
-    case transition.actions do
-      [] ->
-        state_chart
-
-      actions ->
-        # Execute each action in the transition
-        actions
-        |> Enum.reduce(state_chart, fn action, acc_state_chart ->
-          ActionExecutor.execute_single_action(action, acc_state_chart)
-        end)
-    end
   end
 end

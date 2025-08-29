@@ -38,7 +38,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Verify state chart is returned and has events queued
       assert %StateChart{} = result
@@ -64,7 +64,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should return unchanged state chart
       assert result == state_chart
@@ -92,7 +92,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1", "s2", "s3"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1", "s2", "s3"])
 
       # Should have one event from s2
       assert length(result.internal_queue) == 1
@@ -117,7 +117,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       state_chart = create_configured_state_chart(xml)
 
       # Include valid and invalid state IDs
-      result = ActionExecutor.execute_onentry_actions(["s1", "invalid_state"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1", "invalid_state"])
 
       # Should process valid state and skip invalid ones
       assert %StateChart{} = result
@@ -139,7 +139,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onexit_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onexit_actions(state_chart, ["s1"])
 
       assert %StateChart{} = result
       assert length(result.internal_queue) == 1
@@ -163,7 +163,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onexit_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onexit_actions(state_chart, ["s1"])
 
       assert result == state_chart
       assert Enum.empty?(result.internal_queue)
@@ -187,7 +187,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onexit_actions(["s1", "s2"], state_chart)
+      result = ActionExecutor.execute_onexit_actions(state_chart, ["s1", "s2"])
 
       # Should have two events queued
       assert length(result.internal_queue) == 2
@@ -216,7 +216,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Check each expected log entry
       assert_log_entry(result, message_contains: "Log: quoted string")
@@ -244,7 +244,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should have 4 events queued
       assert length(result.internal_queue) == 4
@@ -293,7 +293,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       # Configure logging with TestAdapter
       state_chart = LogManager.configure_from_options(state_chart, [])
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should continue processing despite unknown action
       assert %StateChart{} = result
@@ -323,7 +323,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Events should be in the queue in order
       assert length(result.internal_queue) == 2
@@ -368,7 +368,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       state_chart = LogManager.configure_from_options(state_chart, [])
       state_chart = StateChart.enqueue_event(state_chart, initial_event)
 
-      result = ActionExecutor.execute_onentry_actions(["s1", "s2"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1", "s2"])
 
       # Should have original event plus two new ones
       assert length(result.internal_queue) == 3
@@ -400,7 +400,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = StateChart.new(modified_document, %Configuration{})
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should return unchanged state chart
       assert result == state_chart
@@ -419,7 +419,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions([], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, [])
 
       # Should return unchanged state chart
       assert result == state_chart
@@ -456,7 +456,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       # Configure logging with TestAdapter
       state_chart = LogManager.configure_from_options(state_chart, [])
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should handle nil values gracefully
       assert %StateChart{} = result

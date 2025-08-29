@@ -23,7 +23,7 @@ defmodule Statifier.Actions.ActionExecutorRaiseTest do
       # Configure logging with TestAdapter
       state_chart = LogManager.configure_from_options(state_chart, [])
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should have logged both debug (from ActionExecutor) and info (from RaiseAction)
       debug_log = assert_log_entry(result, level: :debug, action_type: "raise_action")
@@ -51,7 +51,7 @@ defmodule Statifier.Actions.ActionExecutorRaiseTest do
       # Configure logging with TestAdapter
       state_chart = LogManager.configure_from_options(state_chart, [])
 
-      result = ActionExecutor.execute_onexit_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onexit_actions(state_chart, ["s1"])
 
       # Should have logged both debug (from ActionExecutor) and info (from RaiseAction)
       debug_log = assert_log_entry(result, level: :debug, action_type: "raise_action")
@@ -81,7 +81,7 @@ defmodule Statifier.Actions.ActionExecutorRaiseTest do
       # Configure logging with TestAdapter
       state_chart = LogManager.configure_from_options(state_chart, [])
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Assert that the logs appear in correct chronological order
       assert_log_order(result, [
@@ -109,7 +109,7 @@ defmodule Statifier.Actions.ActionExecutorRaiseTest do
       # Configure logging with TestAdapter
       state_chart = LogManager.configure_from_options(state_chart, [])
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should use default "anonymous_event" when event attribute is missing
       debug_log = assert_log_entry(result, level: :debug, action_type: "raise_action")
