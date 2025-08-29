@@ -74,6 +74,26 @@ defmodule Statifier.Document do
     Map.get(lookup, state_id, [])
   end
 
+  @doc """
+  Get the default transition targets for a history state.
+
+  Returns a list of target state IDs from the history state's default transitions.
+  Returns an empty list if the state is not found, not a history state, or has no transitions.
+  """
+  @spec get_history_default_targets(t(), String.t()) :: [String.t()]
+  def get_history_default_targets(%__MODULE__{} = document, history_state_id)
+      when is_binary(history_state_id) do
+    case find_state(document, history_state_id) do
+      %Statifier.State{type: :history, transitions: transitions} ->
+        transitions
+        |> Enum.map(& &1.target)
+        |> Enum.filter(&(&1 != nil))
+
+      _other ->
+        []
+    end
+  end
+
   # Private helper functions
 
   # Build a flat map of state_id -> state for O(1) lookups

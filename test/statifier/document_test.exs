@@ -142,4 +142,88 @@ defmodule Statifier.DocumentTest do
       assert transitions == []
     end
   end
+
+  describe "get_history_default_targets/2" do
+    setup do
+      document =
+        %Document{
+          states: [
+            %State{
+              id: "main",
+              type: :compound,
+              states: [
+                %State{
+                  id: "hist_shallow",
+                  type: :history,
+                  history_type: :shallow,
+                  transitions: [
+                    %Transition{target: "sub1"},
+                    %Transition{target: "sub2"}
+                  ]
+                },
+                %State{
+                  id: "hist_deep",
+                  type: :history,
+                  history_type: :deep,
+                  transitions: [
+                    %Transition{target: "sub1"}
+                  ]
+                },
+                %State{
+                  id: "hist_no_defaults",
+                  type: :history,
+                  history_type: :shallow,
+                  transitions: []
+                },
+                %State{
+                  id: "hist_with_nil",
+                  type: :history,
+                  history_type: :shallow,
+                  transitions: [
+                    %Transition{target: nil},
+                    %Transition{target: "sub1"}
+                  ]
+                },
+                %State{id: "sub1", type: :atomic},
+                %State{id: "sub2", type: :atomic}
+              ]
+            },
+            %State{id: "regular_state", type: :atomic, transitions: [%Transition{target: "main"}]}
+          ]
+        }
+        |> Document.build_lookup_maps()
+
+      {:ok, document: document}
+    end
+
+    test "returns list of targets for history state with transitions", %{document: document} do
+      targets = Document.get_history_default_targets(document, "hist_shallow")
+      assert targets == ["sub1", "sub2"]
+    end
+
+    test "returns single target for history state with one transition", %{document: document} do
+      targets = Document.get_history_default_targets(document, "hist_deep")
+      assert targets == ["sub1"]
+    end
+
+    test "returns empty list for history state without transitions", %{document: document} do
+      targets = Document.get_history_default_targets(document, "hist_no_defaults")
+      assert targets == []
+    end
+
+    test "filters out nil targets", %{document: document} do
+      targets = Document.get_history_default_targets(document, "hist_with_nil")
+      assert targets == ["sub1"]
+    end
+
+    test "returns empty list for non-history state", %{document: document} do
+      targets = Document.get_history_default_targets(document, "regular_state")
+      assert targets == []
+    end
+
+    test "returns empty list for non-existent state", %{document: document} do
+      targets = Document.get_history_default_targets(document, "missing_state")
+      assert targets == []
+    end
+  end
 end
