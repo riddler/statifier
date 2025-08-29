@@ -11,8 +11,8 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
     Actions.LogAction,
     Actions.RaiseAction,
     Actions.SendAction,
-    Actions.SendParam,
     Actions.SendContent,
+    Actions.SendParam,
     Evaluator
   }
 

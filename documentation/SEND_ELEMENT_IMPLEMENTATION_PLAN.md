@@ -13,6 +13,7 @@ This document outlines the comprehensive implementation plan for the SCXML `<sen
 ### 1.1 Purpose
 
 The `<send>` element provides SCXML state machines with the ability to:
+
 - Send events to internal or external destinations
 - Schedule delayed event delivery
 - Include structured data with events
@@ -42,18 +43,22 @@ The `<send>` element provides SCXML state machines with the ability to:
 #### Child Elements
 
 **`<param>` Element**
+
 ```xml
 <param name="paramName" expr="expression"/>
 <param name="paramName" location="dataModelLocation"/>
 ```
+
 - Provides key-value pairs to include with the event
 - Must specify either `expr` or `location`, not both
 
 **`<content>` Element**
+
 ```xml
 <content expr="expression"/>
 <content>literal content</content>
 ```
+
 - Specifies inline content as event data
 - Can contain either literal content or an expression
 
@@ -66,11 +71,13 @@ The `<send>` element provides SCXML state machines with the ability to:
 ### 1.3 Event I/O Processors
 
 #### SCXML Event I/O Processor (Internal)
+
 - **Type identifier**: `scxml` or `http://www.w3.org/TR/scxml/#SCXMLEventProcessor`
 - **Target format**: `#_internal` for same session
 - **Behavior**: Places events directly in internal queue for immediate processing
 
 #### Basic HTTP Event I/O Processor
+
 - **Type identifier**: `basichttp` or `http://www.w3.org/TR/scxml/#BasicHTTPEventProcessor`
 - **Target format**: Full HTTP/HTTPS URL
 - **Behavior**: Sends events as HTTP POST requests
@@ -78,10 +85,12 @@ The `<send>` element provides SCXML state machines with the ability to:
 ### 1.4 Related Elements
 
 #### `<cancel>` Element
+
 ```xml
 <cancel sendid="send1"/>
 <cancel sendidexpr="getSendId()"/>
 ```
+
 - Cancels a delayed send operation
 - References the send by its ID
 
@@ -90,6 +99,7 @@ The `<send>` element provides SCXML state machines with the ability to:
 ### 2.1 Existing Infrastructure
 
 **Available Components**:
+
 - ✅ Action execution framework (`Statifier.Actions.ActionExecutor`)
 - ✅ Expression evaluation (`Statifier.ValueEvaluator`, `Statifier.ConditionEvaluator`)
 - ✅ Internal event queue management (`Statifier.StateChart`)
@@ -97,6 +107,7 @@ The `<send>` element provides SCXML state machines with the ability to:
 - ✅ Parser infrastructure for executable content
 
 **Missing Components**:
+
 - ❌ Event scheduling system for delays
 - ❌ Send ID management and tracking
 - ❌ Event I/O Processor framework
@@ -106,6 +117,7 @@ The `<send>` element provides SCXML state machines with the ability to:
 ### 2.2 Test Coverage Analysis
 
 **SCION Tests** (Currently Failing):
+
 - `actionSend/` - 9 tests for basic send functionality
 - `delayedSend/` - 3 tests for delayed event delivery
 - `send_data/` - 1 test for data inclusion
@@ -113,6 +125,7 @@ The `<send>` element provides SCXML state machines with the ability to:
 - `send_idlocation/` - 1 test for ID management
 
 **W3C Tests** (Currently Failing):
+
 - Multiple tests in `mandatory/` that use send for test coordination
 - Tests validating error handling and edge cases
 
@@ -120,7 +133,7 @@ The `<send>` element provides SCXML state machines with the ability to:
 
 ### 3.1 Architecture Overview
 
-```
+```text
 ┌─────────────────────┐
 │   Parser Layer      │
 │  - Parse <send>     │
@@ -252,6 +265,7 @@ end
 **Goal**: Implement basic internal event sending without delays
 
 **Scope**:
+
 - Parse `<send>` elements with basic attributes
 - Support `event`/`eventexpr` attributes
 - Support `target` attribute for internal sends only
@@ -259,6 +273,7 @@ end
 - Add events to internal queue
 
 **Implementation Tasks**:
+
 1. Add `SendAction` struct and parser support
 2. Implement `send_element` case in `ElementBuilder`
 3. Add send execution to `ActionExecutor`
@@ -266,12 +281,14 @@ end
 5. Update `StateChart` to handle internal send events
 
 **Deliverables**:
+
 - [ ] Parser support for `<send>` elements
 - [ ] Basic send execution for internal events
 - [ ] Unit tests for send parsing and execution
 - [ ] Enable basic actionSend SCION tests
 
 **Success Criteria**:
+
 - Can parse `<send event="myEvent" target="#_internal"/>`
 - Events appear in internal queue during macrostep
 - At least 3 actionSend tests passing
@@ -281,6 +298,7 @@ end
 **Goal**: Add delayed event delivery and cancellation support
 
 **Scope**:
+
 - Parse and evaluate `delay`/`delayexpr` attributes
 - Implement `EventScheduler` GenServer
 - Support `id`/`idlocation` for send identification
@@ -288,6 +306,7 @@ end
 - Handle timer lifecycle and cleanup
 
 **Implementation Tasks**:
+
 1. Create `EventScheduler` GenServer
 2. Add delay parsing and evaluation
 3. Implement send ID generation and management
@@ -296,6 +315,7 @@ end
 6. Handle state machine termination cleanup
 
 **Deliverables**:
+
 - [ ] Working event scheduler with timer management
 - [ ] Delay attribute support (ms, s, min formats)
 - [ ] Cancel action implementation
@@ -303,6 +323,7 @@ end
 - [ ] Enable delayedSend SCION tests
 
 **Success Criteria**:
+
 - Can schedule events with delays like "500ms", "2s"
 - Can cancel delayed sends by ID
 - All timers cleaned up on state machine termination
@@ -313,6 +334,7 @@ end
 **Goal**: Complete data inclusion mechanisms
 
 **Scope**:
+
 - Support `namelist` attribute with datamodel
 - Parse and process `<param>` elements
 - Parse and process `<content>` element
@@ -320,6 +342,7 @@ end
 - Handle expression evaluation for all data sources
 
 **Implementation Tasks**:
+
 1. Add `SendParam` and `SendContent` structs
 2. Parse param and content child elements
 3. Implement `namelist` processing
@@ -328,6 +351,7 @@ end
 6. Build proper event data structure
 
 **Deliverables**:
+
 - [ ] Complete namelist support
 - [ ] Param element support (name/expr/location)
 - [ ] Content element support (literal and expr)
@@ -335,6 +359,7 @@ end
 - [ ] Enable send_data and send_internal tests
 
 **Success Criteria**:
+
 - Can include datamodel variables via namelist
 - Can add custom parameters via `<param>`
 - Can include content via `<content>`
@@ -346,6 +371,7 @@ end
 **Goal**: Add external communication and robust error handling
 
 **Scope**:
+
 - Design Event I/O Processor behavior
 - Implement SCXML Event I/O Processor
 - Add error event generation
@@ -353,6 +379,7 @@ end
 - Optional: Basic HTTP processor
 
 **Implementation Tasks**:
+
 1. Define `EventIOProcessor` behavior
 2. Implement `SCXMLEventIOProcessor`
 3. Add target URI parsing and validation
@@ -361,6 +388,7 @@ end
 6. Optional: Implement `HTTPEventIOProcessor`
 
 **Deliverables**:
+
 - [ ] Event I/O Processor framework
 - [ ] Target validation and routing
 - [ ] Error event generation
@@ -368,6 +396,7 @@ end
 - [ ] Complete test coverage
 
 **Success Criteria**:
+
 - Can route events based on target URI
 - Proper error events for invalid targets
 - Clean processor abstraction
@@ -378,18 +407,21 @@ end
 ### 5.1 Unit Tests
 
 **Parser Tests** (`test/statifier/parser/send_parsing_test.exs`):
+
 - Parse send with all attribute combinations
 - Parse param and content children
 - Parse cancel elements
 - Validate parsing errors
 
 **Executor Tests** (`test/statifier/actions/send_executor_test.exs`):
+
 - Execute immediate sends
 - Schedule delayed sends
 - Cancel scheduled sends
 - Build event data correctly
 
 **Scheduler Tests** (`test/statifier/event_scheduler_test.exs`):
+
 - Schedule and deliver events
 - Cancel by ID
 - Handle concurrent operations
@@ -398,11 +430,13 @@ end
 ### 5.2 Integration Tests
 
 **SCION Test Suites**:
+
 - Enable tests progressively by phase
 - Track pass rate improvements
 - Document any deviations from SCION behavior
 
 **Custom Integration Tests**:
+
 - Complex send scenarios
 - Multiple delayed sends
 - Cancellation edge cases

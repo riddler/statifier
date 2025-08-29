@@ -183,10 +183,10 @@ defmodule Statifier.FeatureDetectorTest do
     end
 
     test "fails validation for unsupported features" do
-      mixed_features = MapSet.new([:basic_states, :send_elements])
+      mixed_features = MapSet.new([:basic_states, :send_idlocation])
 
       assert {:error, unsupported} = FeatureDetector.validate_features(mixed_features)
-      assert MapSet.member?(unsupported, :send_elements)
+      assert MapSet.member?(unsupported, :send_idlocation)
       refute MapSet.member?(unsupported, :basic_states)
     end
 
@@ -214,13 +214,13 @@ defmodule Statifier.FeatureDetectorTest do
       assert registry[:onentry_actions] == :supported
       assert registry[:onexit_actions] == :supported
       assert registry[:log_elements] == :supported
+      assert registry[:send_elements] == :supported
 
       # Recently implemented datamodel features
       assert registry[:datamodel] == :supported
       assert registry[:data_elements] == :supported
 
       # Still unsupported features
-      assert registry[:send_elements] == :unsupported
       assert registry[:send_idlocation] == :unsupported
     end
 

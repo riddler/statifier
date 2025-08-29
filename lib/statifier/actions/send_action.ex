@@ -10,7 +10,7 @@ defmodule Statifier.Actions.SendAction do
   - Interface with external systems via Event I/O Processors
   """
 
-  alias Statifier.{Event, StateChart, Evaluator}
+  alias Statifier.{Evaluator, Event, StateChart}
   alias Statifier.Logging.LogManager
 
   @type t :: %__MODULE__{
@@ -258,6 +258,7 @@ defmodule Statifier.Actions.SendAction do
     case Evaluator.compile_expression(expression) do
       {:ok, compiled} ->
         Evaluator.evaluate_value(compiled, state_chart)
+
       {:error, reason} ->
         {:error, reason}
     end

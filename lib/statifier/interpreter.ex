@@ -833,7 +833,7 @@ defmodule Statifier.Interpreter do
     case transition.actions do
       [] ->
         state_chart
-      
+
       actions ->
         # Execute each action in the transition
         actions

@@ -1,7 +1,7 @@
 defmodule Statifier.Parser.SendParsingTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.Actions.{SendAction, SendParam, SendContent}
+  alias Statifier.Actions.{SendAction, SendContent, SendParam}
   alias Statifier.Parser.SCXML
 
   describe "send element parsing" do
