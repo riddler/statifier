@@ -212,7 +212,8 @@ defmodule Statifier.Validator.HistoryStateValidator do
 
   defp validate_transition_target(%{targets: []}, _history, acc, _document), do: acc
 
-  defp validate_transition_target(%{targets: targets}, history, acc, document) when is_list(targets) do
+  defp validate_transition_target(%{targets: targets}, history, acc, document)
+       when is_list(targets) do
     Enum.reduce(targets, acc, fn target, acc2 ->
       if Utils.state_exists?(target, document) do
         acc2
@@ -241,7 +242,8 @@ defmodule Statifier.Validator.HistoryStateValidator do
 
     targeted_states =
       all_transitions
-      |> Enum.flat_map(& &1.targets)  # Flatten the list of target lists
+      # Flatten the list of target lists
+      |> Enum.flat_map(& &1.targets)
       |> MapSet.new()
 
     Enum.reduce(history_states, result, fn history, acc ->

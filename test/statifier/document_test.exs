@@ -31,7 +31,10 @@ defmodule Statifier.DocumentTest do
             id: "parent",
             transitions: [%Transition{event: "exit", targets: ["final"]}],
             states: [
-              %State{id: "child1", transitions: [%Transition{event: "next", targets: ["child2"]}]},
+              %State{
+                id: "child1",
+                transitions: [%Transition{event: "next", targets: ["child2"]}]
+              },
               %State{id: "child2", transitions: []}
             ]
           },
@@ -188,7 +191,11 @@ defmodule Statifier.DocumentTest do
                 %State{id: "sub2", type: :atomic}
               ]
             },
-            %State{id: "regular_state", type: :atomic, transitions: [%Transition{targets: ["main"]}]}
+            %State{
+              id: "regular_state",
+              type: :atomic,
+              transitions: [%Transition{targets: ["main"]}]
+            }
           ]
         }
         |> Document.build_lookup_maps()

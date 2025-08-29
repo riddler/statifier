@@ -283,7 +283,8 @@ defmodule Statifier.Interpreter do
         # Use the initial element's transition target (take first target if multiple)
         case transition.targets do
           [first_target | _rest] -> find_child_by_id(child_states, first_target)
-          [] -> nil  # No target specified
+          # No target specified
+          [] -> nil
         end
 
       %State{type: :initial, transitions: []} ->
@@ -513,7 +514,7 @@ defmodule Statifier.Interpreter do
       [] ->
         # Empty target list - no states should be exited (targetless transition)
         false
-      
+
       targets ->
         # For transitions with targets, check if we should exit for any target
         # For simplicity, if ANY target requires exit, we exit
@@ -548,7 +549,7 @@ defmodule Statifier.Interpreter do
   # Check if we should exit parallel siblings
   defp should_exit_parallel_sibling?(active_state, source_state, target_state, document) do
     exits_parallel_region?(source_state, target_state, document) &&
-      are_parallel_siblings?(document, active_state, source_state)
+      are_in_parallel_regions?(document, active_state, source_state)
   end
 
   # Check if we should exit LCCA descendants (but not target ancestors/descendants)
@@ -629,37 +630,80 @@ defmodule Statifier.Interpreter do
 
   # Check if a transition exits a parallel region (target is outside the parallel region)
   defp exits_parallel_region?(source_state, target_state, document) do
-    case {Document.find_state(document, source_state),
-          Document.find_state(document, target_state)} do
-      {%{parent: source_parent}, _target} when not is_nil(source_parent) ->
-        case Document.find_state(document, source_parent) do
-          %{type: :parallel} ->
-            # Source is in a parallel region - check if target is outside this region
-            not descendant_of?(document, target_state, source_parent) and
-              target_state != source_parent
+    # Get all parallel ancestors of the source state
+    source_parallel_ancestors = get_parallel_ancestors(document, source_state)
 
-          _non_parallel_parent ->
-            false
-        end
-
-      _other_case ->
-        false
-    end
+    # Check if the transition exits any of these parallel ancestors
+    Enum.any?(source_parallel_ancestors, fn parallel_ancestor_id ->
+      # Target is outside this parallel region if it's not a descendant and not the region itself
+      not descendant_of?(document, target_state, parallel_ancestor_id) and
+        target_state != parallel_ancestor_id
+    end)
   end
 
   # Check if two states are siblings within the same parallel region
-  defp are_parallel_siblings?(document, state1_id, state2_id) do
-    case {Document.find_state(document, state1_id), Document.find_state(document, state2_id)} do
-      {%{parent: parent_id}, %{parent: parent_id}} when not is_nil(parent_id) ->
-        # Same parent - check if parent is parallel
-        case Document.find_state(document, parent_id) do
-          %{type: :parallel} -> true
-          _non_parallel_parent -> false
-        end
+  # Check if two states are in different regions of the same parallel state
+  # This handles cases where states are descendants of parallel siblings, not just direct siblings
+  defp are_in_parallel_regions?(document, active_state, source_state) do
+    # Get all parallel ancestors of the source state
+    source_parallel_ancestors = get_parallel_ancestors(document, source_state)
 
-      _different_parents ->
-        false
+    # For each parallel ancestor, check if active_state is in a different region
+    Enum.any?(source_parallel_ancestors, fn parallel_parent_id ->
+      # Get the child of this parallel parent that contains the source
+      source_region =
+        get_parallel_region_for_descendant(document, parallel_parent_id, source_state)
+
+      # Get the child of this parallel parent that contains the active state
+      active_region =
+        get_parallel_region_for_descendant(document, parallel_parent_id, active_state)
+
+      # They are in parallel regions if they're in different regions of the same parallel parent
+      source_region != nil && active_region != nil && source_region != active_region
+    end)
+  end
+
+  # Get all parallel ancestors of a state
+  defp get_parallel_ancestors(document, state_id) do
+    case Document.find_state(document, state_id) do
+      nil -> []
+      state -> collect_parallel_ancestors(document, state, [])
     end
+  end
+
+  defp collect_parallel_ancestors(_document, %{parent: nil}, acc), do: acc
+
+  defp collect_parallel_ancestors(document, %{parent: parent_id}, acc) do
+    case Document.find_state(document, parent_id) do
+      nil ->
+        acc
+
+      %{type: :parallel} = parent_state ->
+        collect_parallel_ancestors(document, parent_state, [parent_id | acc])
+
+      parent_state ->
+        collect_parallel_ancestors(document, parent_state, acc)
+    end
+  end
+
+  # Get which child of a parallel parent contains the given descendant state
+  defp get_parallel_region_for_descendant(document, parallel_parent_id, descendant_id) do
+    case Document.find_state(document, parallel_parent_id) do
+      %{type: :parallel, states: child_states} ->
+        find_containing_child(child_states, descendant_id, document)
+
+      _other ->
+        nil
+    end
+  end
+
+  defp find_containing_child(child_states, descendant_id, document) do
+    Enum.find_value(child_states, fn child_state ->
+      if descendant_id == child_state.id ||
+           descendant_of?(document, descendant_id, child_state.id) do
+        child_state.id
+      end
+    end)
   end
 
   # Execute a single transition and return target leaf states
@@ -761,7 +805,8 @@ defmodule Statifier.Interpreter do
   defp resolve_history_default_transition(
          %{targets: targets},
          %StateChart{document: document} = state_chart
-       ) when is_list(targets) do
+       )
+       when is_list(targets) do
     # Process all targets in the transition
     targets
     |> Enum.flat_map(fn target_id ->

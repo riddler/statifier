@@ -13,7 +13,11 @@ defmodule Statifier.HistoryResolutionTest do
               id: "outside",
               type: :atomic,
               transitions: [
-                %Transition{source: "outside", event: "enter_shallow", targets: ["shallow_history"]},
+                %Transition{
+                  source: "outside",
+                  event: "enter_shallow",
+                  targets: ["shallow_history"]
+                },
                 %Transition{source: "outside", event: "enter_deep", targets: ["deep_history"]}
               ]
             },

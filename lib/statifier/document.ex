@@ -117,7 +117,8 @@ defmodule Statifier.Document do
     case find_state(document, history_state_id) do
       %Statifier.State{type: :history, transitions: transitions} ->
         transitions
-        |> Enum.flat_map(& &1.targets)  # Flatten the list of target lists
+        # Flatten the list of target lists
+        |> Enum.flat_map(& &1.targets)
 
       _other ->
         []

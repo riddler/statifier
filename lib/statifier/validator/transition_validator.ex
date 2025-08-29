@@ -23,20 +23,22 @@ defmodule Statifier.Validator.TransitionValidator do
     all_transitions = Utils.collect_all_transitions(all_states)
 
     Enum.reduce(all_transitions, result, fn transition, acc ->
-      case transition.targets do
-        [] ->
-          # No targets to validate
-          acc
-          
-        targets ->
-          # Validate each target in the list
-          Enum.reduce(targets, acc, fn target, acc2 ->
-            if Utils.state_exists?(target, document) do
-              acc2
-            else
-              Utils.add_error(acc2, "Transition target '#{target}' does not exist")
-            end
-          end)
+      validate_transition_targets_list(transition.targets, acc, document)
+    end)
+  end
+
+  defp validate_transition_targets_list([], acc, _document) do
+    # No targets to validate
+    acc
+  end
+
+  defp validate_transition_targets_list(targets, acc, document) do
+    # Validate each target in the list
+    Enum.reduce(targets, acc, fn target, acc2 ->
+      if Utils.state_exists?(target, document) do
+        acc2
+      else
+        Utils.add_error(acc2, "Transition target '#{target}' does not exist")
       end
     end)
   end
