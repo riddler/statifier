@@ -436,8 +436,11 @@ defmodule Statifier.Interpreter do
     new_target_set = MapSet.new(new_target_states)
     entering_states = MapSet.difference(new_target_set, current_active)
 
-    # Execute onexit actions for states being exited (with proper event queueing)
+    # Record history BEFORE executing onexit actions (per W3C SCXML specification)
     exiting_states = MapSet.to_list(exit_set)
+    state_chart = record_history_for_exiting_states(state_chart, exiting_states)
+
+    # Execute onexit actions for states being exited (with proper event queueing)
     state_chart = ActionExecutor.execute_onexit_actions(exiting_states, state_chart)
 
     # Execute onentry actions for states being entered (with proper event queueing)
@@ -632,6 +635,52 @@ defmodule Statifier.Interpreter do
           nil -> []
           target_state -> enter_state(target_state, document)
         end
+    end
+  end
+
+  # Record history for states that will be exited
+  # Per W3C SCXML spec: "MUST record the [...] children of its parent before taking any
+  # transition that exits the parent"
+  defp record_history_for_exiting_states(%StateChart{} = state_chart, exiting_states) do
+    # For each exiting state, check if it has a parent with history children
+    parent_states_to_record = find_parents_with_history(exiting_states, state_chart.document)
+
+    # Record history for each parent that has history children
+    Enum.reduce(parent_states_to_record, state_chart, fn parent_state_id, acc_state_chart ->
+      StateChart.record_history(acc_state_chart, parent_state_id)
+    end)
+  end
+
+  # Find parent states that have history children and need history recorded
+  defp find_parents_with_history(exiting_states, document) do
+    exiting_states
+    |> Enum.flat_map(fn state_id ->
+      # Get all ancestors of this exiting state
+      case Document.find_state(document, state_id) do
+        nil -> []
+        state -> get_ancestors_with_history(state, document)
+      end
+    end)
+    |> Enum.uniq()
+  end
+
+  # Get all ancestor states of a given state that have history children
+  defp get_ancestors_with_history(state, document) do
+    get_all_ancestors(state, document)
+    |> Enum.filter(fn parent_id ->
+      # Check if this parent has any history children
+      history_children = Document.find_history_states(document, parent_id)
+      length(history_children) > 0
+    end)
+  end
+
+  # Get all ancestor state IDs for a given state
+  defp get_all_ancestors(%Statifier.State{parent: nil}, _document), do: []
+
+  defp get_all_ancestors(%Statifier.State{parent: parent_id}, document) do
+    case Document.find_state(document, parent_id) do
+      nil -> []
+      parent_state -> [parent_id | get_all_ancestors(parent_state, document)]
     end
   end
 end
