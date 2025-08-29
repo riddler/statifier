@@ -189,10 +189,7 @@ defmodule Statifier.Interpreter do
   defp get_initial_configuration(
          %Document{initial: nil, states: [first_state | _rest]} = document
        ) do
-    # No initial specified - use first state and enter it properly
-    # Create temporary state chart for enter_state calls
-    temp_state_chart = StateChart.new(document)
-    initial_states = enter_state(first_state, temp_state_chart)
+    initial_states = enter_state(first_state, document)
     Configuration.new(initial_states)
   end
 
@@ -203,12 +200,13 @@ defmodule Statifier.Interpreter do
         %Configuration{}
 
       state ->
-        # Create temporary state chart for enter_state calls
-        temp_state_chart = StateChart.new(document)
-        initial_states = enter_state(state, temp_state_chart)
+        initial_states = enter_state(state, document)
         Configuration.new(initial_states)
     end
   end
+
+  defp enter_state(%Statifier.State{} = state, %Document{} = document),
+    do: enter_state(state, StateChart.new(document))
 
   # Enter a state by recursively entering its initial child states based on type.
   # Returns a list of leaf state IDs that should be active.
@@ -704,27 +702,21 @@ defmodule Statifier.Interpreter do
          %StateChart{} = state_chart
        ) do
     # Check if parent state has recorded history
-    case StateChart.has_history?(state_chart, parent_id) do
-      true ->
-        # Parent has been visited - restore stored configuration
-        case history_state.history_type do
-          :shallow ->
-            stored_states = StateChart.get_shallow_history(state_chart, parent_id)
-            restore_history_configuration(MapSet.to_list(stored_states), state_chart)
+    if StateChart.has_history?(state_chart, parent_id) do
+      # Parent has been visited - restore stored configuration
+      case history_state.history_type do
+        :deep ->
+          stored_states = StateChart.get_deep_history(state_chart, parent_id)
+          restore_history_configuration(MapSet.to_list(stored_states), state_chart)
 
-          :deep ->
-            stored_states = StateChart.get_deep_history(state_chart, parent_id)
-            restore_history_configuration(MapSet.to_list(stored_states), state_chart)
-
-          _other_type ->
-            # Default to shallow if history_type is not set
-            stored_states = StateChart.get_shallow_history(state_chart, parent_id)
-            restore_history_configuration(MapSet.to_list(stored_states), state_chart)
-        end
-
-      false ->
-        # Parent has not been visited - use default transition targets
-        get_history_default_targets(history_state, state_chart)
+        _shallow_or_other_type ->
+          # Default to shallow if history_type is not set
+          stored_states = StateChart.get_shallow_history(state_chart, parent_id)
+          restore_history_configuration(MapSet.to_list(stored_states), state_chart)
+      end
+    else
+      # Parent has not been visited - use default transition targets
+      get_history_default_targets(history_state, state_chart)
     end
   end
 
