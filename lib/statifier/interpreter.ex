@@ -250,10 +250,29 @@ defmodule Statifier.Interpreter do
     |> Enum.flat_map(&enter_state(&1, state_chart))
   end
 
-  defp enter_state(%State{type: :history} = history_state, %StateChart{} = state_chart) do
-    # History state - resolve to stored configuration or default targets
-    # History states are pseudo-states and never appear in active configuration
-    resolve_history_state(history_state, state_chart)
+  # History state - resolve to stored configuration or default targets
+  # History states are pseudo-states and never appear in active configuration
+  defp enter_state(
+         %State{type: :history, parent: parent_id} = history_state,
+         %StateChart{} = state_chart
+       ) do
+    # Check if parent state has recorded history
+    if StateChart.has_history?(state_chart, parent_id) do
+      # Parent has been visited - restore stored configuration
+      case history_state.history_type do
+        :deep ->
+          stored_states = StateChart.get_deep_history(state_chart, parent_id)
+          restore_history_configuration(MapSet.to_list(stored_states), state_chart)
+
+        _shallow_or_other_type ->
+          # Default to shallow if history_type is not set
+          stored_states = StateChart.get_shallow_history(state_chart, parent_id)
+          restore_history_configuration(MapSet.to_list(stored_states), state_chart)
+      end
+    else
+      # Parent has not been visited - use default transition targets
+      get_history_default_targets(history_state, state_chart)
+    end
   end
 
   # Get the initial child state for a compound state
@@ -696,31 +715,6 @@ defmodule Statifier.Interpreter do
     case Document.find_state(document, parent_id) do
       nil -> []
       parent_state -> [parent_id | get_all_ancestors(parent_state, document)]
-    end
-  end
-
-  # Resolve history state to actual target states
-  # Per W3C SCXML spec: Use stored configuration or default transition targets
-  defp resolve_history_state(
-         %State{type: :history, parent: parent_id} = history_state,
-         %StateChart{} = state_chart
-       ) do
-    # Check if parent state has recorded history
-    if StateChart.has_history?(state_chart, parent_id) do
-      # Parent has been visited - restore stored configuration
-      case history_state.history_type do
-        :deep ->
-          stored_states = StateChart.get_deep_history(state_chart, parent_id)
-          restore_history_configuration(MapSet.to_list(stored_states), state_chart)
-
-        _shallow_or_other_type ->
-          # Default to shallow if history_type is not set
-          stored_states = StateChart.get_shallow_history(state_chart, parent_id)
-          restore_history_configuration(MapSet.to_list(stored_states), state_chart)
-      end
-    else
-      # Parent has not been visited - use default transition targets
-      get_history_default_targets(history_state, state_chart)
     end
   end
 
