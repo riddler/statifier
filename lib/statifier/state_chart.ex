@@ -6,7 +6,7 @@ defmodule Statifier.StateChart do
   for internal and external events as specified by the SCXML specification.
   """
 
-  alias Statifier.{Configuration, Document, Event}
+  alias Statifier.{Configuration, Document, Event, HistoryTracker}
 
   defstruct [
     :document,
@@ -15,6 +15,8 @@ defmodule Statifier.StateChart do
     datamodel: %{},
     internal_queue: [],
     external_queue: [],
+    # History tracking
+    history_tracker: %HistoryTracker{},
     # Logging fields
     log_adapter: nil,
     log_level: :info,
@@ -28,6 +30,7 @@ defmodule Statifier.StateChart do
           datamodel: Statifier.Datamodel.t(),
           internal_queue: [Event.t()],
           external_queue: [Event.t()],
+          history_tracker: HistoryTracker.t(),
           log_adapter: struct() | nil,
           log_level: atom(),
           logs: [map()]
@@ -45,6 +48,7 @@ defmodule Statifier.StateChart do
       datamodel: %{},
       internal_queue: [],
       external_queue: [],
+      history_tracker: HistoryTracker.new(),
       log_adapter: nil,
       log_level: :info,
       logs: []
@@ -63,6 +67,7 @@ defmodule Statifier.StateChart do
       datamodel: %{},
       internal_queue: [],
       external_queue: [],
+      history_tracker: HistoryTracker.new(),
       log_adapter: nil,
       log_level: :info,
       logs: []
