@@ -9,6 +9,7 @@ defmodule Statifier.Validator do
   alias Statifier.Document
 
   alias Statifier.Validator.{
+    HistoryStateValidator,
     InitialStateValidator,
     ReachabilityAnalyzer,
     StateValidator,
@@ -38,6 +39,7 @@ defmodule Statifier.Validator do
       %__MODULE__{}
       |> InitialStateValidator.validate_initial_state(document)
       |> StateValidator.validate_state_ids(document)
+      |> HistoryStateValidator.validate_history_states(document)
       |> TransitionValidator.validate_transition_targets(document)
       |> ReachabilityAnalyzer.validate_reachability(document)
       |> finalize(document)
