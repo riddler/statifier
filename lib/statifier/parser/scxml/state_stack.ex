@@ -133,6 +133,17 @@ defmodule Statifier.Parser.SCXML.StateStack do
 
         {:ok, %{state | stack: [{"initial", updated_parent} | rest]}}
 
+      [{"history", parent_state} | rest] ->
+        # Set the source state ID for history states too
+        transition_with_source = %{transition | source: parent_state.id}
+
+        updated_parent = %{
+          parent_state
+          | transitions: parent_state.transitions ++ [transition_with_source]
+        }
+
+        {:ok, %{state | stack: [{"history", updated_parent} | rest]}}
+
       _other_parent ->
         {:ok, %{state | stack: parent_stack}}
     end

@@ -75,8 +75,8 @@ defmodule Statifier.FeatureDetector do
       targetless_transitions: :unsupported,
       internal_transitions: :unsupported,
 
-      # History (unsupported)
-      history_states: :unsupported,
+      # History (supported)
+      history_states: :supported,
 
       # Advanced attributes (unsupported)
       send_idlocation: :unsupported,
