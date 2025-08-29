@@ -393,9 +393,9 @@ defmodule Statifier.Interpreter do
   end
 
   # Execute optimal transition set (microstep) with proper SCXML semantics
-  defp execute_transitions(%StateChart{} = state_chart, transitions) do
+  defp execute_transitions(%StateChart{document: document} = state_chart, transitions) do
     # Apply SCXML conflict resolution: create optimal transition set
-    optimal_transition_set = resolve_transition_conflicts(transitions, state_chart.document)
+    optimal_transition_set = resolve_transition_conflicts(transitions, document)
 
     # Group transitions by source state to handle document order correctly
     transitions_by_source = Enum.group_by(optimal_transition_set, & &1.source)
@@ -434,7 +434,7 @@ defmodule Statifier.Interpreter do
 
   # Update configuration with proper SCXML exit set computation while preserving unaffected parallel regions
   defp update_configuration_with_parallel_preservation(
-         %StateChart{} = state_chart,
+         %StateChart{document: document} = state_chart,
          transitions,
          new_target_states
        ) do
@@ -442,7 +442,7 @@ defmodule Statifier.Interpreter do
     current_active = Configuration.active_states(state_chart.configuration)
 
     # Compute exit set for these specific transitions
-    exit_set = compute_exit_set(transitions, current_active, state_chart.document)
+    exit_set = compute_exit_set(transitions, current_active, document)
 
     # Determine which states are actually being entered
     new_target_set = MapSet.new(new_target_states)
@@ -636,14 +636,14 @@ defmodule Statifier.Interpreter do
   end
 
   # Execute a single transition and return target leaf states
-  defp execute_single_transition(transition, %StateChart{} = state_chart) do
+  defp execute_single_transition(transition, %StateChart{document: document} = state_chart) do
     case transition.target do
       # No target
       nil ->
         []
 
       target_id ->
-        case Document.find_state(state_chart.document, target_id) do
+        case Document.find_state(document, target_id) do
           nil -> []
           target_state -> enter_state(target_state, state_chart)
         end
@@ -653,9 +653,12 @@ defmodule Statifier.Interpreter do
   # Record history for states that will be exited
   # Per W3C SCXML spec: "MUST record the [...] children of its parent before taking any
   # transition that exits the parent"
-  defp record_history_for_exiting_states(%StateChart{} = state_chart, exiting_states) do
+  defp record_history_for_exiting_states(
+         %StateChart{document: document} = state_chart,
+         exiting_states
+       ) do
     # For each exiting state, check if it has a parent with history children
-    parent_states_to_record = find_parents_with_history(exiting_states, state_chart.document)
+    parent_states_to_record = find_parents_with_history(exiting_states, document)
 
     # Record history for each parent that has history children
     Enum.reduce(parent_states_to_record, state_chart, fn parent_state_id, acc_state_chart ->
@@ -724,10 +727,13 @@ defmodule Statifier.Interpreter do
   # Restore stored history configuration by recursively entering the stored states
   defp restore_history_configuration([], _state_chart), do: []
 
-  defp restore_history_configuration(stored_state_ids, %StateChart{} = state_chart) do
+  defp restore_history_configuration(
+         stored_state_ids,
+         %StateChart{document: document} = state_chart
+       ) do
     stored_state_ids
     |> Enum.flat_map(fn state_id ->
-      case Document.find_state(state_chart.document, state_id) do
+      case Document.find_state(document, state_id) do
         nil -> []
         state -> enter_state(state, state_chart)
       end
@@ -753,8 +759,11 @@ defmodule Statifier.Interpreter do
   # Resolve a single default transition for history state
   defp resolve_history_default_transition(%{target: nil}, _state_chart), do: []
 
-  defp resolve_history_default_transition(%{target: target_id}, %StateChart{} = state_chart) do
-    case Document.find_state(state_chart.document, target_id) do
+  defp resolve_history_default_transition(
+         %{target: target_id},
+         %StateChart{document: document} = state_chart
+       ) do
+    case Document.find_state(document, target_id) do
       nil -> []
       target_state -> enter_state(target_state, state_chart)
     end
