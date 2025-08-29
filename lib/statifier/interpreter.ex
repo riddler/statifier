@@ -13,6 +13,7 @@ defmodule Statifier.Interpreter do
     Document,
     Evaluator,
     Event,
+    State,
     StateChart,
     Validator
   }
@@ -205,29 +206,29 @@ defmodule Statifier.Interpreter do
     end
   end
 
-  defp enter_state(%Statifier.State{} = state, %Document{} = document),
+  defp enter_state(%State{} = state, %Document{} = document),
     do: enter_state(state, StateChart.new(document))
 
   # Enter a state by recursively entering its initial child states based on type.
   # Returns a list of leaf state IDs that should be active.
-  defp enter_state(%Statifier.State{type: :atomic} = state, %StateChart{}) do
+  defp enter_state(%State{type: :atomic} = state, %StateChart{}) do
     # Atomic state - return its ID
     [state.id]
   end
 
-  defp enter_state(%Statifier.State{type: :final} = state, %StateChart{}) do
+  defp enter_state(%State{type: :final} = state, %StateChart{}) do
     # Final state is treated like an atomic state - return its ID
     [state.id]
   end
 
-  defp enter_state(%Statifier.State{type: :initial}, %StateChart{}) do
+  defp enter_state(%State{type: :initial}, %StateChart{}) do
     # Initial states are not directly entered - they are processing pseudo-states
     # The interpreter should have already resolved their transition targets
     []
   end
 
   defp enter_state(
-         %Statifier.State{type: :compound, states: child_states, initial: initial_id},
+         %State{type: :compound, states: child_states, initial: initial_id},
          %StateChart{} = state_chart
        ) do
     # Compound state - find and enter initial child (don't add compound state to active set)
@@ -241,7 +242,7 @@ defmodule Statifier.Interpreter do
   end
 
   defp enter_state(
-         %Statifier.State{type: :parallel, states: child_states},
+         %State{type: :parallel, states: child_states},
          %StateChart{} = state_chart
        ) do
     # Parallel state - enter ALL children simultaneously
@@ -249,7 +250,7 @@ defmodule Statifier.Interpreter do
     |> Enum.flat_map(&enter_state(&1, state_chart))
   end
 
-  defp enter_state(%Statifier.State{type: :history} = history_state, %StateChart{} = state_chart) do
+  defp enter_state(%State{type: :history} = history_state, %StateChart{} = state_chart) do
     # History state - resolve to stored configuration or default targets
     # History states are pseudo-states and never appear in active configuration
     resolve_history_state(history_state, state_chart)
@@ -259,11 +260,11 @@ defmodule Statifier.Interpreter do
   defp get_initial_child_state(nil, child_states) do
     # No initial attribute - check for <initial> element first
     case find_initial_element(child_states) do
-      %Statifier.State{type: :initial, transitions: [transition | _rest]} ->
+      %State{type: :initial, transitions: [transition | _rest]} ->
         # Use the initial element's transition target
         find_child_by_id(child_states, transition.target)
 
-      %Statifier.State{type: :initial, transitions: []} ->
+      %State{type: :initial, transitions: []} ->
         # Initial element exists but no transition yet (during parsing)
         # Use first non-initial child as fallback
         Enum.find(child_states, &(&1.type != :initial))
@@ -686,9 +687,9 @@ defmodule Statifier.Interpreter do
   end
 
   # Get all ancestor state IDs for a given state
-  defp get_all_ancestors(%Statifier.State{parent: nil}, _document), do: []
+  defp get_all_ancestors(%State{parent: nil}, _document), do: []
 
-  defp get_all_ancestors(%Statifier.State{parent: parent_id}, document) do
+  defp get_all_ancestors(%State{parent: parent_id}, document) do
     case Document.find_state(document, parent_id) do
       nil -> []
       parent_state -> [parent_id | get_all_ancestors(parent_state, document)]
@@ -698,7 +699,7 @@ defmodule Statifier.Interpreter do
   # Resolve history state to actual target states
   # Per W3C SCXML spec: Use stored configuration or default transition targets
   defp resolve_history_state(
-         %Statifier.State{type: :history, parent: parent_id} = history_state,
+         %State{type: :history, parent: parent_id} = history_state,
          %StateChart{} = state_chart
        ) do
     # Check if parent state has recorded history
@@ -735,7 +736,7 @@ defmodule Statifier.Interpreter do
 
   # Get default transition targets for history state when parent has no recorded history
   defp get_history_default_targets(
-         %Statifier.State{transitions: transitions},
+         %State{transitions: transitions},
          %StateChart{} = state_chart
        ) do
     # Use the first transition's target as default (SCXML allows one default transition)
