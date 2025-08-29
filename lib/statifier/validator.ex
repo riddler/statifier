@@ -71,13 +71,17 @@ defmodule Statifier.Validator do
       case validated_result.errors do
         [] ->
           # Only optimize valid documents
+          # Build lookup maps first (required for StateHierarchy functions)
+          # Then build hierarchy cache (uses StateHierarchy functions)
           document
-          |> build_hierarchy_cache()
           |> Document.build_lookup_maps()
+          |> build_hierarchy_cache()
+          |> mark_as_validated()
 
         _errors ->
           # Don't waste time optimizing invalid documents
-          document
+          # But still mark as processed through validation
+          mark_as_validated(document)
       end
 
     {validated_result, final_document}
@@ -88,5 +92,11 @@ defmodule Statifier.Validator do
   defp build_hierarchy_cache(document) do
     cache = HierarchyCache.build(document)
     %{document | hierarchy_cache: cache}
+  end
+
+  # Mark document as having been validated
+  @spec mark_as_validated(Document.t()) :: Document.t()
+  defp mark_as_validated(document) do
+    %{document | validated: true}
   end
 end

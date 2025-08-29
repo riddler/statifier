@@ -16,6 +16,8 @@ defmodule Statifier.Document do
     transitions_by_source: %{},
     # Hierarchy cache for O(1) hierarchy operations
     hierarchy_cache: %Statifier.HierarchyCache{},
+    # Validation status
+    validated: false,
     # Document order for deterministic processing
     document_order: nil,
     # Location information for validation
@@ -39,6 +41,8 @@ defmodule Statifier.Document do
           transitions_by_source: %{String.t() => [Statifier.Transition.t()]},
           # Hierarchy cache for O(1) hierarchy operations
           hierarchy_cache: Statifier.HierarchyCache.t(),
+          # Validation status
+          validated: boolean(),
           document_order: integer() | nil,
           source_location: map() | nil,
           name_location: map() | nil,

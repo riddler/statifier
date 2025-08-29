@@ -12,6 +12,8 @@ defmodule Statifier.StateHierarchy do
   @doc """
   Check if a state is a descendant of another state in the hierarchy.
 
+  Uses O(1) cache lookup when available, falls back to O(depth) traversal.
+
   ## Examples
 
       iex> StateHierarchy.descendant_of?(document, "child", "parent")
@@ -22,9 +24,22 @@ defmodule Statifier.StateHierarchy do
   """
   @spec descendant_of?(Document.t(), String.t(), String.t()) :: boolean()
   def descendant_of?(document, state_id, ancestor_id) do
-    case Document.find_state(document, state_id) do
-      nil -> false
-      state -> ancestor_in_parent_chain?(state, ancestor_id, document)
+    # Special case: a state cannot be its own descendant
+    if state_id == ancestor_id do
+      false
+    else
+      # Try cache first for O(1) lookup
+      case get_cached_descendant_set(document, ancestor_id) do
+        {:ok, descendants} ->
+          MapSet.member?(descendants, state_id)
+
+        :no_cache ->
+          # Fallback to O(depth) traversal
+          case Document.find_state(document, state_id) do
+            nil -> false
+            state -> ancestor_in_parent_chain?(state, ancestor_id, document)
+          end
+      end
     end
   end
 
@@ -32,6 +47,7 @@ defmodule Statifier.StateHierarchy do
   Get the complete ancestor path from a state to the root, including the state itself.
 
   Returns a list of state IDs from the root down to the given state.
+  Uses O(1) cache lookup when available, falls back to O(depth) traversal.
 
   ## Examples
 
@@ -40,9 +56,17 @@ defmodule Statifier.StateHierarchy do
   """
   @spec get_ancestor_path(String.t(), Document.t()) :: [String.t()]
   def get_ancestor_path(state_id, document) do
-    case Document.find_state(document, state_id) do
-      nil -> []
-      state -> build_ancestor_path(state, document, [])
+    # Try cache first for O(1) lookup
+    case get_cached_ancestor_path(document, state_id) do
+      {:ok, path} ->
+        path
+
+      :no_cache ->
+        # Fallback to O(depth) traversal
+        case Document.find_state(document, state_id) do
+          nil -> []
+          state -> build_ancestor_path(state, document, [])
+        end
     end
   end
 
@@ -51,6 +75,7 @@ defmodule Statifier.StateHierarchy do
 
   Returns the deepest compound state that is an ancestor of both states,
   or nil if no common compound ancestor exists.
+  Uses O(1) cache lookup when available, falls back to O(depth) computation.
 
   ## Examples
 
@@ -59,22 +84,38 @@ defmodule Statifier.StateHierarchy do
   """
   @spec compute_lcca(String.t(), String.t(), Document.t()) :: String.t() | nil
   def compute_lcca(source_state_id, target_state_id, document) do
-    source_ancestors = get_ancestor_path(source_state_id, document)
-    target_ancestors = get_ancestor_path(target_state_id, document)
+    # Try cache first for O(1) lookup
+    case get_cached_lcca(document, source_state_id, target_state_id) do
+      {:ok, lcca} ->
+        lcca
 
-    find_deepest_common_ancestor(source_ancestors, target_ancestors, document)
+      :no_cache ->
+        # Fallback to O(depth) computation
+        source_ancestors = get_ancestor_path(source_state_id, document)
+        target_ancestors = get_ancestor_path(target_state_id, document)
+        find_deepest_common_ancestor(source_ancestors, target_ancestors, document)
+    end
   end
 
   @doc """
   Get all parallel ancestors of a state.
 
   Returns a list of parallel state IDs that are ancestors of the given state.
+  Uses O(1) cache lookup when available, falls back to O(depth) traversal.
   """
   @spec get_parallel_ancestors(Document.t(), String.t()) :: [String.t()]
   def get_parallel_ancestors(document, state_id) do
-    case Document.find_state(document, state_id) do
-      nil -> []
-      state -> collect_parallel_ancestors(document, state, [])
+    # Try cache first for O(1) lookup
+    case get_cached_parallel_ancestors(document, state_id) do
+      {:ok, ancestors} ->
+        ancestors
+
+      :no_cache ->
+        # Fallback to O(depth) traversal
+        case Document.find_state(document, state_id) do
+          nil -> []
+          state -> collect_parallel_ancestors(document, state, [])
+        end
     end
   end
 
@@ -97,7 +138,7 @@ defmodule Statifier.StateHierarchy do
   Check if two states are in different regions of the same parallel state.
 
   Returns true if the states are descendants of different child regions
-  within the same parallel ancestor.
+  within the same parallel ancestor. Uses cached parallel region data when available.
   """
   @spec are_in_parallel_regions?(Document.t(), String.t(), String.t()) :: boolean()
   def are_in_parallel_regions?(document, active_state, source_state) do
@@ -106,16 +147,24 @@ defmodule Statifier.StateHierarchy do
 
     # For each parallel ancestor, check if active_state is in a different region
     Enum.any?(source_parallel_ancestors, fn parallel_parent_id ->
-      # Get the child of this parallel parent that contains the source
-      source_region =
-        get_parallel_region_for_descendant(document, parallel_parent_id, source_state)
+      # Try cache first for O(1) region lookup
+      case get_cached_parallel_regions(document, parallel_parent_id) do
+        {:ok, region_mapping} ->
+          # Find regions containing each state using cache
+          source_region = find_region_in_cache(region_mapping, source_state)
+          active_region = find_region_in_cache(region_mapping, active_state)
+          source_region != nil && active_region != nil && source_region != active_region
 
-      # Get the child of this parallel parent that contains the active state
-      active_region =
-        get_parallel_region_for_descendant(document, parallel_parent_id, active_state)
+        :no_cache ->
+          # Fallback to O(n) traversal
+          source_region =
+            get_parallel_region_for_descendant(document, parallel_parent_id, source_state)
 
-      # They are in parallel regions if they're in different regions of the same parallel parent
-      source_region != nil && active_region != nil && source_region != active_region
+          active_region =
+            get_parallel_region_for_descendant(document, parallel_parent_id, active_state)
+
+          source_region != nil && active_region != nil && source_region != active_region
+      end
     end)
   end
 
@@ -255,6 +304,109 @@ defmodule Statifier.StateHierarchy do
     |> Enum.filter(fn parent_id ->
       history_children = Document.find_history_states(document, parent_id)
       length(history_children) > 0
+    end)
+  end
+
+  # Cache helper functions
+
+  # Get cached descendant set for a given ancestor
+  @spec get_cached_descendant_set(Document.t(), String.t()) :: {:ok, MapSet.t()} | :no_cache
+  defp get_cached_descendant_set(%Document{hierarchy_cache: cache}, ancestor_id) do
+    case cache.descendant_sets do
+      sets when sets == %{} ->
+        :no_cache
+
+      sets ->
+        case Map.get(sets, ancestor_id) do
+          # No descendants
+          nil -> {:ok, MapSet.new()}
+          descendants -> {:ok, descendants}
+        end
+    end
+  end
+
+  # Get cached ancestor path for a given state
+  @spec get_cached_ancestor_path(Document.t(), String.t()) :: {:ok, [String.t()]} | :no_cache
+  defp get_cached_ancestor_path(%Document{hierarchy_cache: cache}, state_id) do
+    case cache.ancestor_paths do
+      paths when paths == %{} ->
+        :no_cache
+
+      paths ->
+        case Map.get(paths, state_id) do
+          # State not in cache
+          nil -> :no_cache
+          path -> {:ok, path}
+        end
+    end
+  end
+
+  # Get cached LCCA for two states
+  @spec get_cached_lcca(Document.t(), String.t(), String.t()) ::
+          {:ok, String.t() | nil} | :no_cache
+  defp get_cached_lcca(%Document{hierarchy_cache: cache}, state1, state2) do
+    case cache.lcca_matrix do
+      matrix when matrix == %{} ->
+        :no_cache
+
+      matrix ->
+        # Normalize the key for consistent lookup
+        key =
+          if state1 == state2 do
+            state1
+          else
+            if state1 < state2, do: {state1, state2}, else: {state2, state1}
+          end
+
+        case Map.get(matrix, key) do
+          # Pair not in cache
+          nil when is_tuple(key) -> :no_cache
+          # Found (could be nil for no LCCA)
+          result -> {:ok, result}
+        end
+    end
+  end
+
+  # Get cached parallel ancestors for a given state
+  @spec get_cached_parallel_ancestors(Document.t(), String.t()) :: {:ok, [String.t()]} | :no_cache
+  defp get_cached_parallel_ancestors(%Document{hierarchy_cache: cache}, state_id) do
+    case cache.parallel_ancestors do
+      ancestors when ancestors == %{} ->
+        :no_cache
+
+      ancestors ->
+        case Map.get(ancestors, state_id) do
+          # No parallel ancestors
+          nil -> {:ok, []}
+          list -> {:ok, list}
+        end
+    end
+  end
+
+  # Get cached parallel region mapping for a parallel state
+  @spec get_cached_parallel_regions(Document.t(), String.t()) ::
+          {:ok, %{String.t() => [String.t()]}} | :no_cache
+  defp get_cached_parallel_regions(%Document{hierarchy_cache: cache}, parallel_id) do
+    case cache.parallel_regions do
+      regions when regions == %{} ->
+        :no_cache
+
+      regions ->
+        case Map.get(regions, parallel_id) do
+          # Not a parallel state or not cached
+          nil -> :no_cache
+          mapping -> {:ok, mapping}
+        end
+    end
+  end
+
+  # Find which region contains a state using cached region mapping
+  @spec find_region_in_cache(%{String.t() => [String.t()]}, String.t()) :: String.t() | nil
+  defp find_region_in_cache(region_mapping, state_id) do
+    Enum.find_value(region_mapping, fn {region_id, descendants} ->
+      if state_id == region_id || state_id in descendants do
+        region_id
+      end
     end)
   end
 end
