@@ -7,4 +7,4 @@ Application.put_env(
 
 Application.put_env(:statifier, :default_log_level, :debug)
 
-ExUnit.start(exclude: [:scion, :scxml_w3])
+ExUnit.start(exclude: [:benchmark, :scion, :scxml_w3])

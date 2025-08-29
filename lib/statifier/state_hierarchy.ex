@@ -28,18 +28,23 @@ defmodule Statifier.StateHierarchy do
     if state_id == ancestor_id do
       false
     else
-      # Try cache first for O(1) lookup
-      case get_cached_descendant_set(document, ancestor_id) do
-        {:ok, descendants} ->
-          MapSet.member?(descendants, state_id)
+      check_descendant_relationship(document, state_id, ancestor_id)
+    end
+  end
 
-        :no_cache ->
-          # Fallback to O(depth) traversal
-          case Document.find_state(document, state_id) do
-            nil -> false
-            state -> ancestor_in_parent_chain?(state, ancestor_id, document)
-          end
-      end
+  # Helper function to reduce nesting depth in descendant_of?/3
+  defp check_descendant_relationship(document, state_id, ancestor_id) do
+    # Try cache first for O(1) lookup
+    case get_cached_descendant_set(document, ancestor_id) do
+      {:ok, descendants} ->
+        MapSet.member?(descendants, state_id)
+
+      :no_cache ->
+        # Fallback to O(depth) traversal
+        case Document.find_state(document, state_id) do
+          nil -> false
+          state -> ancestor_in_parent_chain?(state, ancestor_id, document)
+        end
     end
   end
 
@@ -350,22 +355,27 @@ defmodule Statifier.StateHierarchy do
         :no_cache
 
       matrix ->
-        # Normalize the key for consistent lookup
-        key =
-          if state1 == state2 do
-            state1
-          else
-            if state1 < state2, do: {state1, state2}, else: {state2, state1}
-          end
-
-        case Map.get(matrix, key) do
-          # Pair not in cache
-          nil when is_tuple(key) -> :no_cache
-          # Found (could be nil for no LCCA)
-          result -> {:ok, result}
-        end
+        lookup_lcca_in_matrix(matrix, state1, state2)
     end
   end
+
+  # Helper function to reduce nesting depth in get_cached_lcca/3
+  defp lookup_lcca_in_matrix(matrix, state1, state2) do
+    # Normalize the key for consistent lookup
+    key = normalize_lcca_key(state1, state2)
+
+    case Map.get(matrix, key) do
+      # Pair not in cache
+      nil when is_tuple(key) -> :no_cache
+      # Found (could be nil for no LCCA)
+      result -> {:ok, result}
+    end
+  end
+
+  # Helper to normalize LCCA cache keys
+  defp normalize_lcca_key(same_state, same_state), do: same_state
+  defp normalize_lcca_key(state1, state2) when state1 < state2, do: {state1, state2}
+  defp normalize_lcca_key(state1, state2), do: {state2, state1}
 
   # Get cached parallel ancestors for a given state
   @spec get_cached_parallel_ancestors(Document.t(), String.t()) :: {:ok, [String.t()]} | :no_cache

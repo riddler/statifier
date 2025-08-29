@@ -12,13 +12,14 @@ defmodule Statifier.Interpreter do
     Configuration,
     Datamodel,
     Document,
-    Evaluator,
     Event,
     State,
     StateChart,
     StateHierarchy,
     Validator
   }
+
+  alias Statifier.Interpreter.TransitionResolver
 
   alias Statifier.Logging.LogManager
 
@@ -119,7 +120,7 @@ defmodule Statifier.Interpreter do
   @spec send_event(StateChart.t(), Event.t()) :: {:ok, StateChart.t()}
   def send_event(%StateChart{} = state_chart, %Event{} = event) do
     # Find optimal transition set enabled by this event
-    enabled_transitions = find_enabled_transitions(state_chart, event)
+    enabled_transitions = TransitionResolver.find_enabled_transitions(state_chart, event)
 
     case enabled_transitions do
       [] ->
@@ -180,7 +181,7 @@ defmodule Statifier.Interpreter do
 
   defp execute_microsteps(%StateChart{} = state_chart, iterations) do
     # Per SCXML specification: eventless transitions have higher priority than internal events
-    eventless_transitions = find_eventless_transitions(state_chart)
+    eventless_transitions = TransitionResolver.find_eventless_transitions(state_chart)
 
     case eventless_transitions do
       [] ->
@@ -341,86 +342,11 @@ defmodule Statifier.Interpreter do
     Enum.find(child_states, &(&1.id == target_id))
   end
 
-  # Check if a transition's condition (if any) evaluates to true
-  defp transition_condition_enabled?(%{compiled_cond: nil}, _context), do: true
-
-  defp transition_condition_enabled?(%{compiled_cond: compiled_cond}, context) do
-    Evaluator.evaluate_condition(compiled_cond, context)
-  end
-
-  defp find_enabled_transitions(%StateChart{} = state_chart, %Event{} = event) do
-    find_enabled_transitions_for_event(state_chart, event)
-  end
-
-  # Find eventless transitions (also called NULL transitions in SCXML spec)
-  defp find_eventless_transitions(%StateChart{} = state_chart) do
-    find_enabled_transitions_for_event(state_chart, nil)
-  end
-
-  # Unified transition finding logic for both named events and eventless transitions
-  defp find_enabled_transitions_for_event(%StateChart{} = state_chart, event_or_nil) do
-    # Get all currently active states (including ancestors)
-    active_states_with_ancestors = StateChart.active_states(state_chart)
-
-    # Update the state chart with current event for context building
-    state_chart_with_event = %{state_chart | current_event: event_or_nil}
-
-    # Find transitions from all active states (including ancestors) that match the event/NULL and condition
-    active_states_with_ancestors
-    |> Enum.flat_map(fn state_id ->
-      # Use O(1) lookup for transitions from this state
-      transitions = Document.get_transitions_from_state(state_chart.document, state_id)
-
-      transitions
-      |> Enum.filter(fn transition ->
-        matches_event_or_eventless?(transition, event_or_nil) and
-          transition_condition_enabled?(transition, state_chart_with_event)
-      end)
-    end)
-    # Process in document order
-    |> Enum.sort_by(& &1.document_order)
-  end
-
-  # Check if transition matches the event (or eventless for transitions without event attribute)
-  # Eventless transition (no event attribute - called NULL transitions in SCXML spec)
-  defp matches_event_or_eventless?(%{event: nil}, nil), do: true
-
-  defp matches_event_or_eventless?(%{event: transition_event}, %Event{} = event) do
-    Event.matches?(event, transition_event)
-  end
-
-  defp matches_event_or_eventless?(_transition, _event), do: false
-
-  # Resolve transition conflicts according to SCXML semantics:
-  # Child state transitions take priority over ancestor state transitions
-  defp resolve_transition_conflicts(transitions, document) do
-    # Group transitions by their source states
-    transitions_by_source = Enum.group_by(transitions, & &1.source)
-    source_states = Map.keys(transitions_by_source)
-
-    # Filter out ancestor state transitions if descendant has enabled transitions
-    source_states
-    |> Enum.filter(fn source_state ->
-      # Check if any descendant of this source state also has enabled transitions
-      descendants_with_transitions =
-        source_states
-        |> Enum.filter(fn other_source ->
-          other_source != source_state and
-            StateHierarchy.descendant_of?(document, other_source, source_state)
-        end)
-
-      # Keep this source state's transitions only if no descendants have transitions
-      descendants_with_transitions == []
-    end)
-    |> Enum.flat_map(fn source_state ->
-      Map.get(transitions_by_source, source_state, [])
-    end)
-  end
-
   # Execute optimal transition set (microstep) with proper SCXML semantics
   defp execute_transitions(%StateChart{document: document} = state_chart, transitions) do
     # Apply SCXML conflict resolution: create optimal transition set
-    optimal_transition_set = resolve_transition_conflicts(transitions, document)
+    optimal_transition_set =
+      TransitionResolver.resolve_transition_conflicts(transitions, document)
 
     # Group transitions by source state to handle document order correctly
     transitions_by_source = Enum.group_by(optimal_transition_set, & &1.source)

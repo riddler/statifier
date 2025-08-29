@@ -1,7 +1,11 @@
 defmodule Statifier.HierarchyCacheBenchmarkTest do
+  @moduledoc false
+  # credo:disable-for-this-file Credo.Check.Refactor.IoPuts
+
   use ExUnit.Case, async: true
 
   alias Statifier.{Document, HierarchyCache, StateHierarchy, Validator}
+  alias Statifier.Parser.SCXML
 
   @tag :benchmark
   @tag timeout: 60_000
@@ -9,7 +13,7 @@ defmodule Statifier.HierarchyCacheBenchmarkTest do
     # Create a deep hierarchy document for benchmarking
     xml = create_deep_hierarchy_xml(10)
     # Create uncached document (just lookup maps, no hierarchy cache)
-    {:ok, raw_document} = Statifier.Parser.SCXML.parse(xml)
+    {:ok, raw_document} = SCXML.parse(xml)
     uncached_doc = Document.build_lookup_maps(raw_document)
 
     # Create cached document (with hierarchy cache)
@@ -31,7 +35,7 @@ defmodule Statifier.HierarchyCacheBenchmarkTest do
     # Benchmark uncached (O(depth))
     uncached_start = :erlang.monotonic_time(:microsecond)
 
-    for _ <- 1..iterations do
+    for _iteration <- 1..iterations do
       StateHierarchy.descendant_of?(uncached_doc, leaf_state, root_state)
     end
 
@@ -40,7 +44,7 @@ defmodule Statifier.HierarchyCacheBenchmarkTest do
     # Benchmark cached (O(1))
     cached_start = :erlang.monotonic_time(:microsecond)
 
-    for _ <- 1..iterations do
+    for _iteration <- 1..iterations do
       StateHierarchy.descendant_of?(cached_doc, leaf_state, root_state)
     end
 
@@ -51,7 +55,7 @@ defmodule Statifier.HierarchyCacheBenchmarkTest do
 
     IO.puts("\n=== Hierarchy Cache Performance Benchmark ===")
     IO.puts("Document depth: 10 levels")
-    IO.puts("Operation: descendant_of?(\"level10\", \"level1\")")
+    IO.puts(~s[Operation: descendant_of?("level10", "level1")])
     IO.puts("Iterations: #{iterations}")
     IO.puts("Uncached time: #{uncached_time} μs (O(depth))")
     IO.puts("Cached time: #{cached_time} μs (O(1))")
@@ -64,7 +68,7 @@ defmodule Statifier.HierarchyCacheBenchmarkTest do
     # Benchmark LCCA operations
     uncached_lcca_start = :erlang.monotonic_time(:microsecond)
 
-    for _ <- 1..iterations do
+    for _iteration <- 1..iterations do
       StateHierarchy.compute_lcca("level8", "level9", uncached_doc)
     end
 
@@ -72,7 +76,7 @@ defmodule Statifier.HierarchyCacheBenchmarkTest do
 
     cached_lcca_start = :erlang.monotonic_time(:microsecond)
 
-    for _ <- 1..iterations do
+    for _iteration <- 1..iterations do
       StateHierarchy.compute_lcca("level8", "level9", cached_doc)
     end
 
@@ -81,7 +85,7 @@ defmodule Statifier.HierarchyCacheBenchmarkTest do
     lcca_speedup = uncached_lcca_time / cached_lcca_time
 
     IO.puts("\n=== LCCA Performance Benchmark ===")
-    IO.puts("Operation: compute_lcca(\"level8\", \"level9\")")
+    IO.puts(~s[Operation: compute_lcca("level8", "level9")])
     IO.puts("Iterations: #{iterations}")
     IO.puts("Uncached time: #{uncached_lcca_time} μs (O(depth))")
     IO.puts("Cached time: #{cached_lcca_time} μs (O(1))")
@@ -96,7 +100,7 @@ defmodule Statifier.HierarchyCacheBenchmarkTest do
     # Test with documents of various sizes
     for depth <- [5, 10, 15] do
       xml = create_deep_hierarchy_xml(depth)
-      {:ok, raw_document} = Statifier.Parser.SCXML.parse(xml)
+      {:ok, raw_document} = SCXML.parse(xml)
       {:ok, cached_doc, _warnings} = Validator.validate(raw_document)
 
       cache_stats = HierarchyCache.get_stats(cached_doc.hierarchy_cache)

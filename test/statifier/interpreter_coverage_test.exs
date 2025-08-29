@@ -149,7 +149,7 @@ defmodule Statifier.InterpreterCoverageTest do
               active_states = MapSet.to_list(result_chart.configuration.active_states)
               assert "s1" in active_states
 
-            {:error, _reason} ->
+            {:error, _warnings, _errors} ->
               # Initialize failed - also acceptable for invalid document
               :ok
           end

@@ -10,6 +10,8 @@ defmodule Statifier.InitialStatesTest do
     Validator
   }
 
+  alias Statifier.Parser.SCXML
+
   describe "initial element parsing" do
     test "parses initial element with transition" do
       xml = """
@@ -24,7 +26,7 @@ defmodule Statifier.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
 
       # Check document structure and find the compound state
       assert length(document.states) > 0
@@ -54,7 +56,7 @@ defmodule Statifier.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
 
       # Check document structure and find the parallel state
       assert length(document.states) > 0
@@ -102,7 +104,7 @@ defmodule Statifier.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       features = FeatureDetector.detect_features(document)
       assert MapSet.member?(features, :initial_elements)
     end
@@ -127,7 +129,7 @@ defmodule Statifier.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       {:ok, _document, warnings} = Validator.validate(document)
       assert Enum.empty?(warnings)
     end
@@ -145,7 +147,7 @@ defmodule Statifier.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       {:error, errors, _warnings} = Validator.validate(document)
 
       assert length(errors) == 1
@@ -227,7 +229,7 @@ defmodule Statifier.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       active_states = Interpreter.active_states(state_chart) |> MapSet.to_list()
@@ -247,7 +249,7 @@ defmodule Statifier.InitialStatesTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.Parser.SCXML.parse(xml)
+      {:ok, document} = SCXML.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       active_states = Interpreter.active_states(state_chart) |> MapSet.to_list()
