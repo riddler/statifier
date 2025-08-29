@@ -478,6 +478,9 @@ defmodule Statifier.Interpreter do
     # Execute onexit actions for states being exited (with proper event queueing)
     state_chart = ActionExecutor.execute_onexit_actions(exiting_states, state_chart)
 
+    # Execute transition actions (per SCXML spec: after exit actions, before entry actions)
+    state_chart = execute_transition_actions(transitions, state_chart)
+
     # Execute onentry actions for states being entered (with proper event queueing)
     entering_states_list = MapSet.to_list(entering_states)
     state_chart = ActionExecutor.execute_onentry_actions(entering_states_list, state_chart)
@@ -815,5 +818,28 @@ defmodule Statifier.Interpreter do
         target_state -> enter_state(target_state, state_chart)
       end
     end)
+  end
+
+  # Execute transition actions for all transitions being taken
+  defp execute_transition_actions(transitions, state_chart) do
+    transitions
+    |> Enum.reduce(state_chart, fn transition, acc_state_chart ->
+      execute_single_transition_actions(transition, acc_state_chart)
+    end)
+  end
+
+  # Execute actions for a single transition
+  defp execute_single_transition_actions(transition, state_chart) do
+    case transition.actions do
+      [] ->
+        state_chart
+      
+      actions ->
+        # Execute each action in the transition
+        actions
+        |> Enum.reduce(state_chart, fn action, acc_state_chart ->
+          ActionExecutor.execute_single_action(action, acc_state_chart)
+        end)
+    end
   end
 end

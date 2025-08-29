@@ -10,6 +10,9 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
     Actions.AssignAction,
     Actions.LogAction,
     Actions.RaiseAction,
+    Actions.SendAction,
+    Actions.SendParam,
+    Actions.SendContent,
     Evaluator
   }
 
@@ -344,6 +347,108 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
         expr: expr_location
       }
     )
+  end
+
+  @doc """
+  Build an Statifier.SendAction from XML attributes and location info.
+  """
+  @spec build_send_action(list(), map(), String.t(), map()) :: SendAction.t()
+  def build_send_action(attributes, location, xml_string, _element_counts) do
+    attrs_map = attributes_to_map(attributes)
+
+    # Calculate attribute-specific locations for all send attributes
+    event_location = LocationTracker.attribute_location(xml_string, "event", location)
+    event_expr_location = LocationTracker.attribute_location(xml_string, "eventexpr", location)
+    target_location = LocationTracker.attribute_location(xml_string, "target", location)
+    target_expr_location = LocationTracker.attribute_location(xml_string, "targetexpr", location)
+    type_location = LocationTracker.attribute_location(xml_string, "type", location)
+    type_expr_location = LocationTracker.attribute_location(xml_string, "typeexpr", location)
+    id_location = LocationTracker.attribute_location(xml_string, "id", location)
+    id_location_location = LocationTracker.attribute_location(xml_string, "idlocation", location)
+    delay_location = LocationTracker.attribute_location(xml_string, "delay", location)
+    delay_expr_location = LocationTracker.attribute_location(xml_string, "delayexpr", location)
+    namelist_location = LocationTracker.attribute_location(xml_string, "namelist", location)
+
+    # Store detailed location information
+    detailed_location = %{
+      source: location,
+      event: event_location,
+      event_expr: event_expr_location,
+      target: target_location,
+      target_expr: target_expr_location,
+      type: type_location,
+      type_expr: type_expr_location,
+      id: id_location,
+      id_location: id_location_location,
+      delay: delay_location,
+      delay_expr: delay_expr_location,
+      namelist: namelist_location
+    }
+
+    %SendAction{
+      event: get_attr_value(attrs_map, "event"),
+      event_expr: get_attr_value(attrs_map, "eventexpr"),
+      target: get_attr_value(attrs_map, "target"),
+      target_expr: get_attr_value(attrs_map, "targetexpr"),
+      type: get_attr_value(attrs_map, "type"),
+      type_expr: get_attr_value(attrs_map, "typeexpr"),
+      id: get_attr_value(attrs_map, "id"),
+      id_location: get_attr_value(attrs_map, "idlocation"),
+      delay: get_attr_value(attrs_map, "delay"),
+      delay_expr: get_attr_value(attrs_map, "delayexpr"),
+      namelist: get_attr_value(attrs_map, "namelist"),
+      # Will be populated by child elements
+      params: [],
+      # Will be populated by child element
+      content: nil,
+      source_location: detailed_location
+    }
+  end
+
+  @doc """
+  Build an Statifier.SendParam from XML attributes and location info.
+  """
+  @spec build_send_param(list(), map(), String.t(), map()) :: SendParam.t()
+  def build_send_param(attributes, location, xml_string, _element_counts) do
+    attrs_map = attributes_to_map(attributes)
+
+    # Calculate attribute-specific locations
+    name_location = LocationTracker.attribute_location(xml_string, "name", location)
+    expr_location = LocationTracker.attribute_location(xml_string, "expr", location)
+    location_attr_location = LocationTracker.attribute_location(xml_string, "location", location)
+
+    %SendParam{
+      name: get_attr_value(attrs_map, "name"),
+      expr: get_attr_value(attrs_map, "expr"),
+      location: get_attr_value(attrs_map, "location"),
+      source_location: %{
+        source: location,
+        name: name_location,
+        expr: expr_location,
+        location: location_attr_location
+      }
+    }
+  end
+
+  @doc """
+  Build an Statifier.SendContent from XML attributes and location info.
+  """
+  @spec build_send_content(list(), map(), String.t(), map()) :: SendContent.t()
+  def build_send_content(attributes, location, xml_string, _element_counts) do
+    attrs_map = attributes_to_map(attributes)
+
+    # Calculate attribute-specific locations
+    expr_location = LocationTracker.attribute_location(xml_string, "expr", location)
+
+    %SendContent{
+      expr: get_attr_value(attrs_map, "expr"),
+      # Will be populated with text content if present
+      content: nil,
+      source_location: %{
+        source: location,
+        expr: expr_location
+      }
+    }
   end
 
   # Private utility functions

@@ -11,6 +11,7 @@ defmodule Statifier.Actions.ActionExecutor do
     Actions.IfAction,
     Actions.LogAction,
     Actions.RaiseAction,
+    Actions.SendAction,
     Document
   }
 
@@ -126,6 +127,21 @@ defmodule Statifier.Actions.ActionExecutor do
 
     # Use the IfAction's execute method which handles all the conditional logic
     IfAction.execute(if_action, state_chart)
+  end
+
+  defp execute_single_action(%SendAction{} = send_action, state_id, phase, state_chart) do
+    # Log context information for debugging
+    state_chart =
+      LogManager.debug(state_chart, "Executing send action", %{
+        action_type: "send_action",
+        state_id: state_id,
+        phase: phase,
+        event: send_action.event,
+        target: send_action.target
+      })
+
+    # Use the SendAction's execute method which handles all the send logic
+    SendAction.execute(send_action, state_chart)
   end
 
   defp execute_single_action(unknown_action, state_id, phase, state_chart) do
