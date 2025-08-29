@@ -84,7 +84,7 @@
           # Priority values are: `low, normal, high, higher`
           #
           {Credo.Check.Design.AliasUsage,
-           [priority: :low, if_nested_deeper_than: 1, if_called_more_often_than: 0]},
+           [priority: :normal, if_nested_deeper_than: 1, if_called_more_often_than: 0]},
           {Credo.Check.Design.TagFIXME, []},
           # You can also customize the exit_status of each check.
           # If you don't want TODO comments to cause `mix credo` to fail, just
