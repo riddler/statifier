@@ -172,4 +172,57 @@ defmodule Statifier.StateChart do
   def set_log_level(%__MODULE__{} = state_chart, level) do
     %{state_chart | log_level: level}
   end
+
+  @doc """
+  Record history for a parent state before it exits.
+
+  Uses the current active state configuration and the document to determine
+  which states to record for shallow and deep history.
+  """
+  @spec record_history(t(), String.t()) :: t()
+  def record_history(%__MODULE__{} = state_chart, parent_state_id)
+      when is_binary(parent_state_id) do
+    active_states = active_states(state_chart)
+
+    updated_tracker =
+      HistoryTracker.record_history(
+        state_chart.history_tracker,
+        parent_state_id,
+        active_states,
+        state_chart.document
+      )
+
+    %{state_chart | history_tracker: updated_tracker}
+  end
+
+  @doc """
+  Get shallow history for a parent state.
+
+  Returns the immediate children that were active when the parent was last exited.
+  """
+  @spec get_shallow_history(t(), String.t()) :: MapSet.t(String.t())
+  def get_shallow_history(%__MODULE__{} = state_chart, parent_state_id)
+      when is_binary(parent_state_id) do
+    HistoryTracker.get_shallow_history(state_chart.history_tracker, parent_state_id)
+  end
+
+  @doc """
+  Get deep history for a parent state.
+
+  Returns all atomic descendant states that were active when the parent was last exited.
+  """
+  @spec get_deep_history(t(), String.t()) :: MapSet.t(String.t())
+  def get_deep_history(%__MODULE__{} = state_chart, parent_state_id)
+      when is_binary(parent_state_id) do
+    HistoryTracker.get_deep_history(state_chart.history_tracker, parent_state_id)
+  end
+
+  @doc """
+  Check if a parent state has recorded history.
+  """
+  @spec has_history?(t(), String.t()) :: boolean()
+  def has_history?(%__MODULE__{} = state_chart, parent_state_id)
+      when is_binary(parent_state_id) do
+    HistoryTracker.has_history?(state_chart.history_tracker, parent_state_id)
+  end
 end
