@@ -41,7 +41,7 @@ Steps to reproduce the behavior:
 
 ## Error Output
 <!-- If applicable, paste the full error message/stacktrace -->
-```
+```text
 Error output here
 ```
 
