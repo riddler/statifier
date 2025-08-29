@@ -7,8 +7,7 @@ defmodule Statifier.Parser.SendParsingTest do
   describe "send element parsing" do
     test "parses basic send elements in onentry" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
           <state id="start">
               <onentry>
                   <send event="myEvent" target="#_internal"/>
@@ -42,8 +41,7 @@ defmodule Statifier.Parser.SendParsingTest do
 
     test "parses send elements in onexit" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
           <state id="start">
               <onexit>
                   <send event="exitEvent"/>
@@ -71,8 +69,7 @@ defmodule Statifier.Parser.SendParsingTest do
 
     test "parses send with all attributes" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
           <state id="start">
               <onentry>
                   <send event="testEvent" 
@@ -108,8 +105,7 @@ defmodule Statifier.Parser.SendParsingTest do
 
     test "parses send with param children" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
           <state id="start">
               <onentry>
                   <send event="testEvent">
@@ -151,8 +147,7 @@ defmodule Statifier.Parser.SendParsingTest do
 
     test "parses send with content child" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
           <state id="start">
               <onentry>
                   <send event="testEvent">
@@ -185,8 +180,7 @@ defmodule Statifier.Parser.SendParsingTest do
 
     test "parses mixed actions with send" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
           <state id="start">
               <onentry>
                   <log expr="'Starting'"/>
@@ -225,8 +219,7 @@ defmodule Statifier.Parser.SendParsingTest do
 
     test "parses send with expression attributes" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
           <state id="start">
               <onentry>
                   <send eventexpr="'event_' + counter" 

@@ -19,7 +19,6 @@ defmodule Statifier.Case do
     Event,
     FeatureDetector,
     Interpreter,
-    Parser.SCXML,
     StateChart
   }
 
@@ -72,7 +71,7 @@ defmodule Statifier.Case do
 
   defp run_scxml_test(xml, _description, expected_initial_config, events) do
     # Parse and initialize the state chart
-    {:ok, document} = SCXML.parse(xml)
+    {:ok, document, _warnings} = Statifier.parse(xml)
     {:ok, state_chart} = Interpreter.initialize(document)
 
     # Verify initial configuration

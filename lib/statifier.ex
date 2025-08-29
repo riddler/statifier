@@ -17,9 +17,10 @@ defmodule Statifier do
   ## Options
 
   - `:relaxed` - Enable relaxed parsing mode (default: true)
-    - Auto-adds XML declaration, xmlns and version attributes if missing
-  - `:xml_declaration` - Add XML declaration in relaxed mode (default: true)
-    - Set to false to preserve original line numbers
+    - Auto-adds xmlns and version attributes if missing
+    - Preserves line numbers by skipping XML declaration by default
+  - `:xml_declaration` - Add XML declaration in relaxed mode (default: false)
+    - Set to true to add XML declaration (shifts line numbers by 1)
   - `:validate` - Enable validation and optimization (default: true)
   - `:strict` - Treat warnings as errors (default: false)
 
@@ -46,17 +47,7 @@ defmodule Statifier do
 
     with {:ok, document} <- SCXML.parse(xml_string, opts) do
       if validate? do
-        case Validator.validate(document) do
-          {:ok, validated_document, warnings} ->
-            if strict? and warnings != [] do
-              {:error, {:warnings, warnings}}
-            else
-              {:ok, validated_document, warnings}
-            end
-
-          {:error, errors, warnings} ->
-            {:error, {:validation_errors, errors, warnings}}
-        end
+        handle_validation(document, strict?)
       else
         {:ok, document, []}
       end
@@ -83,6 +74,21 @@ defmodule Statifier do
   @spec validated?(Statifier.Document.t()) :: boolean()
   def validated?(document) do
     document.validated
+  end
+
+  # Private helper to reduce nesting depth
+  defp handle_validation(document, strict?) do
+    case Validator.validate(document) do
+      {:ok, validated_document, warnings} ->
+        if strict? and warnings != [] do
+          {:error, {:warnings, warnings}}
+        else
+          {:ok, validated_document, warnings}
+        end
+
+      {:error, errors, warnings} ->
+        {:error, {:validation_errors, errors, warnings}}
+    end
   end
 
   # Legacy delegates

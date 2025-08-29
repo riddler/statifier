@@ -1,13 +1,12 @@
 defmodule Statifier.Interpreter.CompoundStateTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.{Event, Interpreter, Parser.SCXML}
+  alias Statifier.{Event, Interpreter}
 
   describe "compound state entry" do
     test "enters initial child state automatically" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child1">
           <state id="child1"/>
           <state id="child2"/>
@@ -15,7 +14,7 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should automatically enter child1 when entering parent
@@ -25,8 +24,7 @@ defmodule Statifier.Interpreter.CompoundStateTest do
 
     test "enters first child when no initial specified" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent">
           <state id="first_child"/>
           <state id="second_child"/>
@@ -34,7 +32,7 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       active_states = Interpreter.active_states(state_chart)
@@ -43,8 +41,7 @@ defmodule Statifier.Interpreter.CompoundStateTest do
 
     test "handles deeply nested compound states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="level1">
+      <scxml initial="level1">
         <state id="level1" initial="level2">
           <state id="level2" initial="level3">
             <state id="level3"/>
@@ -53,7 +50,7 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should automatically enter the deepest child (level3)
@@ -63,15 +60,14 @@ defmodule Statifier.Interpreter.CompoundStateTest do
 
     test "active ancestors includes compound states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child">
           <state id="child"/>
         </state>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Leaf states: ["child"]
@@ -87,8 +83,7 @@ defmodule Statifier.Interpreter.CompoundStateTest do
   describe "compound state transitions" do
     test "transitions to compound state automatically enter initial child" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="simple">
+      <scxml initial="simple">
         <state id="simple">
           <transition event="go" target="compound"/>
         </state>
@@ -99,7 +94,7 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Initially in simple state

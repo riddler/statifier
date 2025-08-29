@@ -1,6 +1,6 @@
 defmodule Statifier.InterpreterCoverageTest do
   use ExUnit.Case
-  alias Statifier.{Configuration, Document, Event, Interpreter, Parser.SCXML, State, StateChart}
+  alias Statifier.{Configuration, Document, Event, Interpreter, State, StateChart}
 
   describe "Interpreter edge cases for coverage" do
     test "initialize with document having no states" do
@@ -51,15 +51,13 @@ defmodule Statifier.InterpreterCoverageTest do
     test "initialize with validation errors" do
       # Create document with validation errors (invalid initial state)
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="nonexistent">
+      <scxml initial="nonexistent">
         <state id="s1"/>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-
-      # Should return validation errors
-      {:error, errors, _warnings} = Interpreter.initialize(document)
+      # This should now fail at parse time due to validation errors
+      {:error, {:validation_errors, errors, _warnings}} = Statifier.parse(xml)
       assert is_list(errors)
       assert length(errors) > 0
     end
@@ -67,7 +65,7 @@ defmodule Statifier.InterpreterCoverageTest do
     test "parallel region exit scenarios" do
       # Test complex parallel region exit logic
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+      <scxml initial="main">
         <parallel id="main">
           <state id="region1" initial="r1s1">
             <state id="r1s1">
@@ -82,7 +80,7 @@ defmodule Statifier.InterpreterCoverageTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Send event that should exit parallel region
@@ -101,7 +99,7 @@ defmodule Statifier.InterpreterCoverageTest do
     test "LCCA computation edge cases" do
       # Test LCCA computation with complex hierarchies
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="root">
+      <scxml initial="root">
         <state id="root" initial="child1">
           <state id="child1" initial="grandchild1">
             <state id="grandchild1">
@@ -114,7 +112,7 @@ defmodule Statifier.InterpreterCoverageTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Send event to trigger deep transition
@@ -131,26 +129,32 @@ defmodule Statifier.InterpreterCoverageTest do
       # Create document with transition to nonexistent state
       # This should be handled gracefully during execution
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <transition event="invalid" target="nonexistent"/>
         </state>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      # Initialize should succeed (validation might pass if target is just missing from lookup)
-      case Interpreter.initialize(document) do
-        {:ok, state_chart} ->
-          # Send event to trigger invalid transition
-          event = %Event{name: "invalid"}
-          {:ok, result_chart} = Interpreter.send_event(state_chart, event)
+      case Statifier.parse(xml) do
+        {:ok, document, _warnings} ->
+          # Initialize should succeed (validation might pass if target is just missing from lookup)
+          case Interpreter.initialize(document) do
+            {:ok, state_chart} ->
+              # Send event to trigger invalid transition
+              event = %Event{name: "invalid"}
+              {:ok, result_chart} = Interpreter.send_event(state_chart, event)
 
-          # Should remain in original state (transition fails gracefully)
-          active_states = MapSet.to_list(result_chart.configuration.active_states)
-          assert "s1" in active_states
+              # Should remain in original state (transition fails gracefully)
+              active_states = MapSet.to_list(result_chart.configuration.active_states)
+              assert "s1" in active_states
 
-        {:error, _errors, _warnings} ->
+            {:error, _reason} ->
+              # Initialize failed - also acceptable for invalid document
+              :ok
+          end
+
+        {:error, {:validation_errors, _errors, _warnings}} ->
           # Validation caught the error - also acceptable
           :ok
       end
@@ -199,7 +203,7 @@ defmodule Statifier.InterpreterCoverageTest do
     test "find nearest compound ancestor edge cases" do
       # Test scenarios for find_nearest_compound_ancestor function
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="atomic_root">
+      <scxml initial="atomic_root">
         <state id="atomic_root">
           <transition event="test" target="compound_state"/>
         </state>
@@ -209,7 +213,7 @@ defmodule Statifier.InterpreterCoverageTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Send event to trigger transition to compound state
@@ -224,7 +228,7 @@ defmodule Statifier.InterpreterCoverageTest do
     test "parallel siblings detection" do
       # Test are_parallel_siblings? function coverage
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parallel_root">
+      <scxml initial="parallel_root">
         <parallel id="parallel_root">
           <state id="sibling1" initial="s1">
             <state id="s1">
@@ -238,7 +242,7 @@ defmodule Statifier.InterpreterCoverageTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Send event to trigger cross-sibling transition in parallel region
@@ -254,12 +258,12 @@ defmodule Statifier.InterpreterCoverageTest do
     test "document with null initial state" do
       # Test edge case where document.initial is nil
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <state id="default"/>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
 
       # Should handle missing initial attribute gracefully
       result = Interpreter.initialize(document)
@@ -274,7 +278,7 @@ defmodule Statifier.InterpreterCoverageTest do
     test "state type transitions coverage" do
       # Test transitions between different state types for coverage
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="compound">
+      <scxml initial="compound">
         <state id="compound" initial="nested">
           <state id="nested">
             <transition event="to_parallel" target="parallel_state"/>
@@ -287,7 +291,7 @@ defmodule Statifier.InterpreterCoverageTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Transition from compound to parallel state

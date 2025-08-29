@@ -2,7 +2,6 @@ defmodule Statifier.Interpreter.EventlessTransitionsTest do
   use Statifier.Case
 
   alias Statifier.Interpreter
-  alias Statifier.Parser.SCXML
 
   @moduletag :unit
 
@@ -133,8 +132,7 @@ defmodule Statifier.Interpreter.EventlessTransitionsTest do
 
     test "infinite loop prevention with cycle detection" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <state id="a">
           <transition target="b"/>
         </state>
@@ -146,7 +144,7 @@ defmodule Statifier.Interpreter.EventlessTransitionsTest do
 
       # Should not crash due to infinite loop - cycle detection should prevent this
       # Final state depends on implementation but should not hang
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Just ensure we don't crash and have some stable state

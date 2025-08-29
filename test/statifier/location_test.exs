@@ -5,10 +5,10 @@ defmodule Statifier.LocationTest do
 
   describe "location tracking" do
     test "tracks source locations for elements and attributes" do
-      # Creating XML with proper line structure
+      # Creating XML with proper line structure - adding XML declaration for line tracking
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" initial="a">
         <state id="a">
           <transition event="go" target="b"/>
         </state>
@@ -19,12 +19,10 @@ defmodule Statifier.LocationTest do
       assert {:ok, doc} = SCXML.parse(xml)
 
       # Document should have location info - absolute line numbers
-      # <scxml> is on line 2
+      # <scxml> is on line 2 (after blank line)
       assert doc.source_location.line == 2
       # initial attribute on same line as scxml
       assert doc.initial_location.line == 2
-      # version attribute on same line as scxml
-      assert doc.version_location.line == 2
 
       # States should have location info
       [state_a, state_b] = doc.states
@@ -46,12 +44,10 @@ defmodule Statifier.LocationTest do
     end
 
     test "tracks source locations for multiline attributes" do
-      # Creating XML with proper line structure
+      # Creating XML with proper line structure - adding XML declaration for line tracking
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
-      <scxml
-        xmlns="http://www.w3.org/2005/07/scxml"
-        version="1.0"
+      <scxml xmlns="http://www.w3.org/2005/07/scxml"
         initial="a">
 
         <state
@@ -69,28 +65,27 @@ defmodule Statifier.LocationTest do
       # Document should have location info - absolute line numbers
 
       assert doc.source_location.line == 2
-      assert doc.version_location.line == 4
-      assert doc.initial_location.line == 5
+      assert doc.initial_location.line == 3
 
       [state_a, state_b] = doc.states
 
-      assert state_a.source_location.line == 7
+      assert state_a.source_location.line == 5
       # id attribute on next line
-      assert state_a.id_location.line == 8
+      assert state_a.id_location.line == 6
 
-      assert state_b.source_location.line == 13
+      assert state_b.source_location.line == 11
 
       # Transitions should have location info
       [transition] = state_a.transitions
-      assert transition.source_location.line == 9
-      assert transition.event_location.line == 10
-      assert transition.target_location.line == 11
+      assert transition.source_location.line == 7
+      assert transition.event_location.line == 8
+      assert transition.target_location.line == 9
     end
 
     test "tracks datamodel element locations" do
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="elixir">
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" datamodel="elixir">
         <datamodel>
           <data id="counter" expr="0"/>
           <data id="name"/>
@@ -103,7 +98,7 @@ defmodule Statifier.LocationTest do
 
       # Datamodel elements should have location info - absolute line numbers
       [counter, name] = doc.datamodel_elements
-      # <data id="counter"> is on line 4
+      # <data id="counter"> is on line 4 (after blank line)
       assert counter.source_location.line == 4
       # id attribute on same line as data element
       assert counter.id_location.line == 4

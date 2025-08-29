@@ -6,8 +6,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
   describe "validate_history_states/2" do
     test "accepts valid shallow history state" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+      <scxml initial="main">
         <state id="main" initial="sub1">
           <history id="hist" type="shallow">
             <transition target="sub1"/>
@@ -24,8 +23,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
 
     test "accepts valid deep history state" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+      <scxml initial="main">
         <state id="main" initial="sub1">
           <history id="deepHist" type="deep">
             <transition target="sub1"/>
@@ -43,8 +41,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
 
     test "rejects history state at root level" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+      <scxml initial="main">
         <history id="rootHist" type="shallow">
           <transition target="main"/>
         </history>
@@ -59,8 +56,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
 
     test "accepts history states with no child states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+      <scxml initial="main">
         <state id="main">
           <history id="hist" type="shallow"/>
           <state id="sub1"/>
@@ -120,8 +116,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
 
     test "accepts history states with default transitions" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+      <scxml initial="main">
         <state id="main" initial="sub1">
           <history id="hist">
             <transition target="sub1"/>
@@ -138,8 +133,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
 
     test "accepts history state with unspecified type (defaults to shallow)" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+      <scxml initial="main">
         <state id="main">
           <history id="defaultHist"/>
           <state id="sub1"/>
@@ -153,8 +147,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
 
     test "accepts multiple history states in different parent states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="state1">
+      <scxml initial="state1">
         <state id="state1" initial="sub1">
           <history id="hist1" type="shallow"/>
           <state id="sub1"/>
@@ -172,8 +165,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
 
     test "accepts history state in parallel state" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="par">
+      <scxml initial="par">
         <parallel id="par">
           <history id="parHist" type="deep"/>
           <state id="region1"/>
@@ -276,8 +268,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
 
     test "accepts one shallow and one deep history state in same parent" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+      <scxml initial="main">
         <state id="main" initial="sub1">
           <history id="shallowHist" type="shallow"/>
           <history id="deepHist" type="deep"/>
@@ -370,8 +361,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
 
     test "does not warn about reachable history state" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
+      <scxml initial="a">
         <state id="a">
           <transition target="hist" event="go"/>
         </state>

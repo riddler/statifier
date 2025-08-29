@@ -11,10 +11,10 @@ defmodule Statifier.Parser.SCXML do
   ## Options
 
   - `:relaxed` - Enable relaxed parsing mode (default: true)
-    - Auto-adds XML declaration, xmlns and version attributes if missing
-  - `:xml_declaration` - Add XML declaration in relaxed mode (default: true)
-    - Note: Adding XML declaration shifts line numbers by 1
-    - Set to false to preserve original line numbers
+    - Auto-adds xmlns and version attributes if missing
+    - Preserves line numbers by skipping XML declaration by default
+  - `:xml_declaration` - Add XML declaration in relaxed mode (default: false)
+    - Set to true to add XML declaration (shifts line numbers by 1)
   """
   @spec parse(String.t(), keyword()) :: {:ok, Statifier.Document.t()} | {:error, term()}
   def parse(xml_string, opts \\ []) do
@@ -46,7 +46,7 @@ defmodule Statifier.Parser.SCXML do
   @spec normalize_xml(String.t(), keyword()) :: String.t()
   defp normalize_xml(xml_string, opts) do
     relaxed = Keyword.get(opts, :relaxed, true)
-    xml_declaration = Keyword.get(opts, :xml_declaration, true)
+    xml_declaration = Keyword.get(opts, :xml_declaration, false)
 
     xml_string = String.trim(xml_string)
 

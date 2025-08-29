@@ -40,7 +40,7 @@ defmodule StatifierTest do
       </scxml>
       """
 
-      {:ok, document, _} = Statifier.parse(xml, validate: false)
+      {:ok, document, _warnings} = Statifier.parse(xml, validate: false)
       assert {:ok, _optimized_document, _warnings} = Statifier.validate(document)
     end
 
@@ -52,7 +52,7 @@ defmodule StatifierTest do
       </scxml>
       """
 
-      {:ok, document, _} = Statifier.parse(xml, validate: false)
+      {:ok, document, _warnings} = Statifier.parse(xml, validate: false)
       assert {:error, _errors, _warnings} = Statifier.validate(document)
     end
   end
@@ -66,7 +66,7 @@ defmodule StatifierTest do
       </scxml>
       """
 
-      {:ok, document, _} = Statifier.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       assert {:ok, state_chart} = Statifier.interpret(document)
       assert %Statifier.StateChart{} = state_chart
     end
@@ -115,7 +115,7 @@ defmodule StatifierTest do
       assert document.version == "1.0"
     end
 
-    test "adds XML declaration by default" do
+    test "skips XML declaration by default to preserve line numbers" do
       xml = """
       <scxml initial="start">
         <state id="start"/>
@@ -125,17 +125,17 @@ defmodule StatifierTest do
       assert {:ok, document, _warnings} = Statifier.parse(xml)
       assert document.validated == true
       assert document.initial == "start"
-      # XML declaration should be added by default
+      # XML declaration should not be added by default
     end
 
-    test "can skip XML declaration to preserve line numbers" do
+    test "can add XML declaration when explicitly requested" do
       xml = """
       <scxml initial="start">
         <state id="start"/>
       </scxml>
       """
 
-      assert {:ok, document, _warnings} = Statifier.parse(xml, xml_declaration: false)
+      assert {:ok, document, _warnings} = Statifier.parse(xml, xml_declaration: true)
       assert document.validated == true
       assert document.initial == "start"
     end
@@ -191,7 +191,7 @@ defmodule StatifierTest do
       </scxml>
       """
 
-      {:ok, document, _} = Statifier.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       assert Statifier.validated?(document) == true
     end
 
@@ -222,7 +222,7 @@ defmodule StatifierTest do
       """
 
       # Parse
-      assert {:ok, document, _} = Statifier.parse(xml, validate: false)
+      assert {:ok, document, _warnings} = Statifier.parse(xml, validate: false)
 
       # Validate
       assert {:ok, _optimized_document, _warnings} = Statifier.validate(document)

@@ -3,7 +3,8 @@ defmodule Statifier.Interpreter do
   Core interpreter for SCXML state charts.
 
   Provides a synchronous, functional API for state chart execution.
-  Documents are automatically validated before interpretation.
+  Documents from Statifier.parse are used as-is (already validated).
+  Unvalidated documents are automatically validated for backward compatibility.
   """
 
   alias Statifier.{
@@ -24,7 +25,8 @@ defmodule Statifier.Interpreter do
   @doc """
   Initialize a state chart from a parsed document.
 
-  Automatically validates the document and sets up the initial configuration.
+  Documents from Statifier.parse are used directly (already validated).
+  Unvalidated documents are validated automatically for backward compatibility.
 
   ## Options
 
@@ -56,33 +58,50 @@ defmodule Statifier.Interpreter do
   @spec initialize(Document.t(), keyword()) ::
           {:ok, StateChart.t()} | {:error, [String.t()], [String.t()]}
   def initialize(%Document{} = document, opts) when is_list(opts) do
-    case Validator.validate(document) do
-      {:ok, optimized_document, warnings} ->
-        initial_config = get_initial_configuration(optimized_document)
-        initial_states = MapSet.to_list(Configuration.active_states(initial_config))
+    # Check if document is already validated (e.g., from Statifier.parse)
+    case {document.validated, document} do
+      {true, _document} ->
+        # Document already validated and optimized, use as-is
+        optimized_document = document
+        warnings = []
 
-        state_chart = StateChart.new(optimized_document, initial_config)
+        initialize_state_chart(optimized_document, warnings, opts)
 
-        # Initialize data model from datamodel_elements
-        datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
+      {false, _document} ->
+        # Document not validated, validate it now (backward compatibility)
+        case Validator.validate(document) do
+          {:ok, validated_document, validation_warnings} ->
+            initialize_state_chart(validated_document, validation_warnings, opts)
 
-        state_chart =
-          state_chart
-          |> StateChart.update_datamodel(datamodel)
-          # Configure logging based on options or defaults
-          |> LogManager.configure_from_options(opts)
-          # Execute onentry actions for initial states and queue any raised events
-          |> ActionExecutor.execute_onentry_actions(initial_states)
-          # Execute microsteps (eventless transitions and internal events) after initialization
-          |> execute_microsteps()
-
-        # Log warnings if any (TODO: Use proper logging)
-        if warnings != [], do: :ok
-        {:ok, state_chart}
-
-      {:error, errors, warnings} ->
-        {:error, errors, warnings}
+          {:error, errors, validation_warnings} ->
+            {:error, errors, validation_warnings}
+        end
     end
+  end
+
+  # Helper function to avoid code duplication
+  defp initialize_state_chart(optimized_document, warnings, opts) do
+    initial_config = get_initial_configuration(optimized_document)
+    initial_states = MapSet.to_list(Configuration.active_states(initial_config))
+
+    state_chart = StateChart.new(optimized_document, initial_config)
+
+    # Initialize data model from datamodel_elements
+    datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
+
+    state_chart =
+      state_chart
+      |> StateChart.update_datamodel(datamodel)
+      # Configure logging based on options or defaults
+      |> LogManager.configure_from_options(opts)
+      # Execute onentry actions for initial states and queue any raised events
+      |> ActionExecutor.execute_onentry_actions(initial_states)
+      # Execute microsteps (eventless transitions and internal events) after initialization
+      |> execute_microsteps()
+
+    # Log warnings if any (TODO: Use proper logging)
+    if warnings != [], do: :ok
+    {:ok, state_chart}
   end
 
   @doc """

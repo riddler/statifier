@@ -13,6 +13,7 @@ This document outlines the comprehensive plan for refactoring the large Interpre
 ## Current Status
 
 ### Completed Work
+
 - ✅ **StateHierarchy Module Extraction** (Complete)
   - **Interpreter reduced**: 824 lines → 636 lines (23% reduction)
   - **New StateHierarchy module**: 260 lines of focused hierarchy functionality
@@ -20,6 +21,7 @@ This document outlines the comprehensive plan for refactoring the large Interpre
   - **Functions extracted**: 8 hierarchy operations with comprehensive documentation
 
 ### Architecture Improvements Achieved
+
 - **Better separation of concerns**: Hierarchy operations isolated
 - **Improved testability**: Dedicated test suite for hierarchy functions
 - **Enhanced reusability**: StateHierarchy can be used by other modules
@@ -34,7 +36,8 @@ The Interpreter module, while reduced, still contains **636 lines with 60+ funct
 **Size**: ~120-150 lines
 **Complexity**: High (SCXML transition conflict resolution)
 
-#### Functions to Extract:
+#### Functions to Extract
+
 - `resolve_transition_conflicts/2` - SCXML-compliant conflict resolution
 - `find_enabled_transitions/2` - Transition matching logic for events
 - `find_enabled_transitions_for_event/2` - Unified event/eventless transition finding
@@ -42,13 +45,15 @@ The Interpreter module, while reduced, still contains **636 lines with 60+ funct
 - `matches_event_or_eventless?/2` - Event pattern matching logic
 - `transition_condition_enabled?/2` - Condition evaluation with predicator
 
-#### Benefits:
+#### Benefits
+
 - **Focused transition logic**: Complex SCXML transition rules in dedicated module
 - **Easier testing**: Isolated testing of transition selection algorithms
 - **Reusability**: Future state machine implementations can use transition resolver
 - **Performance**: Potential for transition caching and optimization
 
-#### Usage Patterns:
+#### Usage Patterns
+
 - Called during every event processing cycle
 - Critical for correct SCXML behavior (child transitions override parent)
 - Complex interaction with document order and condition evaluation
@@ -58,7 +63,8 @@ The Interpreter module, while reduced, still contains **636 lines with 60+ funct
 **Size**: ~100-120 lines
 **Complexity**: Very High (W3C SCXML exit set algorithm)
 
-#### Functions to Extract:
+#### Functions to Extract
+
 - `compute_exit_set/3` - W3C SCXML exit set computation
 - `should_exit_state_for_transition?/3` - Exit decision logic per transition
 - `compute_state_exit_for_transition/4` - LCCA-based exit rules
@@ -67,13 +73,15 @@ The Interpreter module, while reduced, still contains **636 lines with 60+ funct
 - `should_exit_parallel_sibling?/4` - Parallel sibling exit rules
 - `should_exit_lcca_descendant?/4` - LCCA descendant exit logic
 
-#### Benefits:
+#### Benefits
+
 - **Isolated W3C algorithm**: Critical SCXML exit set computation in dedicated module
 - **Parallel state correctness**: Essential for proper parallel region behavior
 - **Complex logic testing**: Exit set computation deserves focused test suite
 - **Performance optimization**: Pre-computed exit patterns for common cases
 
-#### SCXML Specification Compliance:
+#### SCXML Specification Compliance
+
 - Implements W3C SCXML Section 3.13 (SelectTransitions Algorithm)
 - Handles complex parallel region exit semantics
 - Supports LCCA (Least Common Compound Ancestor) computation
@@ -84,20 +92,23 @@ The Interpreter module, while reduced, still contains **636 lines with 60+ funct
 **Size**: ~80-100 lines
 **Complexity**: Medium (recursive state entry logic)
 
-#### Functions to Extract:
+#### Functions to Extract
+
 - `enter_state/2` - Recursive state entry with type-specific logic
 - `get_initial_child_state/2` - Initial child resolution (attribute vs element)
 - `find_initial_element/1` - `<initial>` element discovery
 - `find_child_by_id/2` - Child state lookup utilities
 - `get_initial_configuration/1` - Document-level initial configuration setup
 
-#### Benefits:
+#### Benefits
+
 - **Clean separation**: Entry logic separated from exit logic
 - **Type-specific entry**: Compound, parallel, atomic, final state entry rules
 - **Testing clarity**: Easier to test compound/parallel entry behavior
 - **Future optimization**: Foundation for entry action caching
 
-#### State Entry Types:
+#### State Entry Types
+
 - **Atomic states**: Direct entry (leaf nodes)
 - **Compound states**: Recursive initial child entry
 - **Parallel states**: Enter all child regions simultaneously
@@ -109,19 +120,22 @@ The Interpreter module, while reduced, still contains **636 lines with 60+ funct
 **Size**: ~60-80 lines
 **Complexity**: Medium (W3C SCXML history semantics)
 
-#### Functions to Extract:
+#### Functions to Extract
+
 - `record_history_for_exiting_states/2` - History recording per W3C spec
 - `restore_history_configuration/2` - History restoration logic
 - `get_history_default_targets/2` - Default history transition targets
 - `resolve_history_default_transition/2` - History transition resolution
 
-#### Benefits:
+#### Benefits
+
 - **Isolated W3C semantics**: History state behavior in dedicated module
 - **Complex history logic**: Shallow vs deep history needs focused testing
 - **Future enhancements**: Preparation for enhanced history features
 - **Performance**: History state caching opportunities
 
-#### SCXML History Features:
+#### SCXML History Features
+
 - **Shallow history**: Restore immediate child states only
 - **Deep history**: Restore entire nested state configuration
 - **Default transitions**: Fallback behavior when no history recorded
@@ -132,18 +146,21 @@ The Interpreter module, while reduced, still contains **636 lines with 60+ funct
 **Size**: ~40-60 lines
 **Complexity**: Low-Medium (event processing orchestration)
 
-#### Functions to Extract:
+#### Functions to Extract
+
 - `execute_microsteps/1,2` - Microstep execution loop with cycle detection
 - `send_event/2` - Event processing entry point
 - Cycle detection and iteration limits (prevent infinite loops)
 
-#### Benefits:
+#### Benefits
+
 - **Clean event abstraction**: Event processing separated from state logic
 - **Macrostep/microstep clarity**: W3C SCXML execution model isolation
 - **Testing focus**: Event processing behavior independently testable
 - **Performance monitoring**: Event processing metrics and profiling
 
-#### SCXML Event Processing:
+#### SCXML Event Processing
+
 - **Macrostep**: Complete event processing including all resulting microsteps
 - **Microstep**: Single transition set execution plus eventless transitions
 - **Cycle detection**: Prevent infinite eventless transition loops (100 iteration limit)
@@ -151,13 +168,15 @@ The Interpreter module, while reduced, still contains **636 lines with 60+ funct
 
 ## Expected Results After Full Extraction
 
-### Module Size Reduction:
+### Module Size Reduction
+
 - **Current Interpreter**: 636 lines
 - **Final Interpreter**: ~200-250 lines (focused orchestration only)
 - **5 new focused modules**: Each 60-150 lines with clear responsibilities
 - **Total reduction**: ~75% size reduction from original 824 lines
 
-### Architecture Benefits:
+### Architecture Benefits
+
 - **Single Responsibility Principle**: Each module has one clear purpose
 - **Improved Testability**: Each module independently testable
 - **Better Maintainability**: Smaller, focused modules easier to understand
@@ -168,13 +187,15 @@ The Interpreter module, while reduced, still contains **636 lines with 60+ funct
 
 ### Performance Problem Analysis
 
-#### Current Expensive Operations:
+#### Current Expensive Operations
+
 1. **Ancestor path computation**: O(depth) tree traversal for each call
 2. **LCCA calculation**: O(depth₁ + depth₂) for each transition pair
 3. **Descendant checking**: O(depth) parent chain traversal
 4. **Parallel ancestor detection**: O(depth) with parallel state filtering
 
-#### Usage Frequency Impact:
+#### Usage Frequency Impact
+
 - **Called during every transition**: Transition evaluation and exit set computation
 - **Complex documents**: Deep hierarchies (10+ levels) show significant performance impact
 - **Parallel regions**: Cross-region transitions require extensive hierarchy analysis
@@ -183,6 +204,7 @@ The Interpreter module, while reduced, still contains **636 lines with 60+ funct
 ### Caching Architecture Design
 
 #### Enhanced Document Structure
+
 ```elixir
 defmodule Statifier.Document do
   defstruct [
@@ -223,6 +245,7 @@ end
 ```
 
 #### Integration with Validation Pipeline
+
 ```elixir
 defmodule Statifier.Validator do
   def validate(document) do
@@ -249,6 +272,7 @@ end
 ### Cache Building Implementation
 
 #### HierarchyCache Builder
+
 ```elixir
 defmodule Statifier.HierarchyCache do
   @doc """
@@ -342,6 +366,7 @@ end
 ### Optimized StateHierarchy Functions
 
 #### Cache-Enabled Function Updates
+
 ```elixir
 defmodule Statifier.StateHierarchy do
   @doc """
@@ -445,9 +470,11 @@ end
 ## Implementation Phases
 
 ### Phase 1A: Cache Infrastructure (Week 1)
+
 **Goal**: Build foundation for hierarchy caching
 
-#### Tasks:
+#### Tasks
+
 1. **Create HierarchyCache module**
    - Define cache data structures
    - Implement cache building algorithms
@@ -469,16 +496,19 @@ end
    - Verify cache data accuracy
    - Test memory usage for various document sizes
 
-#### Success Criteria:
+#### Success Criteria
+
 - ✅ Cache builds correctly for simple and complex documents
 - ✅ Cache contains accurate pre-computed hierarchy data
 - ✅ No impact on existing functionality (cache is optional)
 - ✅ Test coverage >95% for cache building logic
 
 ### Phase 1B: StateHierarchy Optimization (Week 2)
+
 **Goal**: Update StateHierarchy functions to use cache with performance improvements
 
-#### Tasks:
+#### Tasks
+
 1. **Update StateHierarchy functions**
    - Add cache-enabled versions of all hierarchy functions
    - Implement fallback to uncached versions
@@ -499,22 +529,26 @@ end
    - Test with malformed cache data
    - Verify behavior with partially populated cache
 
-#### Success Criteria:
+#### Success Criteria
+
 - ✅ All StateHierarchy functions use cache when available
 - ✅ Performance improvements measurable (target: 5-10x for deep hierarchies)
 - ✅ 100% functional correctness maintained
 - ✅ Graceful fallback behavior for cache issues
 
-#### Performance Targets:
+#### Performance Targets
+
 - **Shallow hierarchy** (3 levels): 2-3x improvement
 - **Medium hierarchy** (5-7 levels): 5-8x improvement  
 - **Deep hierarchy** (10+ levels): 10-15x improvement
 - **Complex parallel** (multiple regions): 8-12x improvement
 
 ### Phase 1C: Advanced Caching (Week 3)
+
 **Goal**: Optimize cache for production use and complex scenarios
 
-#### Tasks:
+#### Tasks
+
 1. **Parallel region caching optimization**
    - Optimize parallel region detection algorithms
    - Cache parallel region relationships
@@ -535,13 +569,15 @@ end
    - Measure memory usage across document sizes
    - Optimize critical performance paths
 
-#### Success Criteria:
+#### Success Criteria
+
 - ✅ Complex parallel region operations optimized
 - ✅ Memory usage acceptable for large documents (target: <2x document size)
 - ✅ Cache building time <20% of total validation time
 - ✅ Performance gains documented and verified
 
-#### Memory Trade-off Analysis:
+#### Memory Trade-off Analysis
+
 - **Cache size**: ~O(n²) for LCCA matrix, O(n) for other caches
 - **Typical overhead**: 1.5-2x original document size
 - **Build time cost**: +10-20% during validation (one-time cost)
@@ -552,15 +588,18 @@ end
 While implementing hierarchy caching, other module extractions can proceed in parallel to maximize development efficiency.
 
 ### Parallel Track: TransitionResolver Module (Week 2-3)
+
 **Can be developed concurrently with Phase 1B-1C**
 
-#### Implementation Strategy:
+#### Implementation Strategy
+
 - Extract transition resolution logic while cache implementation proceeds
 - No dependencies on hierarchy caching
 - Independent testing and validation
 - Immediate benefits to code organization
 
-### Sequential Extractions (Weeks 4-7):
+### Sequential Extractions (Weeks 4-7)
+
 1. **ExitSetCalculator Module** (Week 4) - Depends on optimized StateHierarchy
 2. **StateEntryManager Module** (Week 5) - Can leverage hierarchy cache
 3. **HistoryManager Module** (Week 6) - Independent extraction
@@ -569,18 +608,21 @@ While implementing hierarchy caching, other module extractions can proceed in pa
 ## Success Metrics
 
 ### Performance Metrics
+
 - **Hierarchy operation speed**: 5-15x improvement for cached operations
 - **Memory overhead**: <2x original document size for cache
 - **Validation time impact**: <20% increase in total validation time
 - **Complex document handling**: Support documents with 100+ states efficiently
 
 ### Code Quality Metrics
+
 - **Interpreter module size**: Reduce to <250 lines (from 824 original)
 - **Test coverage**: Maintain >90% coverage across all modules
 - **Module cohesion**: Each module focused on single responsibility
 - **Documentation coverage**: 100% public API documentation
 
 ### Maintainability Metrics
+
 - **Module dependencies**: Clear dependency graph with minimal coupling
 - **Function complexity**: Average function length <20 lines
 - **Test isolation**: Each module independently testable
@@ -589,12 +631,14 @@ While implementing hierarchy caching, other module extractions can proceed in pa
 ## Risk Mitigation
 
 ### Technical Risks
+
 1. **Cache consistency**: Comprehensive validation and integrity checks
 2. **Memory usage**: Size monitoring and optimization strategies
 3. **Performance regression**: Extensive benchmarking and fallback mechanisms
 4. **Backward compatibility**: Gradual rollout with feature flags
 
 ### Implementation Risks
+
 1. **Complexity creep**: Strict scope control and incremental delivery
 2. **Test coverage gaps**: Dual testing strategy (cached vs uncached)
 3. **Integration issues**: Careful validation pipeline integration
@@ -603,18 +647,21 @@ While implementing hierarchy caching, other module extractions can proceed in pa
 ## Future Enhancements (Phase 2+)
 
 ### Advanced Cache Optimizations
+
 - **Lazy cache building**: Build cache entries on-demand for large documents
 - **Cache compression**: LZ4/Snappy compression for memory optimization
 - **Incremental updates**: Update cache when document structure changes
 - **Cache serialization**: Persist cache across application sessions
 
 ### Extended Caching Opportunities
+
 - **Transition conflict resolution**: Cache conflict resolution results
 - **Exit set patterns**: Cache common exit set computations for frequent transitions
 - **Entry patterns**: Cache common state entry sequences
 - **Event processing**: Cache event processing paths for performance
 
 ### Integration Enhancements
+
 - **Performance monitoring**: Real-time performance metrics and alerting
 - **Cache analytics**: Usage patterns and optimization recommendations
 - **Memory profiling**: Detailed memory usage analysis and optimization

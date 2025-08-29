@@ -1,12 +1,12 @@
 defmodule Statifier.FeatureDetectorTest do
   use ExUnit.Case
 
-  alias Statifier.{Document, FeatureDetector, Parser.SCXML, State}
+  alias Statifier.{Document, FeatureDetector, State}
 
   describe "feature detection from XML" do
     test "detects basic states and transitions" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <transition event="go" target="s2"/>
         </state>
@@ -24,7 +24,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects compound states" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="compound">
+      <scxml initial="compound">
         <state id="compound" initial="child1">
           <state id="child1">
             <transition event="go" target="child2"/>
@@ -43,7 +43,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects parallel states" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parallel_state">
+      <scxml initial="parallel_state">
         <parallel id="parallel_state">
           <state id="branch1"/>
           <state id="branch2"/>
@@ -59,7 +59,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects final states" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <transition event="finish" target="final_state"/>
         </state>
@@ -76,7 +76,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects datamodel features" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <datamodel>
           <data id="x" expr="5"/>
         </datamodel>
@@ -93,7 +93,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects conditional transitions" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <transition event="check" target="s2" cond="x > 5"/>
         </state>
@@ -110,7 +110,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects executable content" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <log expr="'entering s1'"/>
@@ -135,7 +135,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects send idlocation feature (from SCION test)" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s0">
+      <scxml initial="s0">
         <datamodel>
           <data id="httpid" expr="'foo'"/>
         </datamodel>
@@ -158,7 +158,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects targetless transitions" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <transition event="internal_event">
             <log expr="'internal action'"/>
@@ -242,7 +242,7 @@ defmodule Statifier.FeatureDetectorTest do
   describe "integration with parsed documents" do
     test "detects features from parsed Statifier.Document" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="compound">
+      <scxml initial="compound">
         <state id="compound" initial="child1">
           <state id="child1">
             <transition event="go" target="child2"/>
@@ -252,7 +252,7 @@ defmodule Statifier.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -262,7 +262,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects final states from parsed document" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <transition event="finish" target="final_state"/>
         </state>
@@ -270,7 +270,7 @@ defmodule Statifier.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -280,7 +280,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects parallel states from parsed document" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parallel_state">
+      <scxml initial="parallel_state">
         <parallel id="parallel_state">
           <state id="branch1"/>
           <state id="branch2"/>
@@ -288,7 +288,7 @@ defmodule Statifier.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -297,7 +297,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects history states from XML directly" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <history id="hist1"/>
         </state>
@@ -312,7 +312,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects datamodel elements from parsed document" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <datamodel>
           <data id="x" expr="5"/>
         </datamodel>
@@ -320,7 +320,7 @@ defmodule Statifier.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -330,12 +330,12 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "handles document with no datamodel elements" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1"/>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -345,7 +345,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects conditional transitions from parsed document" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <transition event="check" target="s2" cond="x > 5"/>
         </state>
@@ -353,7 +353,7 @@ defmodule Statifier.FeatureDetectorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -363,14 +363,14 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "detects targetless transitions from parsed document" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <transition event="internal_event"/>
         </state>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       features = FeatureDetector.detect_features(document)
 
       assert MapSet.member?(features, :basic_states)
@@ -382,7 +382,7 @@ defmodule Statifier.FeatureDetectorTest do
   describe "edge cases" do
     test "detects compound states via nested state XML pattern (multiline match)" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="outer">
+      <scxml initial="outer">
         <state id="outer"><state id="inner"/></state>
       </scxml>
       """
@@ -409,7 +409,7 @@ defmodule Statifier.FeatureDetectorTest do
 
     test "handles raise elements detection" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <raise event="internal_event"/>

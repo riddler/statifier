@@ -5,7 +5,7 @@ defmodule Statifier.Actions.RaiseTest do
   describe "raise element parsing" do
     test "parses raise element in onentry block" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <raise event="internal_event"/>
@@ -25,7 +25,7 @@ defmodule Statifier.Actions.RaiseTest do
 
     test "parses raise element in onexit block" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onexit>
             <raise event="cleanup_event"/>
@@ -45,7 +45,7 @@ defmodule Statifier.Actions.RaiseTest do
 
     test "parses multiple raise elements" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <raise event="first_event"/>
@@ -67,7 +67,7 @@ defmodule Statifier.Actions.RaiseTest do
 
     test "parses raise with mixed log and raise actions" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <log expr="'starting process'"/>
@@ -91,7 +91,7 @@ defmodule Statifier.Actions.RaiseTest do
 
     test "handles raise element without event attribute" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <raise/>

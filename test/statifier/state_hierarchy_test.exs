@@ -1,13 +1,12 @@
 defmodule Statifier.StateHierarchyTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.{Document, Parser.SCXML, StateHierarchy, Validator}
+  alias Statifier.{Document, StateHierarchy}
 
   # Helper to create a test document with hierarchy
   defp create_test_document do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="root">
+    <scxml initial="root">
       <state id="root" initial="branch1">
         <state id="branch1" initial="leaf1">
           <state id="leaf1"/>
@@ -33,8 +32,7 @@ defmodule Statifier.StateHierarchyTest do
     </scxml>
     """
 
-    {:ok, raw_document} = SCXML.parse(xml)
-    {:ok, document, _warnings} = Validator.validate(raw_document)
+    {:ok, document, _warnings} = Statifier.parse(xml)
     document
   end
 
@@ -214,8 +212,7 @@ defmodule Statifier.StateHierarchyTest do
       </scxml>
       """
 
-      {:ok, raw_document} = SCXML.parse(xml)
-      {:ok, document, _warnings} = Validator.validate(raw_document)
+      {:ok, document, _warnings} = Statifier.parse(xml)
 
       # The atomic parent is actually compound (has children), so it should be the LCCA
       lcca = StateHierarchy.compute_lcca("child1", "child2", document)
@@ -266,8 +263,7 @@ defmodule Statifier.StateHierarchyTest do
       </scxml>
       """
 
-      {:ok, raw_document} = SCXML.parse(xml)
-      {:ok, document, _warnings} = Validator.validate(raw_document)
+      {:ok, document, _warnings} = Statifier.parse(xml)
 
       parallel_ancestors = StateHierarchy.get_parallel_ancestors(document, "region1")
       assert parallel_ancestors == ["outer_parallel", "inner_parallel"]
@@ -365,8 +361,7 @@ defmodule Statifier.StateHierarchyTest do
       </scxml>
       """
 
-      {:ok, raw_document} = SCXML.parse(xml)
-      {:ok, document, _warnings} = Validator.validate(raw_document)
+      {:ok, document, _warnings} = Statifier.parse(xml)
 
       assert StateHierarchy.are_in_parallel_regions?(document, "deep_ui", "deep_data")
       assert StateHierarchy.are_in_parallel_regions?(document, "ui_sub", "data_sub")
@@ -447,8 +442,7 @@ defmodule Statifier.StateHierarchyTest do
       </scxml>
       """
 
-      {:ok, raw_document} = SCXML.parse(xml)
-      {:ok, document, _warnings} = Validator.validate(raw_document)
+      {:ok, document, _warnings} = Statifier.parse(xml)
 
       # When nested state exits, both main and sub2 should be identified as having history
       parents = StateHierarchy.find_parents_with_history(["nested"], document)
@@ -481,8 +475,7 @@ defmodule Statifier.StateHierarchyTest do
       </scxml>
       """
 
-      {:ok, raw_document} = SCXML.parse(xml)
-      {:ok, document, _warnings} = Validator.validate(raw_document)
+      {:ok, document, _warnings} = Statifier.parse(xml)
 
       parents = StateHierarchy.find_parents_with_history(["child1", "child2"], document)
       assert Enum.sort(parents) == ["parent1", "parent2"]
@@ -507,8 +500,7 @@ defmodule Statifier.StateHierarchyTest do
       </scxml>
       """
 
-      {:ok, raw_document} = SCXML.parse(xml)
-      {:ok, document, _warnings} = Validator.validate(raw_document)
+      {:ok, document, _warnings} = Statifier.parse(xml)
 
       # Both children have same parent - should only return parent once
       parents = StateHierarchy.find_parents_with_history(["child1", "child2"], document)
@@ -541,8 +533,7 @@ defmodule Statifier.StateHierarchyTest do
       </scxml>
       """
 
-      {:ok, raw_document} = SCXML.parse(xml)
-      {:ok, document, _warnings} = Validator.validate(raw_document)
+      {:ok, document, _warnings} = Statifier.parse(xml)
 
       # Test hierarchy relationships
       assert StateHierarchy.descendant_of?(document, "main_menu", "app")
@@ -580,8 +571,7 @@ defmodule Statifier.StateHierarchyTest do
       </scxml>
       """
 
-      {:ok, raw_document} = SCXML.parse(xml)
-      {:ok, document, _warnings} = Validator.validate(raw_document)
+      {:ok, document, _warnings} = Statifier.parse(xml)
 
       # Verify that hierarchy relationships are correctly established
       assert StateHierarchy.descendant_of?(document, "child1", "parent")

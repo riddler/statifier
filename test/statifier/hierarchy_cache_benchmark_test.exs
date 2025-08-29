@@ -1,20 +1,19 @@
 defmodule Statifier.HierarchyCacheBenchmarkTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.{Document, HierarchyCache, Parser.SCXML, StateHierarchy, Validator}
+  alias Statifier.{Document, HierarchyCache, StateHierarchy, Validator}
 
   @tag :benchmark
   @tag timeout: 60_000
   test "demonstrates O(1) performance improvements with cache" do
     # Create a deep hierarchy document for benchmarking
     xml = create_deep_hierarchy_xml(10)
-    {:ok, raw_document} = SCXML.parse(xml)
-
     # Create uncached document (just lookup maps, no hierarchy cache)
+    {:ok, raw_document} = Statifier.Parser.SCXML.parse(xml)
     uncached_doc = Document.build_lookup_maps(raw_document)
 
     # Create cached document (with hierarchy cache)
-    {:ok, cached_doc, _warnings} = Validator.validate(raw_document)
+    {:ok, cached_doc, _warnings} = Statifier.parse(xml)
 
     # Verify cache is present
     assert cached_doc.hierarchy_cache.state_count > 0
@@ -97,7 +96,7 @@ defmodule Statifier.HierarchyCacheBenchmarkTest do
     # Test with documents of various sizes
     for depth <- [5, 10, 15] do
       xml = create_deep_hierarchy_xml(depth)
-      {:ok, raw_document} = SCXML.parse(xml)
+      {:ok, raw_document} = Statifier.Parser.SCXML.parse(xml)
       {:ok, cached_doc, _warnings} = Validator.validate(raw_document)
 
       cache_stats = HierarchyCache.get_stats(cached_doc.hierarchy_cache)
@@ -135,7 +134,7 @@ defmodule Statifier.HierarchyCacheBenchmarkTest do
 
     """
     <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="level1">
+    <scxml initial="level1">
     #{Enum.join(states, "\n")}
     #{Enum.join(closing_tags, "\n")}
     </scxml>

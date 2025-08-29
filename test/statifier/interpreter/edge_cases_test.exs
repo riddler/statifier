@@ -2,20 +2,18 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
   use Statifier.Case
 
   alias Statifier.Interpreter
-  alias Statifier.Parser.SCXML
 
   @moduletag :unit
 
   describe "edge cases for improved coverage" do
     test "initialize with empty document (no states)" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <!-- Empty document with no states -->
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should have empty configuration
@@ -24,8 +22,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
 
     test "compound state with atomic child as first child" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child_target">
           <state id="child_first"/>
           <state id="child_target"/>
@@ -33,7 +30,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should use initial attribute, not first child
@@ -42,8 +39,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
 
     test "parallel states with mixed atomic and compound children" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="root">
+      <scxml initial="root">
         <parallel id="root">
           <state id="atomic_region"/>
           <state id="compound_region" initial="nested_child">
@@ -54,7 +50,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should enter both parallel regions
@@ -65,15 +61,14 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
 
     test "transition with no target (targetless)" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
+      <scxml initial="a">
         <state id="a">
           <transition event="no_target_event"/>
         </state>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       event = %Statifier.Event{name: "no_target_event", data: %{}}
@@ -85,8 +80,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
 
     test "complex parallel region exit with cross-boundary transitions" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="app">
+      <scxml initial="app">
         <parallel id="app">
           <state id="ui" initial="idle">
             <state id="idle">
@@ -103,7 +97,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should start with both parallel regions active
@@ -125,8 +119,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
 
     test "nested compound states with deep hierarchy" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="level1">
+      <scxml initial="level1">
         <state id="level1" initial="level2">
           <state id="level2" initial="level3">
             <state id="level3" initial="level4">
@@ -142,7 +135,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should start in deeply nested state
@@ -158,8 +151,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
 
     test "conditional eventless transition that evaluates false" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
         <state id="start">
           <transition target="end" cond="false"/>
         </state>
@@ -167,7 +159,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should stay in start state since condition is false
@@ -177,8 +169,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
 
     test "multiple conflicting transitions with document order resolution" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child">
           <transition event="conflict" target="sibling1"/>
           <state id="child">
@@ -190,7 +181,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Child should win conflict resolution (higher priority)
@@ -202,8 +193,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
 
     test "LCCA computation with complex parallel structure" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="root">
+      <scxml initial="root">
         <parallel id="root">
           <state id="region1" initial="a">
             <state id="a">
@@ -219,7 +209,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should start with both a and c active
@@ -240,8 +230,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
     test "cycle detection in eventless transitions" do
       # This tests the iterations >= 100 guard
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
+      <scxml initial="a">
         <state id="a">
           <transition target="b"/>
         </state>
@@ -251,7 +240,7 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should not crash and should have some stable state

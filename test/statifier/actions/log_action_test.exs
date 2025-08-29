@@ -6,7 +6,6 @@ defmodule Statifier.Actions.LogActionTest do
     Actions.LogAction,
     Configuration,
     Document,
-    Parser.SCXML,
     StateChart
   }
 
@@ -15,12 +14,12 @@ defmodule Statifier.Actions.LogActionTest do
   # Helper function to reduce duplicate code
   defp create_test_state_chart_with_actions(actions) do
     xml = """
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+    <scxml initial="s1">
       <state id="s1"></state>
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
+    {:ok, document, _warnings} = Statifier.parse(xml)
     optimized_document = Document.build_lookup_maps(document)
 
     state = Document.find_state(optimized_document, "s1")

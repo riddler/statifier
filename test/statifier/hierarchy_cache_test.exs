@@ -1,13 +1,12 @@
 defmodule Statifier.HierarchyCacheTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.{Document, HierarchyCache, Parser.SCXML, StateHierarchy, Validator}
+  alias Statifier.{Document, HierarchyCache, StateHierarchy, Validator}
 
   # Helper to create test documents with different complexity levels
   defp create_simple_document do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="root">
+    <scxml initial="root">
       <state id="root" initial="child1">
         <state id="child1"/>
         <state id="child2"/>
@@ -15,15 +14,14 @@ defmodule Statifier.HierarchyCacheTest do
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
-    # Build lookup maps which are required for StateHierarchy functions
-    Document.build_lookup_maps(document)
+    {:ok, document, _warnings} = Statifier.parse(xml)
+    # Document already has lookup maps built by Statifier.parse
+    document
   end
 
   defp create_complex_document do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+    <scxml initial="main">
       <state id="main" initial="branch1">
         <state id="branch1" initial="leaf1">
           <state id="leaf1"/>
@@ -50,15 +48,14 @@ defmodule Statifier.HierarchyCacheTest do
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
-    # Build lookup maps which are required for StateHierarchy functions
-    Document.build_lookup_maps(document)
+    {:ok, document, _warnings} = Statifier.parse(xml)
+    # Document already has lookup maps built by Statifier.parse
+    document
   end
 
   defp create_deep_hierarchy_document do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="level1">
+    <scxml initial="level1">
       <state id="level1" initial="level2">
         <state id="level2" initial="level3">
           <state id="level3" initial="level4">
@@ -73,15 +70,14 @@ defmodule Statifier.HierarchyCacheTest do
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
-    # Build lookup maps which are required for StateHierarchy functions
-    Document.build_lookup_maps(document)
+    {:ok, document, _warnings} = Statifier.parse(xml)
+    # Document already has lookup maps built by Statifier.parse
+    document
   end
 
   defp create_history_document do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+    <scxml initial="main">
       <state id="main" initial="sub1">
         <history id="main_history" type="shallow"/>
         <state id="sub1"/>
@@ -93,9 +89,9 @@ defmodule Statifier.HierarchyCacheTest do
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
-    # Build lookup maps which are required for StateHierarchy functions
-    Document.build_lookup_maps(document)
+    {:ok, document, _warnings} = Statifier.parse(xml)
+    # Document already has lookup maps built by Statifier.parse
+    document
   end
 
   describe "HierarchyCache.build/1" do
@@ -416,14 +412,12 @@ defmodule Statifier.HierarchyCacheTest do
     test "Validator skips cache building for invalid documents" do
       # Create invalid document with non-existent initial state
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="nonexistent">
+      <scxml initial="nonexistent">
         <state id="valid_state"/>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      {:error, _errors, _warnings} = Validator.validate(document)
+      {:error, {:validation_errors, _errors, _warnings}} = Statifier.parse(xml)
 
       # For invalid documents, cache should not be built (default empty cache)
       # This test verifies that we don't waste time on invalid documents
@@ -444,7 +438,7 @@ defmodule Statifier.HierarchyCacheTest do
       # Build times should be reasonable
       # < 5ms
       assert simple_cache.build_time < 5_000
-      # < 20ms  
+      # < 20ms
       assert complex_cache.build_time < 20_000
       # < 10ms (deep but few states)
       assert deep_cache.build_time < 10_000
@@ -469,14 +463,12 @@ defmodule Statifier.HierarchyCacheTest do
   describe "Edge cases and error handling" do
     test "handles document with single state" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="single">
+      <scxml initial="single">
         <state id="single"/>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      document_with_lookups = Document.build_lookup_maps(document)
+      {:ok, document_with_lookups, _warnings} = Statifier.parse(xml)
       cache = HierarchyCache.build(document_with_lookups)
 
       assert cache.state_count == 1
@@ -490,8 +482,7 @@ defmodule Statifier.HierarchyCacheTest do
 
     test "handles document with only parallel states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="app">
+      <scxml initial="app">
         <parallel id="app">
           <state id="region1"/>
           <state id="region2"/>
@@ -499,8 +490,7 @@ defmodule Statifier.HierarchyCacheTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      document_with_lookups = Document.build_lookup_maps(document)
+      {:ok, document_with_lookups, _warnings} = Statifier.parse(xml)
       cache = HierarchyCache.build(document_with_lookups)
 
       assert cache.state_count == 3
@@ -511,8 +501,7 @@ defmodule Statifier.HierarchyCacheTest do
 
     test "handles deeply nested parallel regions" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="outer">
+      <scxml initial="outer">
         <parallel id="outer">
           <parallel id="inner">
             <state id="deep1"/>
@@ -523,8 +512,7 @@ defmodule Statifier.HierarchyCacheTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      document_with_lookups = Document.build_lookup_maps(document)
+      {:ok, document_with_lookups, _warnings} = Statifier.parse(xml)
       cache = HierarchyCache.build(document_with_lookups)
 
       # Verify nested parallel ancestors
