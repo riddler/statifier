@@ -4,9 +4,11 @@ defmodule Statifier.Validator do
 
   Catches issues like invalid initial state references, unreachable states,
   malformed hierarchies, and other problems that could cause runtime errors.
+
+  Optimizes valid documents with hierarchy caching for improved runtime performance.
   """
 
-  alias Statifier.Document
+  alias Statifier.{Document, HierarchyCache}
 
   alias Statifier.Validator.{
     HistoryStateValidator,
@@ -55,7 +57,8 @@ defmodule Statifier.Validator do
 
   This callback is called after all individual validations have completed,
   allowing for validations that require the entire document context.
-  If the document is valid, it will be optimized for runtime performance.
+  If the document is valid, it will be optimized for runtime performance with
+  hierarchy caching and lookup maps.
   """
   @spec finalize(validation_result(), Statifier.Document.t()) :: validation_result_with_document()
   def finalize(%__MODULE__{} = result, %Statifier.Document{} = document) do
@@ -67,8 +70,10 @@ defmodule Statifier.Validator do
     final_document =
       case validated_result.errors do
         [] ->
-          # Only optimize valid documents (state types already determined at parse time)
-          Document.build_lookup_maps(document)
+          # Only optimize valid documents
+          document
+          |> build_hierarchy_cache()
+          |> Document.build_lookup_maps()
 
         _errors ->
           # Don't waste time optimizing invalid documents
@@ -76,5 +81,12 @@ defmodule Statifier.Validator do
       end
 
     {validated_result, final_document}
+  end
+
+  # Build hierarchy cache for performance optimization
+  @spec build_hierarchy_cache(Document.t()) :: Document.t()
+  defp build_hierarchy_cache(document) do
+    cache = HierarchyCache.build(document)
+    %{document | hierarchy_cache: cache}
   end
 end
