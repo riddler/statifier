@@ -23,7 +23,7 @@ defmodule Statifier.Parser.TransitionSourceTest do
                     transitions: [
                       %Statifier.Transition{
                         event: "go",
-                        target: "end",
+                        targets: ["end"],
                         # Source should be set during parsing
                         source: "start"
                       }
@@ -60,12 +60,12 @@ defmodule Statifier.Parser.TransitionSourceTest do
       [transition1] = region1.transitions
       assert transition1.source == "region1"
       assert transition1.event == "t"
-      assert transition1.target == "region1_next"
+      assert transition1.targets == ["region1_next"]
 
       [transition2] = region2.transitions
       assert transition2.source == "region2"
       assert transition2.event == "t"
-      assert transition2.target == "region2_next"
+      assert transition2.targets == ["region2_next"]
     end
 
     test "sets source field for nested compound states" do

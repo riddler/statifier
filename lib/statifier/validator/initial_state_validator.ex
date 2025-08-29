@@ -178,21 +178,23 @@ defmodule Statifier.Validator.InitialStateValidator do
          %Statifier.State{} = parent_state,
          %Statifier.Transition{} = transition
        ) do
-    cond do
-      is_nil(transition.target) ->
+    case transition.targets do
+      [] ->
         Utils.add_error(
           result,
           "Initial element transition in state '#{parent_state.id}' must have a target"
         )
 
-      not Enum.any?(parent_state.states, &(&1.id == transition.target && &1.type != :initial)) ->
-        Utils.add_error(
-          result,
-          "Initial element transition in state '#{parent_state.id}' targets '#{transition.target}' which is not a valid direct child"
-        )
-
-      true ->
-        result
+      [target | _rest] ->
+        # Initial transitions should only have one target, use the first one
+        if Enum.any?(parent_state.states, &(&1.id == target && &1.type != :initial)) do
+          result
+        else
+          Utils.add_error(
+            result,
+            "Initial element transition in state '#{parent_state.id}' targets '#{target}' which is not a valid direct child"
+          )
+        end
     end
   end
 end

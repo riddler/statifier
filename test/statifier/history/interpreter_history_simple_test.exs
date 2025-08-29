@@ -19,7 +19,7 @@ defmodule Statifier.InterpreterHistorySimpleTest do
                 %State{id: "history_deep", type: :history, history_type: :deep, parent: "parent"}
               ],
               transitions: [
-                %Transition{source: "parent", event: "exit", target: "outside"}
+                %Transition{source: "parent", event: "exit", targets: ["outside"]}
               ]
             },
             %State{id: "outside", type: :atomic}
@@ -68,7 +68,7 @@ defmodule Statifier.InterpreterHistorySimpleTest do
                 %State{id: "child2", type: :atomic, parent: "simple_parent"}
               ],
               transitions: [
-                %Transition{source: "simple_parent", event: "exit", target: "outside"}
+                %Transition{source: "simple_parent", event: "exit", targets: ["outside"]}
               ]
             },
             %State{id: "outside", type: :atomic}

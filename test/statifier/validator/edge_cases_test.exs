@@ -52,7 +52,7 @@ defmodule Statifier.Validator.EdgeCasesTest do
     end
 
     test "handles missing transition target" do
-      transition = %Transition{event: "go", target: "nonexistent"}
+      transition = %Transition{event: "go", targets: ["nonexistent"]}
       state = %State{id: "test", transitions: [transition], states: []}
       document = %Document{states: [state]}
 
@@ -161,7 +161,7 @@ defmodule Statifier.Validator.EdgeCasesTest do
     end
 
     test "follows transitions to find reachable states" do
-      transition = %Transition{event: "go", target: "s2"}
+      transition = %Transition{event: "go", targets: ["s2"]}
       state1 = %State{id: "s1", transitions: [transition], states: []}
       state2 = %State{id: "s2", transitions: [], states: []}
       unreachable = %State{id: "unreachable", states: []}
@@ -175,8 +175,8 @@ defmodule Statifier.Validator.EdgeCasesTest do
     end
 
     test "handles circular references in reachability without infinite loops" do
-      transition1 = %Transition{event: "go", target: "s2"}
-      transition2 = %Transition{event: "back", target: "s1"}
+      transition1 = %Transition{event: "go", targets: ["s2"]}
+      transition2 = %Transition{event: "back", targets: ["s1"]}
       state1 = %State{id: "s1", transitions: [transition1], states: []}
       state2 = %State{id: "s2", transitions: [transition2], states: []}
       document = %Document{initial: "s1", states: [state1, state2]}

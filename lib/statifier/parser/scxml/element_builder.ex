@@ -232,9 +232,21 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
           nil
       end
 
+    # Parse target - handle space-separated multiple targets
+    # Always return a list, empty list means no targets
+    targets =
+      case get_attr_value(attrs_map, "target") do
+        nil ->
+          []
+
+        target_string ->
+          # Split by whitespace and filter empty strings
+          String.split(target_string, ~r/\s+/, trim: true)
+      end
+
     %Statifier.Transition{
       event: get_attr_value(attrs_map, "event"),
-      target: get_attr_value(attrs_map, "target"),
+      targets: targets,
       cond: cond_attr,
       compiled_cond: compiled_cond,
       document_order: document_order,

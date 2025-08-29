@@ -70,9 +70,11 @@ defmodule Statifier.Validator.ReachabilityAnalyzer do
 
     # Then process transitions
     state.transitions
-    |> Enum.filter(& &1.target)
     |> Enum.reduce(child_visited, fn transition, acc ->
-      find_reachable_states(transition.target, document, acc)
+      # Process each target in the transition
+      Enum.reduce(transition.targets, acc, fn target, acc2 ->
+        find_reachable_states(target, document, acc2)
+      end)
     end)
   end
 

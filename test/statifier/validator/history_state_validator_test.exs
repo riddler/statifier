@@ -309,7 +309,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
                 states: [],
                 transitions: [
                   %Statifier.Transition{
-                    target: "nonExistent",
+                    targets: ["nonExistent"],
                     event: nil
                   }
                 ]

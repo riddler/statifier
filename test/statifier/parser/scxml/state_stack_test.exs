@@ -203,7 +203,7 @@ defmodule Statifier.Parser.SCXML.StateStackTest do
 
   describe "handle_transition_end/1" do
     test "adds transition to state" do
-      transition = %Statifier.Transition{event: "test_event", target: "target_state"}
+      transition = %Statifier.Transition{event: "test_event", targets: ["target_state"]}
       parent_state = %State{id: "source_state", transitions: []}
 
       parsing_state = %{
@@ -222,12 +222,12 @@ defmodule Statifier.Parser.SCXML.StateStackTest do
 
       added_transition = hd(updated_state.transitions)
       assert added_transition.event == "test_event"
-      assert added_transition.target == "target_state"
+      assert added_transition.targets == ["target_state"]
       assert added_transition.source == "source_state"
     end
 
     test "adds transition to parallel state" do
-      transition = %Statifier.Transition{event: "parallel_event", target: "target_state"}
+      transition = %Statifier.Transition{event: "parallel_event", targets: ["target_state"]}
       parallel_state = %State{id: "parallel_source", transitions: [], type: :parallel}
 
       parsing_state = %{
@@ -249,7 +249,7 @@ defmodule Statifier.Parser.SCXML.StateStackTest do
     end
 
     test "adds transition to final state" do
-      transition = %Statifier.Transition{event: "final_event", target: "target_state"}
+      transition = %Statifier.Transition{event: "final_event", targets: ["target_state"]}
       final_state = %State{id: "final_source", transitions: [], type: :final}
 
       parsing_state = %{
