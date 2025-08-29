@@ -86,7 +86,7 @@ defmodule Statifier.HistoryResolutionTest do
       assert MapSet.member?(active_config, "child1")
 
       # Should NOT have the history state itself active (it's a pseudo-state)
-      assert not MapSet.member?(active_config, "shallow_history")
+      refute MapSet.member?(active_config, "shallow_history")
     end
 
     test "resolves deep history to default when parent has no recorded history", %{
@@ -106,7 +106,7 @@ defmodule Statifier.HistoryResolutionTest do
       assert MapSet.member?(active_config, "child2")
 
       # Should NOT have the history state itself active
-      assert not MapSet.member?(active_config, "deep_history")
+      refute MapSet.member?(active_config, "deep_history")
     end
 
     test "resolves shallow history to stored configuration when parent has history", %{
@@ -143,7 +143,7 @@ defmodule Statifier.HistoryResolutionTest do
       assert MapSet.member?(active_config, "grandchild1")
 
       # Should NOT have the history state itself active
-      assert not MapSet.member?(active_config, "shallow_history")
+      refute MapSet.member?(active_config, "shallow_history")
     end
 
     test "resolves deep history to stored configuration when parent has history", %{
@@ -177,7 +177,7 @@ defmodule Statifier.HistoryResolutionTest do
       assert MapSet.member?(active_config, "grandchild2")
 
       # Should NOT have the history state itself active
-      assert not MapSet.member?(active_config, "deep_history")
+      refute MapSet.member?(active_config, "deep_history")
     end
 
     test "handles history state with no default transition", %{document: _document} do
@@ -223,9 +223,9 @@ defmodule Statifier.HistoryResolutionTest do
       active_config = Configuration.active_states(new_state_chart.configuration)
 
       # Should not have any states from parent active (history resolved to empty)
-      assert not MapSet.member?(active_config, "child")
-      assert not MapSet.member?(active_config, "parent")
-      assert not MapSet.member?(active_config, "no_default_history")
+      refute MapSet.member?(active_config, "child")
+      refute MapSet.member?(active_config, "parent")
+      refute MapSet.member?(active_config, "no_default_history")
     end
 
     test "preserves compound state hierarchy when restoring history", %{document: document} do
