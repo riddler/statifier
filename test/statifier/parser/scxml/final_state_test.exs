@@ -51,7 +51,7 @@ defmodule Statifier.Parser.SCXML.FinalStateTest do
     assert length(final_state.transitions) == 1
 
     transition = hd(final_state.transitions)
-    assert transition.target == "s1"
+    assert transition.targets == ["s1"]
     assert transition.event == "restart"
   end
 
@@ -195,7 +195,7 @@ defmodule Statifier.Parser.SCXML.FinalStateTest do
     end)
 
     # Check specific transition targets
-    targets = Enum.map(final_state.transitions, & &1.target)
+    targets = Enum.flat_map(final_state.transitions, & &1.targets)
     assert "s1" in targets
     assert "s2" in targets
   end

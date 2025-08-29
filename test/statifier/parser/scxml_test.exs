@@ -50,7 +50,7 @@ defmodule Statifier.Parser.SCXMLTest do
                     transitions: [
                       %Statifier.Transition{
                         event: "go",
-                        target: "b",
+                        targets: ["b"],
                         cond: nil
                       }
                     ]
@@ -114,7 +114,7 @@ defmodule Statifier.Parser.SCXMLTest do
                         transitions: [
                           %Statifier.Transition{
                             event: "next",
-                            target: "child2"
+                            targets: ["child2"]
                           }
                         ]
                       },
@@ -146,7 +146,7 @@ defmodule Statifier.Parser.SCXMLTest do
                       %Statifier.Transition{
                         event: nil,
                         cond: nil,
-                        target: "end"
+                        targets: ["end"]
                       }
                     ]
                   },
@@ -245,7 +245,7 @@ defmodule Statifier.Parser.SCXMLTest do
                     transitions: [
                       %Statifier.Transition{
                         event: nil,
-                        target: nil,
+                        targets: [],
                         cond: nil
                       }
                     ]

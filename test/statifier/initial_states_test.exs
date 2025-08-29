@@ -182,7 +182,7 @@ defmodule Statifier.InitialStatesTest do
           %State{
             id: "__initial_1__",
             type: :initial,
-            transitions: [%Transition{target: "nonexistent"}]
+            transitions: [%Transition{targets: ["nonexistent"]}]
           },
           %State{id: "child1", type: :atomic, states: []}
         ]

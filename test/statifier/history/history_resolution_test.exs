@@ -13,8 +13,8 @@ defmodule Statifier.HistoryResolutionTest do
               id: "outside",
               type: :atomic,
               transitions: [
-                %Transition{source: "outside", event: "enter_shallow", target: "shallow_history"},
-                %Transition{source: "outside", event: "enter_deep", target: "deep_history"}
+                %Transition{source: "outside", event: "enter_shallow", targets: ["shallow_history"]},
+                %Transition{source: "outside", event: "enter_deep", targets: ["deep_history"]}
               ]
             },
             %State{
@@ -41,7 +41,7 @@ defmodule Statifier.HistoryResolutionTest do
                   parent: "parent",
                   transitions: [
                     # Default
-                    %Transition{source: "shallow_history", target: "child1"}
+                    %Transition{source: "shallow_history", targets: ["child1"]}
                   ]
                 },
                 %State{
@@ -51,12 +51,12 @@ defmodule Statifier.HistoryResolutionTest do
                   parent: "parent",
                   transitions: [
                     # Default
-                    %Transition{source: "deep_history", target: "child2"}
+                    %Transition{source: "deep_history", targets: ["child2"]}
                   ]
                 }
               ],
               transitions: [
-                %Transition{source: "parent", event: "exit", target: "outside"}
+                %Transition{source: "parent", event: "exit", targets: ["outside"]}
               ]
             }
           ]
@@ -189,7 +189,7 @@ defmodule Statifier.HistoryResolutionTest do
               id: "outside",
               type: :atomic,
               transitions: [
-                %Transition{source: "outside", event: "enter", target: "no_default_history"}
+                %Transition{source: "outside", event: "enter", targets: ["no_default_history"]}
               ]
             },
             %State{

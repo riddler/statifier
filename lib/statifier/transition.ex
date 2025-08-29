@@ -5,7 +5,7 @@ defmodule Statifier.Transition do
 
   defstruct [
     :event,
-    :target,
+    :targets,
     :cond,
     # Compiled conditional expression for performance
     :compiled_cond,
@@ -22,7 +22,7 @@ defmodule Statifier.Transition do
 
   @type t :: %__MODULE__{
           event: String.t() | nil,
-          target: String.t() | nil,
+          targets: [String.t()],
           cond: String.t() | nil,
           compiled_cond: term() | nil,
           source: String.t() | nil,

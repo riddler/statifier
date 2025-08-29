@@ -280,8 +280,11 @@ defmodule Statifier.Interpreter do
     # No initial attribute - check for <initial> element first
     case find_initial_element(child_states) do
       %State{type: :initial, transitions: [transition | _rest]} ->
-        # Use the initial element's transition target
-        find_child_by_id(child_states, transition.target)
+        # Use the initial element's transition target (take first target if multiple)
+        case transition.targets do
+          [first_target | _rest] -> find_child_by_id(child_states, first_target)
+          [] -> nil  # No target specified
+        end
 
       %State{type: :initial, transitions: []} ->
         # Initial element exists but no transition yet (during parsing)
@@ -504,14 +507,19 @@ defmodule Statifier.Interpreter do
   # Determine if a specific active state should be exited for a specific transition
   defp should_exit_state_for_transition?(active_state, transition, document) do
     source_state = transition.source
-    target_state = transition.target
+    target_states = transition.targets
 
-    if target_state == nil do
-      # No target - no states should be exited (targetless transition)
-      false
-    else
-      # For transitions with targets, compute proper exit set using LCCA
-      compute_state_exit_for_transition(active_state, source_state, target_state, document)
+    case target_states do
+      [] ->
+        # Empty target list - no states should be exited (targetless transition)
+        false
+      
+      targets ->
+        # For transitions with targets, check if we should exit for any target
+        # For simplicity, if ANY target requires exit, we exit
+        Enum.any?(targets, fn target_state ->
+          compute_state_exit_for_transition(active_state, source_state, target_state, document)
+        end)
     end
   end
 
@@ -656,17 +664,14 @@ defmodule Statifier.Interpreter do
 
   # Execute a single transition and return target leaf states
   defp execute_single_transition(transition, %StateChart{document: document} = state_chart) do
-    case transition.target do
-      # No target
-      nil ->
-        []
-
-      target_id ->
-        case Document.find_state(document, target_id) do
-          nil -> []
-          target_state -> enter_state(target_state, state_chart)
-        end
-    end
+    # Target is always a list, empty list means no targets
+    transition.targets
+    |> Enum.flat_map(fn target_id ->
+      case Document.find_state(document, target_id) do
+        nil -> []
+        target_state -> enter_state(target_state, state_chart)
+      end
+    end)
   end
 
   # Record history for states that will be exited
@@ -751,15 +756,19 @@ defmodule Statifier.Interpreter do
   end
 
   # Resolve a single default transition for history state
-  defp resolve_history_default_transition(%{target: nil}, _state_chart), do: []
+  defp resolve_history_default_transition(%{targets: []}, _state_chart), do: []
 
   defp resolve_history_default_transition(
-         %{target: target_id},
+         %{targets: targets},
          %StateChart{document: document} = state_chart
-       ) do
-    case Document.find_state(document, target_id) do
-      nil -> []
-      target_state -> enter_state(target_state, state_chart)
-    end
+       ) when is_list(targets) do
+    # Process all targets in the transition
+    targets
+    |> Enum.flat_map(fn target_id ->
+      case Document.find_state(document, target_id) do
+        nil -> []
+        target_state -> enter_state(target_state, state_chart)
+      end
+    end)
   end
 end

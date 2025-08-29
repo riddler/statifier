@@ -7,7 +7,7 @@ defmodule Statifier.DocumentTest do
     test "builds lookup maps for flat state hierarchy" do
       document = %Document{
         states: [
-          %State{id: "state_a", transitions: [%Transition{event: "go", target: "state_b"}]},
+          %State{id: "state_a", transitions: [%Transition{event: "go", targets: ["state_b"]}]},
           %State{id: "state_b", transitions: []}
         ]
       }
@@ -29,9 +29,9 @@ defmodule Statifier.DocumentTest do
         states: [
           %State{
             id: "parent",
-            transitions: [%Transition{event: "exit", target: "final"}],
+            transitions: [%Transition{event: "exit", targets: ["final"]}],
             states: [
-              %State{id: "child1", transitions: [%Transition{event: "next", target: "child2"}]},
+              %State{id: "child1", transitions: [%Transition{event: "next", targets: ["child2"]}]},
               %State{id: "child2", transitions: []}
             ]
           },
@@ -110,8 +110,8 @@ defmodule Statifier.DocumentTest do
             %State{
               id: "state_a",
               transitions: [
-                %Transition{event: "go", target: "state_b"},
-                %Transition{event: "stop", target: "final"}
+                %Transition{event: "go", targets: ["state_b"]},
+                %Transition{event: "stop", targets: ["final"]}
               ]
             },
             %State{id: "state_b", transitions: []},
@@ -157,8 +157,8 @@ defmodule Statifier.DocumentTest do
                   type: :history,
                   history_type: :shallow,
                   transitions: [
-                    %Transition{target: "sub1"},
-                    %Transition{target: "sub2"}
+                    %Transition{targets: ["sub1"]},
+                    %Transition{targets: ["sub2"]}
                   ]
                 },
                 %State{
@@ -166,7 +166,7 @@ defmodule Statifier.DocumentTest do
                   type: :history,
                   history_type: :deep,
                   transitions: [
-                    %Transition{target: "sub1"}
+                    %Transition{targets: ["sub1"]}
                   ]
                 },
                 %State{
@@ -180,15 +180,15 @@ defmodule Statifier.DocumentTest do
                   type: :history,
                   history_type: :shallow,
                   transitions: [
-                    %Transition{target: nil},
-                    %Transition{target: "sub1"}
+                    %Transition{targets: []},
+                    %Transition{targets: ["sub1"]}
                   ]
                 },
                 %State{id: "sub1", type: :atomic},
                 %State{id: "sub2", type: :atomic}
               ]
             },
-            %State{id: "regular_state", type: :atomic, transitions: [%Transition{target: "main"}]}
+            %State{id: "regular_state", type: :atomic, transitions: [%Transition{targets: ["main"]}]}
           ]
         }
         |> Document.build_lookup_maps()

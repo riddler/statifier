@@ -284,7 +284,7 @@ defmodule Statifier.FeatureDetector do
 
   defp add_if_has_cond(features, _transition), do: features
 
-  defp add_if_targetless(features, %Transition{target: target}) when is_nil(target) do
+  defp add_if_targetless(features, %Transition{targets: targets}) when targets == [] do
     MapSet.put(features, :targetless_transitions)
   end
 
