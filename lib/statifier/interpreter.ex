@@ -13,6 +13,7 @@ defmodule Statifier.Interpreter do
     Document,
     Evaluator,
     Event,
+    State,
     StateChart,
     Validator
   }
@@ -189,7 +190,6 @@ defmodule Statifier.Interpreter do
   defp get_initial_configuration(
          %Document{initial: nil, states: [first_state | _rest]} = document
        ) do
-    # No initial specified - use first state and enter it properly
     initial_states = enter_state(first_state, document)
     Configuration.new(initial_states)
   end
@@ -206,27 +206,30 @@ defmodule Statifier.Interpreter do
     end
   end
 
+  defp enter_state(%State{} = state, %Document{} = document),
+    do: enter_state(state, StateChart.new(document))
+
   # Enter a state by recursively entering its initial child states based on type.
   # Returns a list of leaf state IDs that should be active.
-  defp enter_state(%Statifier.State{type: :atomic} = state, _document) do
+  defp enter_state(%State{type: :atomic} = state, %StateChart{}) do
     # Atomic state - return its ID
     [state.id]
   end
 
-  defp enter_state(%Statifier.State{type: :final} = state, _document) do
+  defp enter_state(%State{type: :final} = state, %StateChart{}) do
     # Final state is treated like an atomic state - return its ID
     [state.id]
   end
 
-  defp enter_state(%Statifier.State{type: :initial}, _document) do
+  defp enter_state(%State{type: :initial}, %StateChart{}) do
     # Initial states are not directly entered - they are processing pseudo-states
     # The interpreter should have already resolved their transition targets
     []
   end
 
   defp enter_state(
-         %Statifier.State{type: :compound, states: child_states, initial: initial_id},
-         document
+         %State{type: :compound, states: child_states, initial: initial_id},
+         %StateChart{} = state_chart
        ) do
     # Compound state - find and enter initial child (don't add compound state to active set)
     initial_child = get_initial_child_state(initial_id, child_states)
@@ -234,25 +237,53 @@ defmodule Statifier.Interpreter do
     case initial_child do
       # No valid child - compound state with no children is not active
       nil -> []
-      child -> enter_state(child, document)
+      child -> enter_state(child, state_chart)
     end
   end
 
-  defp enter_state(%Statifier.State{type: :parallel, states: child_states}, document) do
+  defp enter_state(
+         %State{type: :parallel, states: child_states},
+         %StateChart{} = state_chart
+       ) do
     # Parallel state - enter ALL children simultaneously
     child_states
-    |> Enum.flat_map(&enter_state(&1, document))
+    |> Enum.flat_map(&enter_state(&1, state_chart))
+  end
+
+  # History state - resolve to stored configuration or default targets
+  # History states are pseudo-states and never appear in active configuration
+  defp enter_state(
+         %State{type: :history, parent: parent_id} = history_state,
+         %StateChart{} = state_chart
+       ) do
+    # Check if parent state has recorded history
+    if StateChart.has_history?(state_chart, parent_id) do
+      # Parent has been visited - restore stored configuration
+      case history_state.history_type do
+        :deep ->
+          stored_states = StateChart.get_deep_history(state_chart, parent_id)
+          restore_history_configuration(MapSet.to_list(stored_states), state_chart)
+
+        _shallow_or_other_type ->
+          # Default to shallow if history_type is not set
+          stored_states = StateChart.get_shallow_history(state_chart, parent_id)
+          restore_history_configuration(MapSet.to_list(stored_states), state_chart)
+      end
+    else
+      # Parent has not been visited - use default transition targets
+      get_history_default_targets(history_state, state_chart)
+    end
   end
 
   # Get the initial child state for a compound state
   defp get_initial_child_state(nil, child_states) do
     # No initial attribute - check for <initial> element first
     case find_initial_element(child_states) do
-      %Statifier.State{type: :initial, transitions: [transition | _rest]} ->
+      %State{type: :initial, transitions: [transition | _rest]} ->
         # Use the initial element's transition target
         find_child_by_id(child_states, transition.target)
 
-      %Statifier.State{type: :initial, transitions: []} ->
+      %State{type: :initial, transitions: []} ->
         # Initial element exists but no transition yet (during parsing)
         # Use first non-initial child as fallback
         Enum.find(child_states, &(&1.type != :initial))
@@ -381,9 +412,9 @@ defmodule Statifier.Interpreter do
   end
 
   # Execute optimal transition set (microstep) with proper SCXML semantics
-  defp execute_transitions(%StateChart{} = state_chart, transitions) do
+  defp execute_transitions(%StateChart{document: document} = state_chart, transitions) do
     # Apply SCXML conflict resolution: create optimal transition set
-    optimal_transition_set = resolve_transition_conflicts(transitions, state_chart.document)
+    optimal_transition_set = resolve_transition_conflicts(transitions, document)
 
     # Group transitions by source state to handle document order correctly
     transitions_by_source = Enum.group_by(optimal_transition_set, & &1.source)
@@ -404,7 +435,7 @@ defmodule Statifier.Interpreter do
     # Execute the selected transitions
     target_leaf_states =
       selected_transitions
-      |> Enum.flat_map(&execute_single_transition(&1, state_chart.document))
+      |> Enum.flat_map(&execute_single_transition(&1, state_chart))
 
     case target_leaf_states do
       # No valid transitions
@@ -422,7 +453,7 @@ defmodule Statifier.Interpreter do
 
   # Update configuration with proper SCXML exit set computation while preserving unaffected parallel regions
   defp update_configuration_with_parallel_preservation(
-         %StateChart{} = state_chart,
+         %StateChart{document: document} = state_chart,
          transitions,
          new_target_states
        ) do
@@ -430,7 +461,7 @@ defmodule Statifier.Interpreter do
     current_active = Configuration.active_states(state_chart.configuration)
 
     # Compute exit set for these specific transitions
-    exit_set = compute_exit_set(transitions, current_active, state_chart.document)
+    exit_set = compute_exit_set(transitions, current_active, document)
 
     # Determine which states are actually being entered
     new_target_set = MapSet.new(new_target_states)
@@ -624,7 +655,7 @@ defmodule Statifier.Interpreter do
   end
 
   # Execute a single transition and return target leaf states
-  defp execute_single_transition(transition, document) do
+  defp execute_single_transition(transition, %StateChart{document: document} = state_chart) do
     case transition.target do
       # No target
       nil ->
@@ -633,7 +664,7 @@ defmodule Statifier.Interpreter do
       target_id ->
         case Document.find_state(document, target_id) do
           nil -> []
-          target_state -> enter_state(target_state, document)
+          target_state -> enter_state(target_state, state_chart)
         end
     end
   end
@@ -641,9 +672,12 @@ defmodule Statifier.Interpreter do
   # Record history for states that will be exited
   # Per W3C SCXML spec: "MUST record the [...] children of its parent before taking any
   # transition that exits the parent"
-  defp record_history_for_exiting_states(%StateChart{} = state_chart, exiting_states) do
+  defp record_history_for_exiting_states(
+         %StateChart{document: document} = state_chart,
+         exiting_states
+       ) do
     # For each exiting state, check if it has a parent with history children
-    parent_states_to_record = find_parents_with_history(exiting_states, state_chart.document)
+    parent_states_to_record = find_parents_with_history(exiting_states, document)
 
     # Record history for each parent that has history children
     Enum.reduce(parent_states_to_record, state_chart, fn parent_state_id, acc_state_chart ->
@@ -675,12 +709,57 @@ defmodule Statifier.Interpreter do
   end
 
   # Get all ancestor state IDs for a given state
-  defp get_all_ancestors(%Statifier.State{parent: nil}, _document), do: []
+  defp get_all_ancestors(%State{parent: nil}, _document), do: []
 
-  defp get_all_ancestors(%Statifier.State{parent: parent_id}, document) do
+  defp get_all_ancestors(%State{parent: parent_id}, document) do
     case Document.find_state(document, parent_id) do
       nil -> []
       parent_state -> [parent_id | get_all_ancestors(parent_state, document)]
+    end
+  end
+
+  # Restore stored history configuration by recursively entering the stored states
+  defp restore_history_configuration([], _state_chart), do: []
+
+  defp restore_history_configuration(
+         stored_state_ids,
+         %StateChart{document: document} = state_chart
+       ) do
+    stored_state_ids
+    |> Enum.flat_map(fn state_id ->
+      case Document.find_state(document, state_id) do
+        nil -> []
+        state -> enter_state(state, state_chart)
+      end
+    end)
+  end
+
+  # Get default transition targets for history state when parent has no recorded history
+  defp get_history_default_targets(
+         %State{transitions: transitions},
+         %StateChart{} = state_chart
+       ) do
+    # Use the first transition's target as default (SCXML allows one default transition)
+    case transitions do
+      [transition | _other_transitions] ->
+        resolve_history_default_transition(transition, state_chart)
+
+      [] ->
+        # No default transition - return empty (history state resolves to nothing)
+        []
+    end
+  end
+
+  # Resolve a single default transition for history state
+  defp resolve_history_default_transition(%{target: nil}, _state_chart), do: []
+
+  defp resolve_history_default_transition(
+         %{target: target_id},
+         %StateChart{document: document} = state_chart
+       ) do
+    case Document.find_state(document, target_id) do
+      nil -> []
+      target_state -> enter_state(target_state, state_chart)
     end
   end
 end
