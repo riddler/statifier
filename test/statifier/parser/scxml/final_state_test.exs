@@ -6,7 +6,7 @@ defmodule Statifier.Parser.SCXML.FinalStateTest do
   test "parses final state correctly" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+    <scxml initial="s1">
       <state id="s1">
         <transition target="final_state" event="done"/>
       </state>
@@ -30,7 +30,7 @@ defmodule Statifier.Parser.SCXML.FinalStateTest do
   test "parses final state with transitions" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+    <scxml initial="s1">
       <state id="s1">
         <transition target="final_state" event="done"/>
       </state>
@@ -58,7 +58,7 @@ defmodule Statifier.Parser.SCXML.FinalStateTest do
   test "parses nested final state in compound state" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="compound">
+    <scxml initial="compound">
       <state id="compound" initial="child1">
         <state id="child1">
           <transition target="child_final" event="finish"/>
@@ -86,7 +86,7 @@ defmodule Statifier.Parser.SCXML.FinalStateTest do
   test "parses nested final state in parallel state" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parallel_state">
+    <scxml initial="parallel_state">
       <parallel id="parallel_state">
         <state id="branch1">
           <transition target="branch1_final" event="done1"/>
@@ -124,7 +124,7 @@ defmodule Statifier.Parser.SCXML.FinalStateTest do
   test "parses final state with nested states (should be empty)" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+    <scxml initial="s1">
       <state id="s1">
         <transition target="final_state" event="done"/>
       </state>
@@ -147,7 +147,7 @@ defmodule Statifier.Parser.SCXML.FinalStateTest do
   test "validates final state location information" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+    <scxml initial="s1">
       <state id="s1">
         <transition target="final_state" event="done"/>
       </state>
@@ -170,7 +170,7 @@ defmodule Statifier.Parser.SCXML.FinalStateTest do
   test "parses final state with multiple transitions" do
     xml = """
     <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+    <scxml initial="s1">
       <state id="s1">
         <transition target="final_state" event="done"/>
       </state>

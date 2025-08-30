@@ -565,6 +565,97 @@ defmodule Statifier.Parser.SCXML.StateStack do
     {:ok, pop_element(state)}
   end
 
+  @doc """
+  Handle the end of a send element.
+  """
+  @spec handle_send_end(map()) :: {:ok, map()}
+  def handle_send_end(
+        %{stack: [{_element_name, send_action} | [{"onentry", actions} | rest]]} = state
+      )
+      when is_list(actions) do
+    updated_actions = actions ++ [send_action]
+    {:ok, %{state | stack: [{"onentry", updated_actions} | rest]}}
+  end
+
+  def handle_send_end(
+        %{stack: [{_element_name, send_action} | [{"onentry", :onentry_block} | rest]]} = state
+      ) do
+    # First action in this onentry block
+    {:ok, %{state | stack: [{"onentry", [send_action]} | rest]}}
+  end
+
+  def handle_send_end(
+        %{stack: [{_element_name, send_action} | [{"onexit", actions} | rest]]} = state
+      )
+      when is_list(actions) do
+    updated_actions = actions ++ [send_action]
+    {:ok, %{state | stack: [{"onexit", updated_actions} | rest]}}
+  end
+
+  def handle_send_end(
+        %{stack: [{_element_name, send_action} | [{"onexit", :onexit_block} | rest]]} = state
+      ) do
+    # First action in this onexit block
+    {:ok, %{state | stack: [{"onexit", [send_action]} | rest]}}
+  end
+
+  # Handle send action within if container
+  def handle_send_end(
+        %{stack: [{_element_name, send_action} | [{"if", if_container} | rest]]} = state
+      ) do
+    # Add send action to current conditional block within if container
+    updated_container = add_action_to_current_block(if_container, send_action)
+    {:ok, %{state | stack: [{"if", updated_container} | rest]}}
+  end
+
+  # Handle send action within transition
+  def handle_send_end(
+        %{stack: [{_element_name, send_action} | [{"transition", transition} | rest]]} = state
+      ) do
+    # Add send action to transition's actions list
+    updated_transition = %{transition | actions: transition.actions ++ [send_action]}
+    {:ok, %{state | stack: [{"transition", updated_transition} | rest]}}
+  end
+
+  def handle_send_end(state) do
+    # Send element not in an onentry/onexit/transition context, just pop it
+    {:ok, pop_element(state)}
+  end
+
+  @doc """
+  Handle the end of a param element (child of send).
+  """
+  @spec handle_param_end(map()) :: {:ok, map()}
+  def handle_param_end(
+        %{stack: [{_element_name, param} | [{"send", send_action} | rest]]} = state
+      ) do
+    # Add param to send action's params list
+    updated_send = %{send_action | params: send_action.params ++ [param]}
+    {:ok, %{state | stack: [{"send", updated_send} | rest]}}
+  end
+
+  def handle_param_end(state) do
+    # Param not in a send context, just pop it
+    {:ok, pop_element(state)}
+  end
+
+  @doc """
+  Handle the end of a content element (child of send).
+  """
+  @spec handle_content_end(map()) :: {:ok, map()}
+  def handle_content_end(
+        %{stack: [{_element_name, content} | [{"send", send_action} | rest]]} = state
+      ) do
+    # Set content on send action (only one content element allowed)
+    updated_send = %{send_action | content: content}
+    {:ok, %{state | stack: [{"send", updated_send} | rest]}}
+  end
+
+  def handle_content_end(state) do
+    # Content not in a send context, just pop it
+    {:ok, pop_element(state)}
+  end
+
   # Helper function to add an action to the current conditional block
   defp add_action_to_current_block(if_container, action) do
     current_index = if_container.current_block_index

@@ -7,21 +7,19 @@ defmodule Statifier.DatamodelTest do
     Document,
     Event,
     Interpreter,
-    Parser.SCXML,
     StateChart
   }
 
   # Helper function to initialize a state chart from XML
   defp initialize_from_xml(xml) do
-    {:ok, document} = SCXML.parse(xml)
+    {:ok, document, _warnings} = Statifier.parse(xml)
     Interpreter.initialize(document)
   end
 
   # Helper function to create simple SCXML with datamodel
   defp create_scxml_with_datamodel(data_elements) do
     """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+    <scxml initial="start">
       <datamodel>
         #{data_elements}
       </datamodel>

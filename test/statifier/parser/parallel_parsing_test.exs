@@ -6,8 +6,7 @@ defmodule Statifier.Parser.ParallelParsingTest do
   describe "parallel state parsing" do
     test "parses simple parallel state" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="p">
+      <scxml initial="p">
         <parallel id="p">
           <state id="a"/>
           <state id="b"/>
@@ -33,8 +32,7 @@ defmodule Statifier.Parser.ParallelParsingTest do
 
     test "parallel state type is determined correctly during validation" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="p">
+      <scxml initial="p">
         <parallel id="p">
           <state id="a"/>
           <state id="b"/>
@@ -56,8 +54,7 @@ defmodule Statifier.Parser.ParallelParsingTest do
 
     test "nested parallel and compound states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="p">
+      <scxml initial="p">
         <parallel id="p">
           <state id="region1" initial="a1">
             <state id="a1"/>

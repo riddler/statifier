@@ -4,9 +4,11 @@ defmodule Statifier.Validator do
 
   Catches issues like invalid initial state references, unreachable states,
   malformed hierarchies, and other problems that could cause runtime errors.
+
+  Optimizes valid documents with hierarchy caching for improved runtime performance.
   """
 
-  alias Statifier.Document
+  alias Statifier.{Document, HierarchyCache}
 
   alias Statifier.Validator.{
     HistoryStateValidator,
@@ -55,7 +57,8 @@ defmodule Statifier.Validator do
 
   This callback is called after all individual validations have completed,
   allowing for validations that require the entire document context.
-  If the document is valid, it will be optimized for runtime performance.
+  If the document is valid, it will be optimized for runtime performance with
+  hierarchy caching and lookup maps.
   """
   @spec finalize(validation_result(), Statifier.Document.t()) :: validation_result_with_document()
   def finalize(%__MODULE__{} = result, %Statifier.Document{} = document) do
@@ -67,14 +70,33 @@ defmodule Statifier.Validator do
     final_document =
       case validated_result.errors do
         [] ->
-          # Only optimize valid documents (state types already determined at parse time)
-          Document.build_lookup_maps(document)
+          # Only optimize valid documents
+          # Build lookup maps first (required for StateHierarchy functions)
+          # Then build hierarchy cache (uses StateHierarchy functions)
+          document
+          |> Document.build_lookup_maps()
+          |> build_hierarchy_cache()
+          |> mark_as_validated()
 
         _errors ->
           # Don't waste time optimizing invalid documents
-          document
+          # But still mark as processed through validation
+          mark_as_validated(document)
       end
 
     {validated_result, final_document}
+  end
+
+  # Build hierarchy cache for performance optimization
+  @spec build_hierarchy_cache(Document.t()) :: Document.t()
+  defp build_hierarchy_cache(document) do
+    cache = HierarchyCache.build(document)
+    %{document | hierarchy_cache: cache}
+  end
+
+  # Mark document as having been validated
+  @spec mark_as_validated(Document.t()) :: Document.t()
+  defp mark_as_validated(document) do
+    %{document | validated: true}
   end
 end

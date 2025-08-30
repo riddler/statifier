@@ -7,8 +7,7 @@ defmodule Statifier.Parser.AssignParsingTest do
   describe "assign element parsing" do
     test "parses assign elements in onentry" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
           <state id="start">
               <onentry>
                   <assign location="userName" expr="'John Doe'"/>
@@ -40,8 +39,7 @@ defmodule Statifier.Parser.AssignParsingTest do
 
     test "parses assign elements in onexit" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
           <state id="start">
               <onexit>
                   <assign location="status" expr="'exiting'"/>
@@ -68,8 +66,7 @@ defmodule Statifier.Parser.AssignParsingTest do
 
     test "parses mixed actions in onentry" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
           <state id="start">
               <onentry>
                   <log expr="'Starting'"/>
@@ -109,8 +106,7 @@ defmodule Statifier.Parser.AssignParsingTest do
 
     test "handles assign with complex expressions" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
           <state id="start">
               <onentry>
                   <assign location="user.profile.name" expr="'Complex Name'"/>

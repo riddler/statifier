@@ -11,6 +11,7 @@ defmodule Statifier.Actions.ActionExecutor do
     Actions.IfAction,
     Actions.LogAction,
     Actions.RaiseAction,
+    Actions.SendAction,
     Document
   }
 
@@ -20,9 +21,9 @@ defmodule Statifier.Actions.ActionExecutor do
   Execute onentry actions for a list of states being entered.
   Returns the updated state chart with any events raised by actions.
   """
-  @spec execute_onentry_actions([String.t()], Statifier.StateChart.t()) ::
+  @spec execute_onentry_actions(Statifier.StateChart.t(), [String.t()]) ::
           Statifier.StateChart.t()
-  def execute_onentry_actions(entering_states, %Statifier.StateChart{} = state_chart) do
+  def execute_onentry_actions(%Statifier.StateChart{} = state_chart, entering_states) do
     entering_states
     |> Enum.reduce(state_chart, fn state_id, acc_state_chart ->
       case Document.find_state(acc_state_chart.document, state_id) do
@@ -39,8 +40,8 @@ defmodule Statifier.Actions.ActionExecutor do
   Execute onexit actions for a list of states being exited.
   Returns the updated state chart with any events raised by actions.
   """
-  @spec execute_onexit_actions([String.t()], Statifier.StateChart.t()) :: Statifier.StateChart.t()
-  def execute_onexit_actions(exiting_states, %Statifier.StateChart{} = state_chart) do
+  @spec execute_onexit_actions(Statifier.StateChart.t(), [String.t()]) :: Statifier.StateChart.t()
+  def execute_onexit_actions(%Statifier.StateChart{} = state_chart, exiting_states) do
     exiting_states
     |> Enum.reduce(state_chart, fn state_id, acc_state_chart ->
       case Document.find_state(acc_state_chart.document, state_id) do
@@ -54,13 +55,26 @@ defmodule Statifier.Actions.ActionExecutor do
   end
 
   @doc """
+  Execute transition actions for all transitions being taken.
+  Returns the updated state chart with any events raised by actions.
+  """
+  @spec execute_transition_actions(Statifier.StateChart.t(), [Statifier.Transition.t()]) ::
+          Statifier.StateChart.t()
+  def execute_transition_actions(state_chart, transitions) do
+    transitions
+    |> Enum.reduce(state_chart, fn transition, acc_state_chart ->
+      execute_single_transition_actions(acc_state_chart, transition)
+    end)
+  end
+
+  @doc """
   Execute a single action without state/phase context.
 
   This is a public interface for executing individual actions from other action types
   like IfAction that need to execute nested actions.
   """
-  @spec execute_single_action(term(), Statifier.StateChart.t()) :: Statifier.StateChart.t()
-  def execute_single_action(action, state_chart) do
+  @spec execute_single_action(Statifier.StateChart.t(), term()) :: Statifier.StateChart.t()
+  def execute_single_action(state_chart, action) do
     execute_single_action(action, "unknown", :action, state_chart)
   end
 
@@ -128,6 +142,21 @@ defmodule Statifier.Actions.ActionExecutor do
     IfAction.execute(if_action, state_chart)
   end
 
+  defp execute_single_action(%SendAction{} = send_action, state_id, phase, state_chart) do
+    # Log context information for debugging
+    state_chart =
+      LogManager.debug(state_chart, "Executing send action", %{
+        action_type: "send_action",
+        state_id: state_id,
+        phase: phase,
+        event: send_action.event,
+        target: send_action.target
+      })
+
+    # Use the SendAction's execute method which handles all the send logic
+    SendAction.execute(send_action, state_chart)
+  end
+
   defp execute_single_action(unknown_action, state_id, phase, state_chart) do
     # Log unknown action type for debugging
     state_chart =
@@ -140,5 +169,20 @@ defmodule Statifier.Actions.ActionExecutor do
 
     # Unknown actions don't modify the state chart
     state_chart
+  end
+
+  # Execute actions for a single transition
+  defp execute_single_transition_actions(state_chart, transition) do
+    case transition.actions do
+      [] ->
+        state_chart
+
+      actions ->
+        # Execute each action in the transition
+        actions
+        |> Enum.reduce(state_chart, fn action, acc_state_chart ->
+          execute_single_action(acc_state_chart, action)
+        end)
+    end
   end
 end

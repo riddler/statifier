@@ -9,6 +9,8 @@ defmodule Statifier.Transition do
     :cond,
     # Compiled conditional expression for performance
     :compiled_cond,
+    # Executable content (actions) to execute during transition
+    actions: [],
     # Source state ID - set during parsing
     source: nil,
     # Document order for deterministic processing
@@ -25,6 +27,7 @@ defmodule Statifier.Transition do
           targets: [String.t()],
           cond: String.t() | nil,
           compiled_cond: term() | nil,
+          actions: [term()],
           source: String.t() | nil,
           document_order: integer() | nil,
           source_location: map() | nil,

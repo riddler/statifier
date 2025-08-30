@@ -5,16 +5,17 @@ defmodule Statifier.InitialStatesTest do
     Document,
     FeatureDetector,
     Interpreter,
-    Parser.SCXML,
     State,
     Transition,
     Validator
   }
 
+  alias Statifier.Parser.SCXML
+
   describe "initial element parsing" do
     test "parses initial element with transition" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <state id="compound" initial="child1">
           <initial>
             <transition target="child1"/>
@@ -41,7 +42,7 @@ defmodule Statifier.InitialStatesTest do
 
     test "parses nested initial element inside parallel state" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <parallel id="p">
           <state id="branch1">
             <initial>
@@ -76,7 +77,7 @@ defmodule Statifier.InitialStatesTest do
   describe "feature detection" do
     test "detects initial elements in XML" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <state id="compound">
           <initial>
             <transition target="child1"/>
@@ -93,7 +94,7 @@ defmodule Statifier.InitialStatesTest do
 
     test "detects initial elements from parsed document" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <state id="compound">
           <initial>
             <transition target="child1"/>
@@ -117,7 +118,7 @@ defmodule Statifier.InitialStatesTest do
   describe "validation rules" do
     test "validates initial element with valid transition" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <state id="compound">
           <initial>
             <transition target="child1"/>
@@ -135,7 +136,7 @@ defmodule Statifier.InitialStatesTest do
 
     test "rejects state with both initial attribute and initial element" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <state id="compound" initial="child1">
           <initial>
             <transition target="child2"/>
@@ -217,7 +218,7 @@ defmodule Statifier.InitialStatesTest do
   describe "interpreter behavior" do
     test "enters initial state via initial element" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <state id="compound">
           <initial>
             <transition target="child2"/>
@@ -240,7 +241,7 @@ defmodule Statifier.InitialStatesTest do
       # Test the fallback behavior when initial element exists but has no transitions yet
       # (this can happen during parsing before transitions are linked)
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <state id="compound">
           <state id="child1"/>
           <state id="child2"/>

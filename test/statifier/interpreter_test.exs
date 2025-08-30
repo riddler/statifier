@@ -1,19 +1,18 @@
 defmodule Statifier.InterpreterTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.{Event, Interpreter, Parser.SCXML}
+  alias Statifier.{Event, Interpreter}
 
   describe "initialize/1" do
     test "initializes simple state chart with initial state" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
         <state id="start"/>
         <state id="end"/>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should start in the initial state
@@ -23,14 +22,13 @@ defmodule Statifier.InterpreterTest do
 
     test "initializes state chart without explicit initial state" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <state id="first"/>
         <state id="second"/>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should start in the first state by default
@@ -40,11 +38,10 @@ defmodule Statifier.InterpreterTest do
 
     test "handles empty state chart" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0"/>
+      <scxml/>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should have no active states
@@ -54,14 +51,12 @@ defmodule Statifier.InterpreterTest do
 
     test "rejects invalid document" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="nonexistent">
+      <scxml initial="nonexistent">
         <state id="start"/>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
-      {:error, errors, _warnings} = Interpreter.initialize(document)
+      {:error, {:validation_errors, errors, _warnings}} = Statifier.parse(xml)
 
       assert "Initial state 'nonexistent' does not exist" in errors
     end
@@ -70,8 +65,7 @@ defmodule Statifier.InterpreterTest do
   describe "send_event/2" do
     test "executes matching transition" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
         <state id="start">
           <transition event="go" target="end"/>
         </state>
@@ -79,7 +73,7 @@ defmodule Statifier.InterpreterTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should start in 'start' state
@@ -96,8 +90,7 @@ defmodule Statifier.InterpreterTest do
 
     test "ignores non-matching event" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
         <state id="start">
           <transition event="go" target="end"/>
         </state>
@@ -105,7 +98,7 @@ defmodule Statifier.InterpreterTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Send non-matching event
@@ -118,15 +111,14 @@ defmodule Statifier.InterpreterTest do
 
     test "handles transition without target" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
         <state id="start">
           <transition event="internal"/>
         </state>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Send internal event (no target)
@@ -138,8 +130,7 @@ defmodule Statifier.InterpreterTest do
 
     test "processes transitions in document order" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
         <state id="start">
           <transition event="go" target="second"/>
           <transition event="go" target="first"/>
@@ -149,7 +140,7 @@ defmodule Statifier.InterpreterTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Send 'go' event - should take first transition due to document order
@@ -163,15 +154,14 @@ defmodule Statifier.InterpreterTest do
   describe "active_states/1 and active_ancestors/1" do
     test "active_states returns only leaf states, active_ancestors includes parents" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child">
           <state id="child"/>
         </state>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
       active_states = Interpreter.active_states(state_chart)

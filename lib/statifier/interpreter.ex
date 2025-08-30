@@ -3,7 +3,8 @@ defmodule Statifier.Interpreter do
   Core interpreter for SCXML state charts.
 
   Provides a synchronous, functional API for state chart execution.
-  Documents are automatically validated before interpretation.
+  Documents from Statifier.parse are used as-is (already validated).
+  Unvalidated documents are automatically validated for backward compatibility.
   """
 
   alias Statifier.{
@@ -11,19 +12,22 @@ defmodule Statifier.Interpreter do
     Configuration,
     Datamodel,
     Document,
-    Evaluator,
     Event,
     State,
     StateChart,
+    StateHierarchy,
     Validator
   }
+
+  alias Statifier.Interpreter.TransitionResolver
 
   alias Statifier.Logging.LogManager
 
   @doc """
   Initialize a state chart from a parsed document.
 
-  Automatically validates the document and sets up the initial configuration.
+  Documents from Statifier.parse are used directly (already validated).
+  Unvalidated documents are validated automatically for backward compatibility.
 
   ## Options
 
@@ -55,32 +59,50 @@ defmodule Statifier.Interpreter do
   @spec initialize(Document.t(), keyword()) ::
           {:ok, StateChart.t()} | {:error, [String.t()], [String.t()]}
   def initialize(%Document{} = document, opts) when is_list(opts) do
-    case Validator.validate(document) do
-      {:ok, optimized_document, warnings} ->
-        initial_config = get_initial_configuration(optimized_document)
-        state_chart = StateChart.new(optimized_document, initial_config)
+    # Check if document is already validated (e.g., from Statifier.parse)
+    case {document.validated, document} do
+      {true, _document} ->
+        # Document already validated and optimized, use as-is
+        optimized_document = document
+        warnings = []
 
-        # Initialize data model from datamodel_elements
-        datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
-        state_chart = StateChart.update_datamodel(state_chart, datamodel)
+        initialize_state_chart(optimized_document, warnings, opts)
 
-        # Configure logging based on options or defaults
-        state_chart = LogManager.configure_from_options(state_chart, opts)
+      {false, _document} ->
+        # Document not validated, validate it now (backward compatibility)
+        case Validator.validate(document) do
+          {:ok, validated_document, validation_warnings} ->
+            initialize_state_chart(validated_document, validation_warnings, opts)
 
-        # Execute onentry actions for initial states and queue any raised events
-        initial_states = MapSet.to_list(Configuration.active_states(initial_config))
-        state_chart = ActionExecutor.execute_onentry_actions(initial_states, state_chart)
-
-        # Execute microsteps (eventless transitions and internal events) after initialization
-        state_chart = execute_microsteps(state_chart)
-
-        # Log warnings if any (TODO: Use proper logging)
-        if warnings != [], do: :ok
-        {:ok, state_chart}
-
-      {:error, errors, warnings} ->
-        {:error, errors, warnings}
+          {:error, errors, validation_warnings} ->
+            {:error, errors, validation_warnings}
+        end
     end
+  end
+
+  # Helper function to avoid code duplication
+  defp initialize_state_chart(optimized_document, warnings, opts) do
+    initial_config = get_initial_configuration(optimized_document)
+    initial_states = MapSet.to_list(Configuration.active_states(initial_config))
+
+    state_chart = StateChart.new(optimized_document, initial_config)
+
+    # Initialize data model from datamodel_elements
+    datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
+
+    state_chart =
+      state_chart
+      |> StateChart.update_datamodel(datamodel)
+      # Configure logging based on options or defaults
+      |> LogManager.configure_from_options(opts)
+      # Execute onentry actions for initial states and queue any raised events
+      |> ActionExecutor.execute_onentry_actions(initial_states)
+      # Execute microsteps (eventless transitions and internal events) after initialization
+      |> execute_microsteps()
+
+    # Log warnings if any (TODO: Use proper logging)
+    if warnings != [], do: :ok
+    {:ok, state_chart}
   end
 
   @doc """
@@ -98,7 +120,7 @@ defmodule Statifier.Interpreter do
   @spec send_event(StateChart.t(), Event.t()) :: {:ok, StateChart.t()}
   def send_event(%StateChart{} = state_chart, %Event{} = event) do
     # Find optimal transition set enabled by this event
-    enabled_transitions = find_enabled_transitions(state_chart, event)
+    enabled_transitions = TransitionResolver.find_enabled_transitions(state_chart, event)
 
     case enabled_transitions do
       [] ->
@@ -107,11 +129,12 @@ defmodule Statifier.Interpreter do
         {:ok, state_chart}
 
       transitions ->
-        # Execute optimal transition set as a microstep
-        state_chart = execute_transitions(state_chart, transitions)
-
-        # Execute any eventless transitions (complete the macrostep)
-        state_chart = execute_microsteps(state_chart)
+        state_chart =
+          state_chart
+          # Execute optimal transition set as a microstep
+          |> execute_transitions(transitions)
+          # Execute any eventless transitions (complete the macrostep)
+          |> execute_microsteps()
 
         {:ok, state_chart}
     end
@@ -158,7 +181,7 @@ defmodule Statifier.Interpreter do
 
   defp execute_microsteps(%StateChart{} = state_chart, iterations) do
     # Per SCXML specification: eventless transitions have higher priority than internal events
-    eventless_transitions = find_eventless_transitions(state_chart)
+    eventless_transitions = TransitionResolver.find_eventless_transitions(state_chart)
 
     case eventless_transitions do
       [] ->
@@ -178,10 +201,11 @@ defmodule Statifier.Interpreter do
         end
 
       transitions ->
+        state_chart
         # Execute microstep with these eventless transitions (higher priority than internal events)
-        new_state_chart = execute_transitions(state_chart, transitions)
+        |> execute_transitions(transitions)
         # Continue executing microsteps until stable (recursive call)
-        execute_microsteps(new_state_chart, iterations + 1)
+        |> execute_microsteps(iterations + 1)
     end
   end
 
@@ -318,107 +342,11 @@ defmodule Statifier.Interpreter do
     Enum.find(child_states, &(&1.id == target_id))
   end
 
-  # Check if a transition's condition (if any) evaluates to true
-  defp transition_condition_enabled?(%{compiled_cond: nil}, _context), do: true
-
-  defp transition_condition_enabled?(%{compiled_cond: compiled_cond}, context) do
-    Evaluator.evaluate_condition(compiled_cond, context)
-  end
-
-  defp find_enabled_transitions(%StateChart{} = state_chart, %Event{} = event) do
-    find_enabled_transitions_for_event(state_chart, event)
-  end
-
-  # Find eventless transitions (also called NULL transitions in SCXML spec)
-  defp find_eventless_transitions(%StateChart{} = state_chart) do
-    find_enabled_transitions_for_event(state_chart, nil)
-  end
-
-  # Unified transition finding logic for both named events and eventless transitions
-  defp find_enabled_transitions_for_event(%StateChart{} = state_chart, event_or_nil) do
-    # Get all currently active states (including ancestors)
-    active_states_with_ancestors = StateChart.active_states(state_chart)
-
-    # Update the state chart with current event for context building
-    state_chart_with_event = %{state_chart | current_event: event_or_nil}
-
-    # Find transitions from all active states (including ancestors) that match the event/NULL and condition
-    active_states_with_ancestors
-    |> Enum.flat_map(fn state_id ->
-      # Use O(1) lookup for transitions from this state
-      transitions = Document.get_transitions_from_state(state_chart.document, state_id)
-
-      transitions
-      |> Enum.filter(fn transition ->
-        matches_event_or_eventless?(transition, event_or_nil) and
-          transition_condition_enabled?(transition, state_chart_with_event)
-      end)
-    end)
-    # Process in document order
-    |> Enum.sort_by(& &1.document_order)
-  end
-
-  # Check if transition matches the event (or eventless for transitions without event attribute)
-  # Eventless transition (no event attribute - called NULL transitions in SCXML spec)
-  defp matches_event_or_eventless?(%{event: nil}, nil), do: true
-
-  defp matches_event_or_eventless?(%{event: transition_event}, %Event{} = event) do
-    Event.matches?(event, transition_event)
-  end
-
-  defp matches_event_or_eventless?(_transition, _event), do: false
-
-  # Resolve transition conflicts according to SCXML semantics:
-  # Child state transitions take priority over ancestor state transitions
-  defp resolve_transition_conflicts(transitions, document) do
-    # Group transitions by their source states
-    transitions_by_source = Enum.group_by(transitions, & &1.source)
-    source_states = Map.keys(transitions_by_source)
-
-    # Filter out ancestor state transitions if descendant has enabled transitions
-    source_states
-    |> Enum.filter(fn source_state ->
-      # Check if any descendant of this source state also has enabled transitions
-      descendants_with_transitions =
-        source_states
-        |> Enum.filter(fn other_source ->
-          other_source != source_state and
-            descendant_of?(document, other_source, source_state)
-        end)
-
-      # Keep this source state's transitions only if no descendants have transitions
-      descendants_with_transitions == []
-    end)
-    |> Enum.flat_map(fn source_state ->
-      Map.get(transitions_by_source, source_state, [])
-    end)
-  end
-
-  # Check if state_id is a descendant of ancestor_id in the state hierarchy
-  defp descendant_of?(document, state_id, ancestor_id) do
-    case Document.find_state(document, state_id) do
-      nil -> false
-      state -> ancestor_in_parent_chain?(state, ancestor_id, document)
-    end
-  end
-
-  # Recursively check if ancestor_id appears in the parent chain, walking up the hierarchy
-  defp ancestor_in_parent_chain?(%{parent: nil}, _ancestor_id, _document), do: false
-  defp ancestor_in_parent_chain?(%{parent: ancestor_id}, ancestor_id, _document), do: true
-
-  defp ancestor_in_parent_chain?(%{parent: parent_id}, ancestor_id, document)
-       when is_binary(parent_id) do
-    # Look up parent state and continue walking up the chain
-    case Document.find_state(document, parent_id) do
-      nil -> false
-      parent_state -> ancestor_in_parent_chain?(parent_state, ancestor_id, document)
-    end
-  end
-
   # Execute optimal transition set (microstep) with proper SCXML semantics
   defp execute_transitions(%StateChart{document: document} = state_chart, transitions) do
     # Apply SCXML conflict resolution: create optimal transition set
-    optimal_transition_set = resolve_transition_conflicts(transitions, document)
+    optimal_transition_set =
+      TransitionResolver.resolve_transition_conflicts(transitions, document)
 
     # Group transitions by source state to handle document order correctly
     transitions_by_source = Enum.group_by(optimal_transition_set, & &1.source)
@@ -470,17 +398,20 @@ defmodule Statifier.Interpreter do
     # Determine which states are actually being entered
     new_target_set = MapSet.new(new_target_states)
     entering_states = MapSet.difference(new_target_set, current_active)
+    entering_states_list = MapSet.to_list(entering_states)
 
     # Record history BEFORE executing onexit actions (per W3C SCXML specification)
     exiting_states = MapSet.to_list(exit_set)
-    state_chart = record_history_for_exiting_states(state_chart, exiting_states)
 
-    # Execute onexit actions for states being exited (with proper event queueing)
-    state_chart = ActionExecutor.execute_onexit_actions(exiting_states, state_chart)
-
-    # Execute onentry actions for states being entered (with proper event queueing)
-    entering_states_list = MapSet.to_list(entering_states)
-    state_chart = ActionExecutor.execute_onentry_actions(entering_states_list, state_chart)
+    state_chart =
+      state_chart
+      |> record_history_for_exiting_states(exiting_states)
+      # Execute onexit actions for states being exited (with proper event queueing)
+      |> ActionExecutor.execute_onexit_actions(exiting_states)
+      # Execute transition actions (per SCXML spec: after exit actions, before entry actions)
+      |> ActionExecutor.execute_transition_actions(transitions)
+      # Execute onentry actions for states being entered (with proper event queueing)
+      |> ActionExecutor.execute_onentry_actions(entering_states_list)
 
     # Keep active states that are not being exited
     preserved_states = MapSet.difference(current_active, exit_set)
@@ -543,167 +474,26 @@ defmodule Statifier.Interpreter do
 
   # Check if we should exit descendants of the source state
   defp should_exit_source_descendant?(active_state, source_state, document) do
-    descendant_of?(document, active_state, source_state)
+    StateHierarchy.descendant_of?(document, active_state, source_state)
   end
 
   # Check if we should exit parallel siblings
   defp should_exit_parallel_sibling?(active_state, source_state, target_state, document) do
-    exits_parallel_region?(source_state, target_state, document) &&
-      are_in_parallel_regions?(document, active_state, source_state)
+    StateHierarchy.exits_parallel_region?(source_state, target_state, document) &&
+      StateHierarchy.are_in_parallel_regions?(document, active_state, source_state)
   end
 
   # Check if we should exit LCCA descendants (but not target ancestors/descendants)
   defp should_exit_lcca_descendant?(active_state, target_state, lcca, document) do
-    lcca && descendant_of?(document, active_state, lcca) &&
+    lcca && StateHierarchy.descendant_of?(document, active_state, lcca) &&
       active_state != lcca &&
-      not descendant_of?(document, target_state, active_state) &&
-      not descendant_of?(document, active_state, target_state)
+      not StateHierarchy.descendant_of?(document, target_state, active_state) &&
+      not StateHierarchy.descendant_of?(document, active_state, target_state)
   end
 
   # Compute the Least Common Compound Ancestor (LCCA) of source and target states
   defp compute_lcca(source_state_id, target_state_id, document) do
-    source_ancestors = get_ancestor_path(source_state_id, document)
-    target_ancestors = get_ancestor_path(target_state_id, document)
-
-    # Find the deepest common ancestor
-    find_deepest_common_ancestor(source_ancestors, target_ancestors, document)
-  end
-
-  # Get the path from a state to the root, including the state itself
-  defp get_ancestor_path(state_id, document) do
-    case Document.find_state(document, state_id) do
-      nil -> []
-      state -> build_ancestor_path(state, document, [])
-    end
-  end
-
-  # Build ancestor path recursively
-  defp build_ancestor_path(%{parent: nil} = state, _document, acc) do
-    [state.id | acc]
-  end
-
-  defp build_ancestor_path(%{parent: parent_id} = state, document, acc) do
-    case Document.find_state(document, parent_id) do
-      nil -> [state.id | acc]
-      parent_state -> build_ancestor_path(parent_state, document, [state.id | acc])
-    end
-  end
-
-  # Find the deepest state that appears in both ancestor paths
-  defp find_deepest_common_ancestor(source_path, target_path, document) do
-    source_set = MapSet.new(source_path)
-
-    # Find the first state in target path that also appears in source path
-    # This gives us the deepest common ancestor
-    target_path
-    # Start from deepest and work up
-    |> Enum.reverse()
-    |> Enum.find(fn state_id -> MapSet.member?(source_set, state_id) end)
-    |> case do
-      # No common ancestor (shouldn't happen in valid SCXML)
-      nil ->
-        nil
-
-      lcca_id ->
-        case Document.find_state(document, lcca_id) do
-          # Must be compound to be LCCA
-          %{type: :compound} ->
-            lcca_id
-
-          _non_compound_state ->
-            # Find the nearest compound ancestor
-            find_nearest_compound_ancestor(lcca_id, document)
-        end
-    end
-  end
-
-  # Find the nearest compound ancestor of a given state
-  defp find_nearest_compound_ancestor(state_id, document) do
-    case Document.find_state(document, state_id) do
-      nil -> nil
-      %{type: :compound} -> state_id
-      # Root state, no compound ancestor
-      %{parent: nil} -> nil
-      %{parent: parent_id} -> find_nearest_compound_ancestor(parent_id, document)
-    end
-  end
-
-  # Check if a transition exits a parallel region (target is outside the parallel region)
-  defp exits_parallel_region?(source_state, target_state, document) do
-    # Get all parallel ancestors of the source state
-    source_parallel_ancestors = get_parallel_ancestors(document, source_state)
-
-    # Check if the transition exits any of these parallel ancestors
-    Enum.any?(source_parallel_ancestors, fn parallel_ancestor_id ->
-      # Target is outside this parallel region if it's not a descendant and not the region itself
-      not descendant_of?(document, target_state, parallel_ancestor_id) and
-        target_state != parallel_ancestor_id
-    end)
-  end
-
-  # Check if two states are siblings within the same parallel region
-  # Check if two states are in different regions of the same parallel state
-  # This handles cases where states are descendants of parallel siblings, not just direct siblings
-  defp are_in_parallel_regions?(document, active_state, source_state) do
-    # Get all parallel ancestors of the source state
-    source_parallel_ancestors = get_parallel_ancestors(document, source_state)
-
-    # For each parallel ancestor, check if active_state is in a different region
-    Enum.any?(source_parallel_ancestors, fn parallel_parent_id ->
-      # Get the child of this parallel parent that contains the source
-      source_region =
-        get_parallel_region_for_descendant(document, parallel_parent_id, source_state)
-
-      # Get the child of this parallel parent that contains the active state
-      active_region =
-        get_parallel_region_for_descendant(document, parallel_parent_id, active_state)
-
-      # They are in parallel regions if they're in different regions of the same parallel parent
-      source_region != nil && active_region != nil && source_region != active_region
-    end)
-  end
-
-  # Get all parallel ancestors of a state
-  defp get_parallel_ancestors(document, state_id) do
-    case Document.find_state(document, state_id) do
-      nil -> []
-      state -> collect_parallel_ancestors(document, state, [])
-    end
-  end
-
-  defp collect_parallel_ancestors(_document, %{parent: nil}, acc), do: acc
-
-  defp collect_parallel_ancestors(document, %{parent: parent_id}, acc) do
-    case Document.find_state(document, parent_id) do
-      nil ->
-        acc
-
-      %{type: :parallel} = parent_state ->
-        collect_parallel_ancestors(document, parent_state, [parent_id | acc])
-
-      parent_state ->
-        collect_parallel_ancestors(document, parent_state, acc)
-    end
-  end
-
-  # Get which child of a parallel parent contains the given descendant state
-  defp get_parallel_region_for_descendant(document, parallel_parent_id, descendant_id) do
-    case Document.find_state(document, parallel_parent_id) do
-      %{type: :parallel, states: child_states} ->
-        find_containing_child(child_states, descendant_id, document)
-
-      _other ->
-        nil
-    end
-  end
-
-  defp find_containing_child(child_states, descendant_id, document) do
-    Enum.find_value(child_states, fn child_state ->
-      if descendant_id == child_state.id ||
-           descendant_of?(document, descendant_id, child_state.id) do
-        child_state.id
-      end
-    end)
+    StateHierarchy.compute_lcca(source_state_id, target_state_id, document)
   end
 
   # Execute a single transition and return target leaf states
@@ -736,35 +526,7 @@ defmodule Statifier.Interpreter do
 
   # Find parent states that have history children and need history recorded
   defp find_parents_with_history(exiting_states, document) do
-    exiting_states
-    |> Enum.flat_map(fn state_id ->
-      # Get all ancestors of this exiting state
-      case Document.find_state(document, state_id) do
-        nil -> []
-        state -> get_ancestors_with_history(state, document)
-      end
-    end)
-    |> Enum.uniq()
-  end
-
-  # Get all ancestor states of a given state that have history children
-  defp get_ancestors_with_history(state, document) do
-    get_all_ancestors(state, document)
-    |> Enum.filter(fn parent_id ->
-      # Check if this parent has any history children
-      history_children = Document.find_history_states(document, parent_id)
-      length(history_children) > 0
-    end)
-  end
-
-  # Get all ancestor state IDs for a given state
-  defp get_all_ancestors(%State{parent: nil}, _document), do: []
-
-  defp get_all_ancestors(%State{parent: parent_id}, document) do
-    case Document.find_state(document, parent_id) do
-      nil -> []
-      parent_state -> [parent_id | get_all_ancestors(parent_state, document)]
-    end
+    StateHierarchy.find_parents_with_history(exiting_states, document)
   end
 
   # Restore stored history configuration by recursively entering the stored states

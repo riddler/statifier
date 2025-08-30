@@ -56,6 +56,9 @@ defmodule Statifier.Parser.SCXML.Handler do
   def handle_event(:end_element, "log", state), do: StateStack.handle_log_end(state)
   def handle_event(:end_element, "raise", state), do: StateStack.handle_raise_end(state)
   def handle_event(:end_element, "assign", state), do: StateStack.handle_assign_end(state)
+  def handle_event(:end_element, "send", state), do: StateStack.handle_send_end(state)
+  def handle_event(:end_element, "param", state), do: StateStack.handle_param_end(state)
+  def handle_event(:end_element, "content", state), do: StateStack.handle_content_end(state)
   def handle_event(:end_element, "if", state), do: StateStack.handle_if_end(state)
   def handle_event(:end_element, "elseif", state), do: StateStack.handle_elseif_end(state)
   def handle_event(:end_element, "else", state), do: StateStack.handle_else_end(state)
@@ -280,6 +283,57 @@ defmodule Statifier.Parser.SCXML.Handler do
     }
 
     {:ok, StateStack.push_element(updated_state, "assign", assign_action)}
+  end
+
+  defp dispatch_element_start("send", attributes, location, state) do
+    send_action =
+      ElementBuilder.build_send_action(
+        attributes,
+        location,
+        state.xml_string,
+        state.element_counts
+      )
+
+    updated_state = %{
+      state
+      | current_element: {:send, send_action}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "send", send_action)}
+  end
+
+  defp dispatch_element_start("param", attributes, location, state) do
+    param =
+      ElementBuilder.build_send_param(
+        attributes,
+        location,
+        state.xml_string,
+        state.element_counts
+      )
+
+    updated_state = %{
+      state
+      | current_element: {:param, param}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "param", param)}
+  end
+
+  defp dispatch_element_start("content", attributes, location, state) do
+    content =
+      ElementBuilder.build_send_content(
+        attributes,
+        location,
+        state.xml_string,
+        state.element_counts
+      )
+
+    updated_state = %{
+      state
+      | current_element: {:content, content}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "content", content)}
   end
 
   defp dispatch_element_start("if", attributes, location, state) do

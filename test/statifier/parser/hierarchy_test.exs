@@ -6,8 +6,7 @@ defmodule Statifier.Parser.HierarchyTest do
   describe "parent and depth fields" do
     test "sets correct parent and depth for nested states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child1">
           <state id="child1">
             <state id="grandchild"/>
@@ -46,8 +45,7 @@ defmodule Statifier.Parser.HierarchyTest do
 
     test "optimized ancestor lookup works correctly" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child">
           <state id="child" initial="grandchild">
             <state id="grandchild"/>

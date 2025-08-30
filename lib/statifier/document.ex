@@ -14,6 +14,10 @@ defmodule Statifier.Document do
     # Performance optimization: O(1) lookups
     state_lookup: %{},
     transitions_by_source: %{},
+    # Hierarchy cache for O(1) hierarchy operations
+    hierarchy_cache: %Statifier.HierarchyCache{},
+    # Validation status
+    validated: false,
     # Document order for deterministic processing
     document_order: nil,
     # Location information for validation
@@ -35,6 +39,10 @@ defmodule Statifier.Document do
           # Lookup maps for O(1) access
           state_lookup: %{String.t() => Statifier.State.t()},
           transitions_by_source: %{String.t() => [Statifier.Transition.t()]},
+          # Hierarchy cache for O(1) hierarchy operations
+          hierarchy_cache: Statifier.HierarchyCache.t(),
+          # Validation status
+          validated: boolean(),
           document_order: integer() | nil,
           source_location: map() | nil,
           name_location: map() | nil,
@@ -123,6 +131,16 @@ defmodule Statifier.Document do
       _other ->
         []
     end
+  end
+
+  @doc """
+  Get all states from the document hierarchy as a flat list.
+
+  Returns all states including nested children from the document's state hierarchy.
+  """
+  @spec get_all_states(t()) :: [Statifier.State.t()]
+  def get_all_states(%__MODULE__{states: states}) do
+    collect_all_states_flat(states)
   end
 
   # Private helper functions

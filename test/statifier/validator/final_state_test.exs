@@ -1,12 +1,9 @@
 defmodule Statifier.Validator.FinalStateTest do
   use ExUnit.Case
 
-  alias Statifier.{Parser.SCXML, Validator}
-
   test "preserves final state type during validation" do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+    <scxml initial="s1">
       <state id="s1">
         <transition target="final_state" event="done"/>
       </state>
@@ -14,8 +11,7 @@ defmodule Statifier.Validator.FinalStateTest do
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
-    {:ok, validated_document, _warnings} = Validator.validate(document)
+    {:ok, validated_document, _warnings} = Statifier.parse(xml)
 
     # Find the final state in the validated document
     final_state = Enum.find(validated_document.states, &(&1.id == "final_state"))
@@ -25,8 +21,7 @@ defmodule Statifier.Validator.FinalStateTest do
 
   test "preserves final state type with children during validation" do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="compound">
+    <scxml initial="compound">
       <state id="compound" initial="child1">
         <state id="child1">
           <transition target="child_final" event="finish"/>
@@ -38,8 +33,7 @@ defmodule Statifier.Validator.FinalStateTest do
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
-    {:ok, validated_document, _warnings} = Validator.validate(document)
+    {:ok, validated_document, _warnings} = Statifier.parse(xml)
 
     # Find the compound state
     compound_state = Enum.find(validated_document.states, &(&1.id == "compound"))
@@ -54,8 +48,7 @@ defmodule Statifier.Validator.FinalStateTest do
 
   test "validates final state in parallel configuration" do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parallel_state">
+    <scxml initial="parallel_state">
       <parallel id="parallel_state">
         <state id="branch1"/>
         <final id="branch1_final"/>
@@ -63,8 +56,7 @@ defmodule Statifier.Validator.FinalStateTest do
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
-    {:ok, validated_document, _warnings} = Validator.validate(document)
+    {:ok, validated_document, _warnings} = Statifier.parse(xml)
 
     # Find the parallel state
     parallel_state = Enum.find(validated_document.states, &(&1.id == "parallel_state"))
@@ -79,8 +71,7 @@ defmodule Statifier.Validator.FinalStateTest do
 
   test "validates document with multiple final states" do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+    <scxml initial="s1">
       <state id="s1">
         <transition target="final1" event="path1"/>
         <transition target="final2" event="path2"/>
@@ -90,8 +81,7 @@ defmodule Statifier.Validator.FinalStateTest do
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
-    {:ok, validated_document, _warnings} = Validator.validate(document)
+    {:ok, validated_document, _warnings} = Statifier.parse(xml)
 
     # Check both final states are preserved
     final1 = Enum.find(validated_document.states, &(&1.id == "final1"))

@@ -1,17 +1,16 @@
 defmodule Statifier.InterpreterFinalStateTest do
   use ExUnit.Case
 
-  alias Statifier.{Event, Interpreter, Parser.SCXML}
+  alias Statifier.{Event, Interpreter}
 
   test "interprets final state as atomic state" do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="final_state">
+    <scxml initial="final_state">
       <final id="final_state"/>
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
+    {:ok, document, _warnings} = Statifier.parse(xml)
     {:ok, state_chart} = Interpreter.initialize(document)
 
     # Final state should be active as initial state
@@ -21,8 +20,7 @@ defmodule Statifier.InterpreterFinalStateTest do
 
   test "transitions to final state" do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+    <scxml initial="s1">
       <state id="s1">
         <transition target="final_state" event="done"/>
       </state>
@@ -30,7 +28,7 @@ defmodule Statifier.InterpreterFinalStateTest do
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
+    {:ok, document, _warnings} = Statifier.parse(xml)
     {:ok, state_chart} = Interpreter.initialize(document)
 
     # Initially in s1
@@ -50,8 +48,7 @@ defmodule Statifier.InterpreterFinalStateTest do
 
   test "transitions from final state" do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+    <scxml initial="s1">
       <state id="s1">
         <transition target="final_state" event="done"/>
       </state>
@@ -61,7 +58,7 @@ defmodule Statifier.InterpreterFinalStateTest do
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
+    {:ok, document, _warnings} = Statifier.parse(xml)
     {:ok, state_chart} = Interpreter.initialize(document)
 
     # Transition to final state
@@ -84,8 +81,7 @@ defmodule Statifier.InterpreterFinalStateTest do
 
   test "final state in compound state hierarchy" do
     xml = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="compound">
+    <scxml initial="compound">
       <state id="compound" initial="child1">
         <state id="child1">
           <transition target="child_final" event="finish"/>
@@ -95,7 +91,7 @@ defmodule Statifier.InterpreterFinalStateTest do
     </scxml>
     """
 
-    {:ok, document} = SCXML.parse(xml)
+    {:ok, document, _warnings} = Statifier.parse(xml)
     {:ok, state_chart} = Interpreter.initialize(document)
 
     # Initially in child1

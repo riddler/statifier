@@ -6,8 +6,7 @@ defmodule Statifier.Validator.StateTypesTest do
   describe "state type determination at parse time" do
     test "atomic state type determined at parse time" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
+      <scxml initial="a">
         <state id="a"/>
       </scxml>
       """
@@ -21,8 +20,7 @@ defmodule Statifier.Validator.StateTypesTest do
 
     test "compound state type determined at parse time" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child">
           <state id="child"/>
         </state>
@@ -41,8 +39,7 @@ defmodule Statifier.Validator.StateTypesTest do
 
     test "validator only builds lookup maps for valid documents" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="nonexistent">
+      <scxml initial="nonexistent">
         <state id="a"/>
       </scxml>
       """
@@ -59,8 +56,7 @@ defmodule Statifier.Validator.StateTypesTest do
 
     test "nested compound states have correct types" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="level1">
+      <scxml initial="level1">
         <state id="level1" initial="level2">
           <state id="level2" initial="leaf">
             <state id="leaf"/>

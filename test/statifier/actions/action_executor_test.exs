@@ -8,7 +8,6 @@ defmodule Statifier.Actions.ActionExecutorTest do
     Configuration,
     Document,
     Event,
-    Parser.SCXML,
     StateChart
   }
 
@@ -16,9 +15,8 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
   # Helper function to create a properly configured StateChart from SCXML
   defp create_configured_state_chart(xml_string) do
-    {:ok, document} = SCXML.parse(xml_string)
-    optimized_document = Document.build_lookup_maps(document)
-    state_chart = StateChart.new(optimized_document, %Configuration{})
+    {:ok, document, _warnings} = Statifier.parse(xml_string)
+    state_chart = StateChart.new(document, %Configuration{})
     # Configure logging with TestAdapter
     LogManager.configure_from_options(state_chart, [])
   end
@@ -26,7 +24,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
   describe "execute_onentry_actions/2 with StateChart" do
     test "executes actions for states with onentry actions" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <log expr="'entering s1'"/>
@@ -38,7 +36,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Verify state chart is returned and has events queued
       assert %StateChart{} = result
@@ -55,7 +53,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
     test "skips states without onentry actions" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <!-- No onentry actions -->
         </state>
@@ -64,7 +62,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should return unchanged state chart
       assert result == state_chart
@@ -73,7 +71,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
     test "handles multiple states with mixed actions" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <log expr="'s1 entry'"/>
@@ -92,7 +90,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1", "s2", "s3"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1", "s2", "s3"])
 
       # Should have one event from s2
       assert length(result.internal_queue) == 1
@@ -105,7 +103,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
     test "handles invalid state IDs gracefully" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <log expr="'valid state'"/>
@@ -117,7 +115,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       state_chart = create_configured_state_chart(xml)
 
       # Include valid and invalid state IDs
-      result = ActionExecutor.execute_onentry_actions(["s1", "invalid_state"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1", "invalid_state"])
 
       # Should process valid state and skip invalid ones
       assert %StateChart{} = result
@@ -127,7 +125,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
   describe "execute_onexit_actions/2 with StateChart" do
     test "executes onexit actions correctly" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onexit>
             <log expr="'exiting s1'"/>
@@ -139,7 +137,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onexit_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onexit_actions(state_chart, ["s1"])
 
       assert %StateChart{} = result
       assert length(result.internal_queue) == 1
@@ -154,7 +152,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
     test "skips states without onexit actions" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <!-- No onexit actions -->
         </state>
@@ -163,7 +161,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onexit_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onexit_actions(state_chart, ["s1"])
 
       assert result == state_chart
       assert Enum.empty?(result.internal_queue)
@@ -171,7 +169,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
     test "processes multiple exiting states" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onexit>
             <raise event="s1_exit"/>
@@ -187,7 +185,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onexit_actions(["s1", "s2"], state_chart)
+      result = ActionExecutor.execute_onexit_actions(state_chart, ["s1", "s2"])
 
       # Should have two events queued
       assert length(result.internal_queue) == 2
@@ -200,7 +198,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
   describe "action execution with different action types" do
     test "executes log actions with various expressions" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <log expr="'quoted string'"/>
@@ -216,7 +214,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Check each expected log entry
       assert_log_entry(result, message_contains: "Log: quoted string")
@@ -230,7 +228,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
     test "executes raise actions with various event names" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <raise event="normal_event"/>
@@ -244,7 +242,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should have 4 events queued
       assert length(result.internal_queue) == 4
@@ -268,7 +266,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       unknown_action = %{__struct__: UnknownActionType, data: "test"}
 
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <log expr="'before unknown'"/>
@@ -277,7 +275,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       optimized_document = Document.build_lookup_maps(document)
 
       # Manually inject unknown action into state
@@ -293,7 +291,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       # Configure logging with TestAdapter
       state_chart = LogManager.configure_from_options(state_chart, [])
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should continue processing despite unknown action
       assert %StateChart{} = result
@@ -307,7 +305,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
   describe "action execution order and state management" do
     test "maintains proper action execution order" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <log expr="'action 1'"/>
@@ -323,7 +321,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Events should be in the queue in order
       assert length(result.internal_queue) == 2
@@ -344,7 +342,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
     test "properly accumulates events across multiple state entries" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <raise event="s1_event"/>
@@ -358,7 +356,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       optimized_document = Document.build_lookup_maps(document)
 
       # Start with a state chart that already has some events
@@ -368,7 +366,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       state_chart = LogManager.configure_from_options(state_chart, [])
       state_chart = StateChart.enqueue_event(state_chart, initial_event)
 
-      result = ActionExecutor.execute_onentry_actions(["s1", "s2"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1", "s2"])
 
       # Should have original event plus two new ones
       assert length(result.internal_queue) == 3
@@ -382,14 +380,14 @@ defmodule Statifier.Actions.ActionExecutorTest do
   describe "edge cases and error handling" do
     test "handles nil and empty action lists" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <!-- This creates a state with empty onentry_actions list -->
         </state>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       optimized_document = Document.build_lookup_maps(document)
 
       # Manually set onentry_actions to empty list
@@ -400,7 +398,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = StateChart.new(modified_document, %Configuration{})
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should return unchanged state chart
       assert result == state_chart
@@ -408,7 +406,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
     test "handles empty state list" do
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
           <onentry>
             <log expr="'should not execute'"/>
@@ -419,7 +417,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
 
       state_chart = create_configured_state_chart(xml)
 
-      result = ActionExecutor.execute_onentry_actions([], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, [])
 
       # Should return unchanged state chart
       assert result == state_chart
@@ -434,13 +432,13 @@ defmodule Statifier.Actions.ActionExecutorTest do
       raise_action_with_nil = %RaiseAction{event: nil}
 
       xml = """
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+      <scxml initial="s1">
         <state id="s1">
         </state>
       </scxml>
       """
 
-      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml)
       optimized_document = Document.build_lookup_maps(document)
 
       # Manually inject actions with nil values
@@ -456,7 +454,7 @@ defmodule Statifier.Actions.ActionExecutorTest do
       # Configure logging with TestAdapter
       state_chart = LogManager.configure_from_options(state_chart, [])
 
-      result = ActionExecutor.execute_onentry_actions(["s1"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
 
       # Should handle nil values gracefully
       assert %StateChart{} = result

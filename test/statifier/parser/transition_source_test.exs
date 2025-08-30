@@ -6,8 +6,7 @@ defmodule Statifier.Parser.TransitionSourceTest do
   describe "transition source field" do
     test "sets source field during parsing for regular states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
         <state id="start">
           <transition event="go" target="end"/>
         </state>
@@ -36,8 +35,7 @@ defmodule Statifier.Parser.TransitionSourceTest do
 
     test "sets source field for transitions in parallel states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="p">
+      <scxml initial="p">
         <parallel id="p">
           <state id="region1">
             <transition event="t" target="region1_next"/>
@@ -70,8 +68,7 @@ defmodule Statifier.Parser.TransitionSourceTest do
 
     test "sets source field for nested compound states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child1">
           <transition event="exit" target="end"/>
           <state id="child1">

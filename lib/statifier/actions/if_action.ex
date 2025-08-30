@@ -139,7 +139,7 @@ defmodule Statifier.Actions.IfAction do
   defp execute_block_actions([], state_chart), do: state_chart
 
   defp execute_block_actions([action | remaining_actions], state_chart) do
-    updated_state_chart = ActionExecutor.execute_single_action(action, state_chart)
+    updated_state_chart = ActionExecutor.execute_single_action(state_chart, action)
     execute_block_actions(remaining_actions, updated_state_chart)
   end
 end

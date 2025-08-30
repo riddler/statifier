@@ -27,6 +27,8 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - ✅ **Logging Infrastructure** - Protocol-based logging system with TestAdapter for clean test environments
 - ✅ **Test Infrastructure** - Compatible with SCION and W3C test suites with integrated logging
 - ✅ **Code Quality** - Full Credo compliance with proper module aliasing
+- ✅ **History States** - Complete shallow and deep history state support per W3C SCXML specification
+- ✅ **Multiple Transition Targets** - Support for space-separated multiple targets in transitions
 
 ## Current Status
 
@@ -39,8 +41,12 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - ✅ **Eventless transitions** - Automatic transitions without event attributes (also called NULL transitions in SCXML spec), with cycle detection and microstep processing
 - ✅ **Conditional transitions** - Full `cond` attribute support with Predicator v3.0 expression evaluation and SCXML `In()` function
 - ✅ **Assign elements** - Complete `<assign>` element support with location-based assignment, nested property access, and mixed notation
+- ✅ **If/Else/ElseIf conditional actions** - Complete `<if>`, `<elseif>`, `<else>` conditional execution blocks
 - ✅ **Value evaluation system** - Statifier.ValueEvaluator module for non-boolean expression evaluation and data model operations
 - ✅ **Enhanced expression evaluation** - Predicator v3.0 integration with deep property access and type-safe operations
+- ✅ **History states** - Complete shallow and deep history state implementation with recording, restoration, and validation
+- ✅ **Multiple transition targets** - Support for space-separated multiple targets (e.g., `target="state1 state2"`)
+- ✅ **Enhanced parallel state exit logic** - Proper W3C SCXML exit set computation for complex parallel hierarchies
 - ✅ **Transition conflict resolution** - Child state transitions take priority over ancestor transitions per W3C specification
 - ✅ **SCXML-compliant processing** - Proper microstep/macrostep execution model with exit set computation and LCCA algorithms
 - ✅ **Modular validation** - Refactored from 386-line monolith into focused sub-validators
@@ -52,13 +58,30 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 
 ### Planned Features
 
-- History states (`<history>`)
 - Internal and targetless transitions
-- More executable content (`<script>`, `<send>`, etc.) - `<assign>` now supported!
+- More executable content (`<script>`, `<send>`, etc.)
 - Enhanced datamodel support with more expression functions
 - Enhanced validation for complex SCXML constructs
 
 ## Recent Completions
+
+### **✅ Complete History State Support (v1.4.0)**
+
+- **`Shallow History`** - Records and restores immediate children of parent states that contain active descendants
+- **`Deep History`** - Records and restores all atomic descendant states within parent states
+- **`History Tracking`** - Complete `Statifier.HistoryTracker` module with efficient MapSet operations
+- **`History Validation`** - Comprehensive `Statifier.Validator.HistoryStateValidator` with W3C specification compliance
+- **`History Resolution`** - Full W3C SCXML compliant history state transition resolution during interpreter execution
+- **`StateChart Integration`** - History tracking integrated into StateChart lifecycle with recording before onexit actions
+- **`SCION Test Coverage`** - Major improvement in SCION history test compliance (5/8 tests now passing)
+
+### **✅ Multiple Transition Target Support (v1.4.0)**
+
+- **`Space-Separated Parsing`** - Handles `target="state1 state2 state3"` syntax with proper whitespace splitting
+- **`API Enhancement`** - `Statifier.Transition.targets` field (list) replaces `target` field (string) for better readability
+- **`Validator Updates`** - All transition validators updated for list-based target validation with comprehensive testing
+- **`Parallel State Fixes`** - Critical parallel state exit logic improvements with proper W3C SCXML exit set computation
+- **`SCION Compatibility`** - history4b and history5 SCION tests now pass completely with multiple target support
 
 ### **✅ SCXML-Compliant Processing Engine**
 
@@ -69,15 +92,14 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - **`Cycle Detection`** - Prevents infinite loops with configurable iteration limits (100 iterations default)
 - **`Parallel Region Preservation`** - Proper SCXML exit semantics for transitions within and across parallel regions
 - **`Optimal Transition Set`** - SCXML-compliant transition conflict resolution where child state transitions take priority over ancestors
-- **`Test Coverage`** - 18+ comprehensive test scenarios covering all eventless transition patterns, LCCA edge cases, and complex hierarchies
 
 ### **✅ Enhanced Parallel State Support**
 
 - **`Cross-Parallel Boundaries`** - Proper exit semantics when transitions leave parallel regions
 - **`Sibling State Management`** - Automatic exit of parallel siblings when transitions exit their shared parent  
 - **`Self-Transitions`** - Transitions within parallel regions preserve unaffected parallel regions
-- **`SCION Compatibility`** - All 4 `cond_js` tests now pass, 6 parallel interrupt tests fixed
-- **`Regression Prevention`** - 62 regression tests now validate all critical functionality
+- **`Parallel Ancestor Detection`** - New functions for identifying parallel ancestors and region relationships
+- **`Enhanced Exit Logic`** - All parallel regions properly exited when transitioning to external states
 
 ### **✅ Feature-Based Test Validation System**
 
@@ -220,6 +242,91 @@ xml = """
 # Both parallel regions active simultaneously
 active_states = Statifier.Interpreter.active_states(state_chart)
 # Returns: MapSet.new(["idle", "offline"])
+```
+
+### History States Example
+
+```elixir
+# SCXML with shallow and deep history states
+xml = """
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
+  <state id="main" initial="sub1">
+    <!-- Shallow history - restores immediate children -->
+    <history id="main_hist" type="shallow">
+      <transition target="sub1"/>  <!-- Default when no history -->
+    </history>
+    
+    <state id="sub1">
+      <transition event="go" target="sub2"/>
+    </state>
+    
+    <state id="sub2">  
+      <transition event="go" target="sub3"/>
+    </state>
+    
+    <state id="sub3">
+      <transition event="exit" target="other"/>
+      <transition event="back" target="main_hist"/>  <!-- Restore history -->
+    </state>
+  </state>
+  
+  <state id="other">
+    <transition event="return" target="main_hist"/>  <!-- Restore to last sub-state -->
+  </state>
+</scxml>
+"""
+
+{:ok, document} = Statifier.parse(xml)
+{:ok, state_chart} = Statifier.interpret(document)
+
+# Progress through states
+{:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, Statifier.Event.new("go"))
+{:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, Statifier.Event.new("go"))
+# Active states: ["sub3"]
+
+{:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, Statifier.Event.new("exit"))  
+# Active states: ["other"] - history recorded
+
+{:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, Statifier.Event.new("return"))
+# Active states: ["sub3"] - history restored!
+```
+
+### Multiple Transition Targets Example
+
+```elixir
+# SCXML with multiple target transitions
+xml = """
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+  <state id="start">
+    <!-- Multiple targets - enter multiple states simultaneously -->
+    <transition event="activate" target="system target1 target2"/>
+  </state>
+  
+  <parallel id="system">
+    <state id="target1">
+      <transition event="done" target="end"/>
+    </state>
+    
+    <state id="target2">
+      <transition event="done" target="end"/>
+    </state>
+  </parallel>
+  
+  <state id="end"/>
+</scxml>
+"""
+
+{:ok, document} = Statifier.parse(xml)
+{:ok, state_chart} = Statifier.interpret(document)
+
+# Send activate event - enters multiple targets
+{:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, Statifier.Event.new("activate"))
+
+# Check active states - multiple states active simultaneously
+active_states = Statifier.Interpreter.active_states(state_chart)
+# Returns: MapSet.new(["target1", "target2"]) - both targets entered
 ```
 
 ### Document Validation
@@ -373,7 +480,7 @@ mix dialyzer            # Type checking
 The project uses automated regression testing to prevent breaking existing functionality:
 
 ```bash
-# Run only tests that should always pass (63 tests)
+# Run only tests that should always pass (118 tests)
 mix test.regression
 
 # Check which tests are currently passing to update regression suite
@@ -385,28 +492,29 @@ mix test.baseline
 
 The regression suite tracks:
 
-- **Internal tests**: All `test/statifier/**/*_test.exs` files (supports wildcards) - includes edge case coverage tests
-- **SCION tests**: 8 known passing tests (basic + hierarchy + parallel + conditional)
-- **W3C tests**: Currently none passing
+- **Internal tests**: All `test/statifier/**/*_test.exs` files (707 total tests) - comprehensive edge case coverage
+- **SCION tests**: Multiple passing tests including history, parallel, and conditional features
+- **W3C tests**: Several passing tests with continued improvement
 
 ### Running Tests
 
 ```bash
-# All internal tests (excludes SCION/W3C by default)
+# All internal tests (excludes SCION/W3C by default) - 707 tests
 mix test
 
 # All tests including SCION and W3C test suites
 mix test --include scion --include scxml_w3
 
-# Only regression tests (63 critical tests)
+# Only regression tests (118 critical tests)
 mix test.regression
 
 # With coverage reporting
 mix coveralls
 
 # Specific test categories
-mix test --include scion test/scion_tests/basic/
+mix test --include scion test/scion_tests/history/
 mix test test/statifier/parser/scxml_test.exs
+mix test test/statifier/history/
 ```
 
 ## Architecture
@@ -415,17 +523,19 @@ mix test test/statifier/parser/scxml_test.exs
 
 - **`Statifier.Parser.SCXML`** - SAX-based XML parser with location tracking (parse phase)
 - **`Statifier.Validator`** - Modular validation orchestrator with focused sub-validators (validate + optimize phases)
+- **`Statifier.Validator.HistoryStateValidator`** - Dedicated validator for history state constraints and W3C compliance
 - **`Statifier.FeatureDetector`** - SCXML feature detection for test validation and capability tracking
-- **`Statifier.Interpreter`** - Synchronous state chart interpreter with compound state support
-- **`Statifier.StateChart`** - Runtime container with event queues
+- **`Statifier.Interpreter`** - Synchronous state chart interpreter with compound state and history support
+- **`Statifier.StateChart`** - Runtime container with event queues and history tracking
+- **`Statifier.HistoryTracker`** - Core history state tracking with efficient MapSet operations
 - **`Statifier.Configuration`** - Active state management (leaf states only)
 - **`Statifier.Event`** - Event representation with origin tracking
 
 ### Data Structures
 
-- **`Statifier.Document`** - Root SCXML document with states, metadata, and O(1) lookup maps
-- **`Statifier.State`** - Individual states with transitions and hierarchical nesting support
-- **`Statifier.Transition`** - State transitions with events and targets
+- **`Statifier.Document`** - Root SCXML document with states, metadata, O(1) lookup maps, and history helper functions
+- **`Statifier.State`** - Individual states with transitions, hierarchical nesting, and history type support
+- **`Statifier.Transition`** - State transitions with events and multiple targets (list-based)
 - **`Statifier.Data`** - Datamodel elements with expressions
 
 ### Architecture Flow

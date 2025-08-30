@@ -67,7 +67,7 @@ defmodule Statifier.FeatureDetector do
       onentry_actions: :supported,
       onexit_actions: :supported,
       if_elements: :supported,
-      send_elements: :unsupported,
+      send_elements: :supported,
       log_elements: :supported,
       raise_elements: :supported,
 

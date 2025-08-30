@@ -11,7 +11,7 @@ defmodule Statifier.Actions.ActionExecutorCoverageTest do
         configuration: Configuration.new([])
       }
 
-      result = ActionExecutor.execute_onentry_actions([], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, [])
 
       # Should return unchanged state chart
       assert result == state_chart
@@ -34,7 +34,7 @@ defmodule Statifier.Actions.ActionExecutorCoverageTest do
         configuration: Configuration.new([])
       }
 
-      result = ActionExecutor.execute_onentry_actions(["empty_state"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["empty_state"])
 
       # Should return unchanged state chart since no actions to execute
       assert result == state_chart
@@ -52,7 +52,7 @@ defmodule Statifier.Actions.ActionExecutorCoverageTest do
         configuration: Configuration.new([])
       }
 
-      result = ActionExecutor.execute_onentry_actions(["nonexistent"], state_chart)
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["nonexistent"])
 
       # Should handle gracefully and return unchanged state chart
       assert result == state_chart
@@ -65,7 +65,7 @@ defmodule Statifier.Actions.ActionExecutorCoverageTest do
         configuration: Configuration.new([])
       }
 
-      result = ActionExecutor.execute_onexit_actions([], state_chart)
+      result = ActionExecutor.execute_onexit_actions(state_chart, [])
 
       # Should return unchanged state chart
       assert result == state_chart
@@ -88,7 +88,7 @@ defmodule Statifier.Actions.ActionExecutorCoverageTest do
         configuration: Configuration.new([])
       }
 
-      result = ActionExecutor.execute_onexit_actions(["empty_state"], state_chart)
+      result = ActionExecutor.execute_onexit_actions(state_chart, ["empty_state"])
 
       # Should return unchanged state chart since no actions to execute
       assert result == state_chart
@@ -106,7 +106,7 @@ defmodule Statifier.Actions.ActionExecutorCoverageTest do
         configuration: Configuration.new([])
       }
 
-      result = ActionExecutor.execute_onexit_actions(["nonexistent"], state_chart)
+      result = ActionExecutor.execute_onexit_actions(state_chart, ["nonexistent"])
 
       # Should handle gracefully and return unchanged state chart
       assert result == state_chart
@@ -117,7 +117,7 @@ defmodule Statifier.Actions.ActionExecutorCoverageTest do
       log_action = %LogAction{label: "test", expr: "'hello'"}
       state_chart = test_state_chart()
 
-      result = ActionExecutor.execute_single_action(log_action, state_chart)
+      result = ActionExecutor.execute_single_action(state_chart, log_action)
 
       # Should have logged to the state chart's logs
       # One from ActionExecutor debug, one from LogAction
@@ -135,7 +135,7 @@ defmodule Statifier.Actions.ActionExecutorCoverageTest do
       unknown_action = %{unknown: "action", data: "test"}
       state_chart = test_state_chart()
 
-      result = ActionExecutor.execute_single_action(unknown_action, state_chart)
+      result = ActionExecutor.execute_single_action(state_chart, unknown_action)
 
       # Should have logged to the state chart's logs
       assert length(result.logs) == 1
@@ -151,7 +151,7 @@ defmodule Statifier.Actions.ActionExecutorCoverageTest do
       raise_action = %RaiseAction{event: nil}
       state_chart = test_state_chart()
 
-      result = ActionExecutor.execute_single_action(raise_action, state_chart)
+      result = ActionExecutor.execute_single_action(state_chart, raise_action)
 
       # Should have enqueued an event with default name
       assert length(result.internal_queue) == 1
@@ -180,7 +180,7 @@ defmodule Statifier.Actions.ActionExecutorCoverageTest do
       log_action = %LogAction{label: nil, expr: nil}
       state_chart = test_state_chart()
 
-      result = ActionExecutor.execute_single_action(log_action, state_chart)
+      result = ActionExecutor.execute_single_action(state_chart, log_action)
 
       # Should have logged to the state chart's logs
       # One from ActionExecutor debug, one from LogAction

@@ -7,7 +7,6 @@ defmodule Statifier.Parser.SCXMLTest do
   describe "parse/1" do
     test "parses simple SCXML document" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
         <state id="a"/>
       </scxml>
@@ -33,7 +32,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "parses SCXML with transition" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
         <state id="a">
           <transition event="go" target="b"/>
@@ -62,7 +60,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "parses SCXML with datamodel" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="elixir">
         <datamodel>
           <data id="counter" expr="0"/>
@@ -91,7 +88,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "parses nested states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
         <state id="parent" initial="child1">
           <state id="child1">
@@ -127,7 +123,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "handles empty attributes as nil" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
         <state id="test">
           <transition target="end"/>
@@ -163,7 +158,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "handles unknown elements by skipping them" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
         <unknown-element some-attr="value">
           <nested-unknown/>
@@ -180,7 +174,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "handles transitions with unknown parent elements" do
       xml = """
-      <?xml version="1.0" encoding=\"UTF-8\"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
         <unknown-parent>
           <transition event="test" target="somewhere"/>
@@ -194,7 +187,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "handles states with unknown parent elements" do
       xml = """
-      <?xml version="1.0" encoding=\"UTF-8\"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
         <unknown-parent>
           <state id="orphan"/>
@@ -211,7 +203,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "handles data elements with unknown parent" do
       xml = """
-      <?xml version="1.0" encoding=\"UTF-8\"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
         <unknown-parent>
           <data id="orphan" expr="test"/>
@@ -225,7 +216,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "handles empty attribute values" do
       xml = """
-      <?xml version="1.0" encoding=\"UTF-8\"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" name="">
         <state id="test" initial="">
           <transition event="" target="" cond=""/>
@@ -271,7 +261,6 @@ defmodule Statifier.Parser.SCXMLTest do
     test "handles XML with no matching elements for position tracking" do
       # This tests the fallback position tracking when elements can't be found
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
         <state id="a"/>
       </scxml>
@@ -283,7 +272,6 @@ defmodule Statifier.Parser.SCXMLTest do
     test "handles non-string inputs to position tracking" do
       # This indirectly tests the guard clauses in find_element_position
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
         <state id="test"/>
       </scxml>
@@ -294,7 +282,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "assigns document_order based on element counts" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="a">
         <datamodel>
           <data id="x" expr="0"/>
@@ -332,7 +319,6 @@ defmodule Statifier.Parser.SCXMLTest do
   describe "history elements" do
     test "parses shallow history element with default transition" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
         <state id="main" initial="sub1">
           <history id="hist" type="shallow">
@@ -360,7 +346,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "parses deep history element" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
         <state id="main" initial="sub1">
           <history id="deepHist" type="deep">
@@ -381,7 +366,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "parses history element without type attribute (defaults to shallow)" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
         <state id="main">
           <history id="defaultHist">
@@ -402,7 +386,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "parses history element with empty type attribute (defaults to shallow)" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="main">
         <state id="main">
           <history id="emptyTypeHist" type="">
@@ -423,7 +406,6 @@ defmodule Statifier.Parser.SCXMLTest do
 
     test "includes location tracking for history elements" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
         <state id="main">
           <history id="hist" type="deep"/>

@@ -7,8 +7,7 @@ defmodule Statifier.ValidatorTest do
   describe "validate/1" do
     test "validates simple valid document" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
         <state id="start">
           <transition event="go" target="end"/>
         </state>
@@ -22,8 +21,7 @@ defmodule Statifier.ValidatorTest do
 
     test "detects invalid initial state" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="nonexistent">
+      <scxml initial="nonexistent">
         <state id="start"/>
       </scxml>
       """
@@ -35,8 +33,7 @@ defmodule Statifier.ValidatorTest do
 
     test "detects invalid transition target" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
         <state id="start">
           <transition event="go" target="nowhere"/>
         </state>
@@ -50,8 +47,7 @@ defmodule Statifier.ValidatorTest do
 
     test "warns about unreachable states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
+      <scxml initial="start">
         <state id="start">
           <transition event="go" target="reachable"/>
         </state>
@@ -67,8 +63,7 @@ defmodule Statifier.ValidatorTest do
 
     test "validates nested states" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child1">
           <state id="child1">
             <transition event="next" target="child2"/>
@@ -84,8 +79,7 @@ defmodule Statifier.ValidatorTest do
 
     test "detects invalid nested transition target" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child1">
           <state id="child1">
             <transition event="next" target="nonexistent"/>
@@ -102,8 +96,7 @@ defmodule Statifier.ValidatorTest do
 
     test "handles document with no initial state" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0">
+      <scxml>
         <state id="first"/>
         <state id="second"/>
       </scxml>
@@ -116,8 +109,7 @@ defmodule Statifier.ValidatorTest do
 
     test "handles empty document" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0"/>
+      <scxml/>
       """
 
       {:ok, document} = SCXML.parse(xml)
@@ -128,8 +120,7 @@ defmodule Statifier.ValidatorTest do
   describe "finalize/2 validation" do
     test "validates compound state initial references" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="nonexistent">
           <state id="child1"/>
           <state id="child2"/>
@@ -145,8 +136,7 @@ defmodule Statifier.ValidatorTest do
 
     test "passes validation for correct compound state initial" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="parent">
+      <scxml initial="parent">
         <state id="parent" initial="child1">
           <state id="child1"/>
           <state id="child2"/>
@@ -160,8 +150,7 @@ defmodule Statifier.ValidatorTest do
 
     test "warns when document initial state is nested" do
       xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="child1">
+      <scxml initial="child1">
         <state id="parent" initial="child1">
           <state id="child1"/>
           <state id="child2"/>
