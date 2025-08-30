@@ -6,7 +6,8 @@ defmodule Mix.Tasks.Quality do
 
   This task runs the same checks as the pre-push git hook:
   - Code formatting check (and auto-fix if needed)
-  - Markdown linting (if markdownlint-cli2 is available)  
+  - Trailing whitespace check (and auto-fix if needed)
+  - Markdown linting (and auto-fix if needed, if markdownlint-cli2 is available)
   - Regression tests (critical tests that should always pass)
   - Static code analysis with Credo (strict mode)
   - Type checking with Dialyzer
@@ -14,7 +15,7 @@ defmodule Mix.Tasks.Quality do
   ## Usage
 
       mix quality
-      
+
   ## Options
 
   - `--skip-dialyzer` - Skip the Dialyzer type checking step (faster)
@@ -24,10 +25,10 @@ defmodule Mix.Tasks.Quality do
 
       # Run full quality pipeline
       mix quality
-      
+
       # Skip slow Dialyzer step
       mix quality --skip-dialyzer
-      
+
       # Skip both Dialyzer and markdown checks
       mix quality --skip-dialyzer --skip-markdown
   """
@@ -48,18 +49,21 @@ defmodule Mix.Tasks.Quality do
     # Step 1: Code formatting check
     check_formatting()
 
-    # Step 2: Markdown linting (if available and not skipped)
+    # Step 2: Trailing whitespace check
+    check_trailing_whitespace()
+
+    # Step 3: Markdown linting (if available and not skipped)
     unless opts[:skip_markdown] do
       check_markdown()
     end
 
-    # Step 3: Regression tests
+    # Step 4: Regression tests
     run_regression_tests()
 
-    # Step 4: Static analysis
+    # Step 5: Static analysis
     run_static_analysis()
 
-    # Step 5: Type checking (unless skipped)
+    # Step 6: Type checking (unless skipped)
     unless opts[:skip_dialyzer] do
       run_type_checking()
     end
@@ -94,6 +98,99 @@ defmodule Mix.Tasks.Quality do
             Mix.shell().info("   git commit -m 'Auto-format code with mix format'")
             Mix.raise("Code was auto-formatted - please commit changes and re-run")
         end
+    end
+  end
+
+  defp check_trailing_whitespace do
+    Mix.shell().info("🧹 Checking for trailing whitespace...")
+
+    # Find all .ex and .exs files with trailing whitespace
+    case System.cmd(
+           "find",
+           [
+             ".",
+             "-path",
+             "./_build",
+             "-prune",
+             "-o",
+             "-path",
+             "./deps",
+             "-prune",
+             "-o",
+             "-name",
+             "*.ex",
+             "-print",
+             "-o",
+             "-name",
+             "*.exs",
+             "-print"
+           ],
+           stderr_to_stdout: true
+         ) do
+      {output, 0} ->
+        files =
+          output
+          |> String.trim()
+          |> String.split("\n")
+          |> Enum.reject(&(&1 == ""))
+
+        files_with_whitespace =
+          files
+          |> Enum.filter(fn file ->
+            case System.cmd("grep", ["-l", "[[:space:]]$", file], stderr_to_stdout: true) do
+              {_, 0} -> true
+              {_, _} -> false
+            end
+          end)
+
+        case files_with_whitespace do
+          [] ->
+            Mix.shell().info("✅ No trailing whitespace found")
+
+          files_to_fix ->
+            Mix.shell().info("❌ Found trailing whitespace in #{length(files_to_fix)} file(s)")
+
+            Enum.each(files_to_fix, fn file ->
+              Mix.shell().info("   Cleaning: #{file}")
+            end)
+
+            # Remove trailing whitespace from all affected files
+            Enum.each(files_to_fix, fn file ->
+              case System.cmd("sed", ["-i", "", "s/[[:space:]]*$//", file],
+                     stderr_to_stdout: true
+                   ) do
+                {_, 0} ->
+                  :ok
+
+                {error, _} ->
+                  Mix.shell().error("Failed to clean #{file}: #{error}")
+              end
+            end)
+
+            # Check if files were actually changed
+            case System.cmd("git", ["diff", "--quiet"], stderr_to_stdout: true) do
+              {_output, 0} ->
+                Mix.shell().info("✅ No files were actually modified")
+
+              {_output, _exit_code} ->
+                Mix.shell().info("📝 Trailing whitespace has been automatically removed.")
+
+                Mix.shell().info(
+                  "🔄 Please commit the whitespace cleanup and run quality check again:"
+                )
+
+                Mix.shell().info("   git add .")
+                Mix.shell().info("   git commit -m 'Remove trailing whitespace'")
+
+                Mix.raise(
+                  "Trailing whitespace was auto-cleaned - please commit changes and re-run"
+                )
+            end
+        end
+
+      {error, _exit_code} ->
+        Mix.shell().error("❌ Failed to search for files: #{error}")
+        Mix.raise("File search failed")
     end
   end
 
@@ -138,14 +235,47 @@ defmodule Mix.Tasks.Quality do
                 Mix.shell().info("✅ Markdown formatting looks good")
 
               {_output, _exit_code} ->
-                Mix.shell().error("❌ Markdown linting failed!")
-                Mix.shell().info("💡 Fix markdown issues manually or run:")
+                Mix.shell().info("❌ Markdown linting issues found. Running auto-fix...")
 
-                Mix.shell().info(
-                  ~s[   find . -name "*.md" -not -path "./deps/*" -not -path "./_build/*" | xargs markdownlint-cli2 --config .markdownlint.json --fix]
-                )
+                # Try to automatically fix markdown issues
+                case System.cmd(
+                       "markdownlint-cli2",
+                       ["--config", ".markdownlint.json", "--fix"] ++ md_files,
+                       stderr_to_stdout: true
+                     ) do
+                  {_fix_output, 0} ->
+                    Mix.shell().info("✅ Markdown issues were automatically fixed")
 
-                Mix.raise("Markdown linting failed")
+                    # Check if files were actually changed
+                    case System.cmd("git", ["diff", "--quiet"], stderr_to_stdout: true) do
+                      {_git_output, 0} ->
+                        Mix.shell().info("✅ No files were actually modified")
+
+                      {_git_output, _git_exit_code} ->
+                        Mix.shell().info("📝 Markdown files have been automatically fixed.")
+
+                        Mix.shell().info(
+                          "🔄 Please commit the markdown fixes and run quality check again:"
+                        )
+
+                        Mix.shell().info("   git add .")
+                        Mix.shell().info("   git commit -m 'Fix markdown formatting'")
+                        Mix.raise("Markdown was auto-fixed - please commit changes and re-run")
+                    end
+
+                  {fix_error, _fix_exit_code} ->
+                    Mix.shell().error("❌ Automatic markdown fixing failed!")
+                    Mix.shell().info("💡 Manual fix may be required. Error output:")
+                    Mix.shell().info(fix_error)
+                    Mix.shell().info("💡 Try running manually:")
+
+                    Mix.shell().info(
+                      ~s[   markdownlint-cli2 --config .markdownlint.json --fix] <>
+                        " " <> Enum.join(md_files, " ")
+                    )
+
+                    Mix.raise("Markdown linting failed")
+                end
             end
 
           _no_files_found ->
