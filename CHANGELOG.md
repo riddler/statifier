@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] 2025-08-30
+
+### Changed
+
+#### API Consolidation and Cleanup
+
+- **Consolidated Active States API**: Unified active states functionality into single source of truth
+  - **Renamed Functions for Clarity**: `active_states` → `active_leaf_states`, `active_ancestors` → `all_active_states`
+  - **Single Source of Truth**: All active state queries now handled by `Configuration` module
+  - **Removed Wrapper Functions**: Eliminated duplicate functions from `StateChart` and `Interpreter` modules
+  - **Updated All Tests**: All 857 tests updated to use consolidated API directly
+  - **Fixed History Tracking**: History tracking now correctly uses all active states (including ancestors) for proper shallow history computation
+
+- **Removed Backwards Compatibility Layers**: Cleaned up legacy API functions for better maintainability
+  - **Removed Legacy Delegates**: Eliminated `Statifier.validate/1` and `Statifier.interpret/1` delegate functions
+  - **Removed `Statifier.parse_only/1`**: Eliminated unused function that provided no additional value over `SCXML.parse/2`
+  - **Forced Explicit Module Usage**: Users must now call `Statifier.Interpreter.initialize/1` and `Statifier.Validator.validate/1` directly
+  - **Updated Documentation**: All examples and README updated to use explicit module references
+
+#### Code Quality Improvements
+
+- **Implemented Proper Logging**: Replaced TODO comments with actual logging infrastructure
+  - **Validation Warning Logging**: `Interpreter.initialize/1` now properly logs validation warnings using `LogManager`
+  - **Structured Logging**: Warnings logged with warning count and detailed messages
+  - **Consistent Infrastructure**: Uses existing logging system throughout codebase
+
+- **Fixed All Credo Issues**: Resolved all static code analysis warnings
+  - **Added Module Aliases**: Proper module aliasing to eliminate nested module access warnings
+  - **Clean Code Standards**: All 288 source files now pass `mix credo --strict` with no issues
+  - **Improved Readability**: Better import organization and alias usage
+
+### Benefits
+
+- **Clearer API**: Eliminates confusion between multiple similar functions
+- **Better Maintainability**: Single source of truth for active state management
+- **Explicit Architecture**: Direct module usage removes API ambiguity
+- **Enhanced Debugging**: Proper structured logging for validation issues
+- **Code Quality**: Clean codebase with no static analysis issues
+
+All 857 tests pass with 91.2% code coverage maintained throughout the refactoring.
+
 ## [1.5.0] 2025-08-29
 
 ### Added
