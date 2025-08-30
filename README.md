@@ -147,7 +147,7 @@ Add `statifier` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:statifier, "~> 1.4"}
+    {:statifier, "~> 1.5"}
   ]
 end
 ```
