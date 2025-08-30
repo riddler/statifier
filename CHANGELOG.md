@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### API Consolidation and Cleanup
 
 - **Consolidated Active States API**: Unified active states functionality into single source of truth
-  - **Renamed Functions for Clarity**: `active_states` → `active_leaf_states`, `active_ancestors` → `all_active_states` 
+  - **Renamed Functions for Clarity**: `active_states` → `active_leaf_states`, `active_ancestors` → `all_active_states`
   - **Single Source of Truth**: All active state queries now handled by `Configuration` module
   - **Removed Wrapper Functions**: Eliminated duplicate functions from `StateChart` and `Interpreter` modules
   - **Updated All Tests**: All 857 tests updated to use consolidated API directly
