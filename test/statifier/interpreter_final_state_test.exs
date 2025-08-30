@@ -99,7 +99,9 @@ defmodule Statifier.InterpreterFinalStateTest do
     assert MapSet.member?(active_states, "child1")
 
     # Check ancestors include compound state
-    active_ancestors = Configuration.all_active_states(state_chart.configuration, state_chart.document)
+    active_ancestors =
+      Configuration.all_active_states(state_chart.configuration, state_chart.document)
+
     assert MapSet.member?(active_ancestors, "compound")
     assert MapSet.member?(active_ancestors, "child1")
 
@@ -113,7 +115,9 @@ defmodule Statifier.InterpreterFinalStateTest do
     refute MapSet.member?(active_states, "child1")
 
     # Check ancestors still include compound state
-    active_ancestors = Configuration.all_active_states(new_state_chart.configuration, new_state_chart.document)
+    active_ancestors =
+      Configuration.all_active_states(new_state_chart.configuration, new_state_chart.document)
+
     assert MapSet.member?(active_ancestors, "compound")
     assert MapSet.member?(active_ancestors, "child_final")
   end

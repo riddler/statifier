@@ -121,7 +121,6 @@ defmodule Statifier.StateChart do
     %{state_chart | configuration: configuration}
   end
 
-
   @doc """
   Update the datamodel of the state chart.
   """
@@ -175,7 +174,8 @@ defmodule Statifier.StateChart do
   @spec record_history(t(), String.t()) :: t()
   def record_history(%__MODULE__{} = state_chart, parent_state_id)
       when is_binary(parent_state_id) do
-    active_states = Configuration.all_active_states(state_chart.configuration, state_chart.document)
+    active_states =
+      Configuration.all_active_states(state_chart.configuration, state_chart.document)
 
     updated_tracker =
       HistoryTracker.record_history(

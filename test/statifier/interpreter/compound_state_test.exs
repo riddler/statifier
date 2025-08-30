@@ -75,7 +75,9 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       assert MapSet.equal?(active_states, MapSet.new(["child"]))
 
       # Including ancestors: ["child", "parent"]
-      active_ancestors = Configuration.all_active_states(state_chart.configuration, state_chart.document)
+      active_ancestors =
+        Configuration.all_active_states(state_chart.configuration, state_chart.document)
+
       assert MapSet.equal?(active_ancestors, MapSet.new(["child", "parent"]))
     end
   end
@@ -110,7 +112,9 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       assert MapSet.equal?(active_states, MapSet.new(["child1"]))
 
       # Ancestors should include both child1 and compound
-      active_ancestors = Configuration.all_active_states(new_state_chart.configuration, new_state_chart.document)
+      active_ancestors =
+        Configuration.all_active_states(new_state_chart.configuration, new_state_chart.document)
+
       assert MapSet.equal?(active_ancestors, MapSet.new(["child1", "compound"]))
     end
   end

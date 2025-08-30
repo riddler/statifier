@@ -60,7 +60,7 @@ defmodule Statifier.MixProject do
   defp package do
     [
       name: @app,
-      files: ~w(lib/statifier.ex lib/statifier mix.exs README.md LICENSE CHANGELOG.md),
+      files: ~w(lib/statifier* mix.exs README.md LICENSE CHANGELOG.md),
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
       maintainers: ["Riddler Team"]

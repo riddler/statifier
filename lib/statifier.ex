@@ -54,7 +54,6 @@ defmodule Statifier do
     end
   end
 
-
   @doc """
   Check if a document has been validated.
 
@@ -80,5 +79,4 @@ defmodule Statifier do
         {:error, {:validation_errors, errors, warnings}}
     end
   end
-
 end

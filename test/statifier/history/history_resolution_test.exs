@@ -255,7 +255,9 @@ defmodule Statifier.HistoryResolutionTest do
       assert MapSet.member?(active_config, "grandchild2")
 
       # Check that ancestor computation works correctly
-      all_active = Configuration.all_active_states(new_state_chart.configuration, new_state_chart.document)
+      all_active =
+        Configuration.all_active_states(new_state_chart.configuration, new_state_chart.document)
+
       # Atomic state
       assert MapSet.member?(all_active, "grandchild2")
       # Its parent

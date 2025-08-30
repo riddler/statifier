@@ -101,7 +101,7 @@ defmodule Statifier.Interpreter do
       |> execute_microsteps()
 
     # Log warnings if any using proper logging infrastructure
-    state_chart = 
+    state_chart =
       if warnings != [] do
         LogManager.warn(state_chart, "Document validation warnings", %{
           warning_count: length(warnings),

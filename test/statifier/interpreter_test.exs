@@ -165,7 +165,9 @@ defmodule Statifier.InterpreterTest do
       {:ok, state_chart} = Interpreter.initialize(document)
 
       active_states = Configuration.active_leaf_states(state_chart.configuration)
-      active_ancestors = Configuration.all_active_states(state_chart.configuration, state_chart.document)
+
+      active_ancestors =
+        Configuration.all_active_states(state_chart.configuration, state_chart.document)
 
       # active_states should only include leaf states
       assert MapSet.equal?(active_states, MapSet.new(["child"]))

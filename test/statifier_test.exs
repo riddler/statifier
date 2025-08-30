@@ -141,7 +141,6 @@ defmodule StatifierTest do
     end
   end
 
-
   describe "Statifier.validated?/1" do
     test "returns true for validated documents" do
       xml = """

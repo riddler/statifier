@@ -34,7 +34,10 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should use initial attribute, not first child
-      assert MapSet.member?(Configuration.active_leaf_states(state_chart.configuration), "child_target")
+      assert MapSet.member?(
+               Configuration.active_leaf_states(state_chart.configuration),
+               "child_target"
+             )
     end
 
     test "parallel states with mixed atomic and compound children" do
@@ -75,7 +78,8 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
       # Should stay in same state for targetless transition
-      assert Configuration.active_leaf_states(state_chart.configuration) == Configuration.active_leaf_states(new_state_chart.configuration)
+      assert Configuration.active_leaf_states(state_chart.configuration) ==
+               Configuration.active_leaf_states(new_state_chart.configuration)
     end
 
     test "complex parallel region exit with cross-boundary transitions" do
@@ -146,7 +150,10 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
       # Should end up in the target state
-      assert MapSet.member?(Configuration.active_leaf_states(new_state_chart.configuration), "other_level4")
+      assert MapSet.member?(
+               Configuration.active_leaf_states(new_state_chart.configuration),
+               "other_level4"
+             )
     end
 
     test "conditional eventless transition that evaluates false" do
@@ -188,7 +195,10 @@ defmodule Statifier.Interpreter.EdgeCasesTest do
       event = %Statifier.Event{name: "conflict", data: %{}}
       {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
-      assert MapSet.member?(Configuration.active_leaf_states(new_state_chart.configuration), "sibling2")
+      assert MapSet.member?(
+               Configuration.active_leaf_states(new_state_chart.configuration),
+               "sibling2"
+             )
     end
 
     test "LCCA computation with complex parallel structure" do

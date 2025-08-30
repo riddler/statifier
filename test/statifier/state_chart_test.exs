@@ -223,7 +223,8 @@ defmodule Statifier.StateChartTest do
       state_chart = StateChart.new(document, configuration)
 
       # This calls Statifier.Configuration.all_active_states/2 which should return the computed ancestors
-      active_states = Configuration.all_active_states(state_chart.configuration, state_chart.document)
+      active_states =
+        Configuration.all_active_states(state_chart.configuration, state_chart.document)
 
       # Since we're using a simple configuration, this should work
       assert is_struct(active_states, MapSet)
