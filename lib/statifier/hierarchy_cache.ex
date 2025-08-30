@@ -9,7 +9,7 @@ defmodule Statifier.HierarchyCache do
 
   ## Performance Benefits
 
-  - `descendant_of?/3`: O(depth) → O(1)  
+  - `descendant_of?/3`: O(depth) → O(1)
   - `get_ancestor_path/2`: O(depth) → O(1)
   - `compute_lcca/3`: O(depth₁ + depth₂) → O(1)
   - `get_parallel_ancestors/2`: O(depth) → O(1)

@@ -1,5 +1,5 @@
 {
-  "skip_files": [ "test/support", "lib/mix/tasks/test.*.ex" ],
+  "skip_files": [ "test/support", "lib/mix/tasks/test.*.ex", "lib/mix/tasks/quality.ex" ],
   "coverage_options": {
     "treat_no_relevant_lines_as_covered": true,
     "output_dir": "cover/",

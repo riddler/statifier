@@ -117,12 +117,12 @@ defmodule Statifier.DatamodelTest do
         <datamodel>
           <data id="counter" expr="5"/>
         </datamodel>
-        
+
         <state id="start">
           <transition event="check" cond="counter > 3" target="pass"/>
           <transition event="check" target="fail"/>
         </state>
-        
+
         <state id="pass"/>
         <state id="fail"/>
       </scxml>
@@ -140,13 +140,13 @@ defmodule Statifier.DatamodelTest do
           <data id="threshold" expr="80"/>
           <data id="bonus" expr="true"/>
         </datamodel>
-        
+
         <state id="start">
           <transition event="evaluate" cond="score >= threshold AND bonus" target="excellent"/>
           <transition event="evaluate" cond="score >= threshold" target="pass"/>
           <transition event="evaluate" target="fail"/>
         </state>
-        
+
         <state id="excellent"/>
         <state id="pass"/>
         <state id="fail"/>

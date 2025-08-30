@@ -72,8 +72,8 @@ defmodule Statifier.Parser.SendParsingTest do
       <scxml initial="start">
           <state id="start">
               <onentry>
-                  <send event="testEvent" 
-                        target="#_internal" 
+                  <send event="testEvent"
+                        target="#_internal"
                         type="scxml"
                         id="send1"
                         delay="500ms"
@@ -222,7 +222,7 @@ defmodule Statifier.Parser.SendParsingTest do
       <scxml initial="start">
           <state id="start">
               <onentry>
-                  <send eventexpr="'event_' + counter" 
+                  <send eventexpr="'event_' + counter"
                         targetexpr="getTarget()"
                         typeexpr="'scxml'"
                         delayexpr="getDelay()"/>

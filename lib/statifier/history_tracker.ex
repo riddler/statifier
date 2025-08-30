@@ -37,13 +37,13 @@ defmodule Statifier.HistoryTracker do
   @doc """
   Record history for a parent state before it exits.
 
-  Records both shallow (immediate children) and deep (atomic descendants) 
+  Records both shallow (immediate children) and deep (atomic descendants)
   history based on the current active state configuration.
 
   ## Parameters
   - `tracker` - The history tracker
   - `parent_state_id` - ID of the parent state exiting
-  - `active_states` - Current active state configuration 
+  - `active_states` - Current active state configuration
   - `document` - Document for state hierarchy analysis
 
   ## Returns

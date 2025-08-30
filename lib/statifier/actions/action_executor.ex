@@ -2,7 +2,7 @@ defmodule Statifier.Actions.ActionExecutor do
   @moduledoc """
   Executes SCXML actions during state transitions.
 
-  This module handles the execution of executable content like <log>, <raise>, 
+  This module handles the execution of executable content like <log>, <raise>,
   and other actions that occur during onentry and onexit processing.
   """
 
