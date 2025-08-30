@@ -167,21 +167,6 @@ defmodule StatifierTest do
     end
   end
 
-  describe "Statifier.parse_only/2" do
-    test "parses without validation" do
-      xml = """
-      <scxml initial="start">
-        <state id="start"/>
-      </scxml>
-      """
-
-      assert {:ok, document} = Statifier.parse_only(xml)
-      assert document.validated == false
-      assert document.initial == "start"
-      # Should still have relaxed parsing normalization
-      assert document.xmlns == "http://www.w3.org/2005/07/scxml"
-    end
-  end
 
   describe "Statifier.validated?/1" do
     test "returns true for validated documents" do
@@ -202,7 +187,7 @@ defmodule StatifierTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.parse_only(xml)
+      {:ok, document, _warnings} = Statifier.parse(xml, validate: false)
       assert Statifier.validated?(document) == false
     end
   end

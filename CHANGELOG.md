@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Validation Status Tracking**: Added `validated` field to Document struct for better API clarity
   - **Document.validated**: Boolean field indicating whether document has been validated
   - **Interpreter Optimization**: Skips redundant validation for pre-validated documents
-  - **Helper Functions**: `Statifier.validated?/1` and `Statifier.parse_only/2` for API completeness
+  - **Helper Function**: `Statifier.validated?/1` for checking document validation status
 
 #### Basic Send Element Support
 
@@ -94,7 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Improved Test Clarity**: 3-tuple format provides better access to warnings in tests
 
 - **Streamlined Main Module**: Complete rewrite of `/lib/statifier.ex` with modern architecture
-  - **New Functions**: `parse/2`, `parse_only/2`, `validated?/1` for comprehensive API coverage
+  - **New Functions**: `parse/2` and `validated?/1` for comprehensive API coverage
   - **Error Handling**: Enhanced error handling with `handle_validation/2` helper
   - **Reduced Nesting**: Improved code maintainability with better function organization
   - **Options Integration**: Seamless integration with relaxed parsing options
@@ -170,7 +170,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 {:ok, document, warnings} = Statifier.parse(xml)
 
 # Parse without validation for advanced use cases  
-{:ok, document} = Statifier.parse_only(xml)
+{:ok, document, []} = Statifier.parse(xml, validate: false)
 
 # Check validation status
 validated = Statifier.validated?(document)  # true/false

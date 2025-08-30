@@ -54,16 +54,6 @@ defmodule Statifier do
     end
   end
 
-  @doc """
-  Parse an SCXML document without validation (not recommended).
-
-  This is a convenience function for cases where you need only parsing
-  without validation. For most use cases, use `parse/2` instead.
-  """
-  @spec parse_only(String.t(), keyword()) :: {:ok, Statifier.Document.t()} | {:error, term()}
-  def parse_only(xml_string, opts \\ []) do
-    SCXML.parse(xml_string, opts)
-  end
 
   @doc """
   Check if a document has been validated.
