@@ -91,7 +91,7 @@ defmodule Statifier.Logging.LogManager do
 
   ## Parameters
 
-  - `state_chart` - Current StateChart instance  
+  - `state_chart` - Current StateChart instance
   - `level` - Log level to check
 
   ## Returns

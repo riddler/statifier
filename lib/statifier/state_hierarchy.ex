@@ -19,7 +19,7 @@ defmodule Statifier.StateHierarchy do
       iex> StateHierarchy.descendant_of?(document, "child", "parent")
       true
 
-      iex> StateHierarchy.descendant_of?(document, "sibling1", "sibling2") 
+      iex> StateHierarchy.descendant_of?(document, "sibling1", "sibling2")
       false
   """
   @spec descendant_of?(Document.t(), String.t(), String.t()) :: boolean()

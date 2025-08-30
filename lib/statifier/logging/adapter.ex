@@ -19,7 +19,7 @@ defprotocol Statifier.Logging.Adapter do
       # Log a message
       updated_state_chart = Statifier.Logging.Adapter.log(
         adapter,
-        state_chart, 
+        state_chart,
         :info,
         "Processing started",
         %{action_type: "initialization"}

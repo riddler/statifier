@@ -123,7 +123,7 @@ defmodule Statifier.Interpreter do
   3. Execute any resulting eventless transitions (additional microsteps)
   4. Return stable configuration (end of macrostep)
 
-  Returns the updated state chart. If no transitions match, returns the 
+  Returns the updated state chart. If no transitions match, returns the
   state chart unchanged (silent handling as discussed).
   """
   @spec send_event(StateChart.t(), Event.t()) :: {:ok, StateChart.t()}

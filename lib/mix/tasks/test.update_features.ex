@@ -5,13 +5,13 @@ defmodule Mix.Tasks.Test.UpdateFeatures do
   Updates all SCION and W3C test files with @tag required_features: tags.
 
   Analyzes the XML content in each test file using Statifier.FeatureDetector to determine
-  which SCXML features are required, then adds or updates the @tag required_features: 
+  which SCXML features are required, then adds or updates the @tag required_features:
   tag accordingly.
 
   ## Usage
 
       mix test.update_features
-      
+
   ## Options
 
       --dry-run    Show what would be changed without modifying files

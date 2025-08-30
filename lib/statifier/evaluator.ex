@@ -2,7 +2,7 @@ defmodule Statifier.Evaluator do
   @moduledoc """
   Unified expression evaluation for SCXML using Predicator.
 
-  This module handles both condition evaluation (boolean results) and value evaluation 
+  This module handles both condition evaluation (boolean results) and value evaluation
   (extracting actual values) for SCXML expressions. It supports:
 
   - Conditional expressions for transitions and guards
@@ -20,15 +20,15 @@ defmodule Statifier.Evaluator do
       result = Statifier.Evaluator.evaluate_condition(compiled, state_chart)
       # => true or false
 
-      # Value evaluation  
+      # Value evaluation
       {:ok, compiled} = Statifier.Evaluator.compile_expression("user.name")
       {:ok, value} = Statifier.Evaluator.evaluate_value(compiled, state_chart)
       # => {:ok, "John Doe"}
 
       # Assignment operations
       {:ok, updated_datamodel} = Statifier.Evaluator.evaluate_and_assign(
-        "user.profile.name", 
-        "'Jane Smith'", 
+        "user.profile.name",
+        "'Jane Smith'",
         state_chart
       )
   """

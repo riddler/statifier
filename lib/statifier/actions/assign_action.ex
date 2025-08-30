@@ -52,7 +52,7 @@ defmodule Statifier.Actions.AssignAction do
       "user.name"
       iex> action.expr
       "'John'"
-      iex> is_list(action.compiled_expr) 
+      iex> is_list(action.compiled_expr)
       true
 
   """

@@ -150,7 +150,7 @@ defmodule Mix.Tasks.Test.BaselineTest do
       Compiling 7 files (.ex)
       Generated file_system app
       ==> bunt
-      Compiling 2 files (.ex) 
+      Compiling 2 files (.ex)
       Generated bunt app
       ==> jason
       Compiling 10 files (.ex)
