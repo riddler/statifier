@@ -7,7 +7,7 @@ defmodule Statifier.MixProject do
   @source_url "https://github.com/riddler/statifier"
   @deps [
     # Documentation (split out to reduce compile time in dev/test)
-    {:ex_doc, "~> 0.31", only: :dev, runtime: false},
+    {:ex_doc, "~> 0.31", only: :docs, runtime: false},
 
     # Development, Test, Local
     {:castore, "~> 1.0", only: [:dev, :test]},

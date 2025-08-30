@@ -6,7 +6,7 @@ defmodule Statifier do
   and optimization, including relaxed parsing mode for simplified tests.
   """
 
-  alias Statifier.{Parser.SCXML, Validator}
+  alias Statifier.{Event, Interpreter, Parser.SCXML, StateMachine, Validator}
 
   @doc """
   Parse and validate an SCXML document in one step.
@@ -52,6 +52,44 @@ defmodule Statifier do
         {:ok, document, []}
       end
     end
+  end
+
+  @doc """
+  Send an event to a StateMachine process asynchronously.
+
+  This is the primary way to send events to running state chart processes.
+  The event is processed asynchronously and no return value is provided.
+
+  ## Examples
+
+      {:ok, pid} = Statifier.StateMachine.start_link("machine.xml")
+      Statifier.send(pid, "start")
+      Statifier.send(pid, "data_received", %{payload: "value"})
+
+  """
+  @spec send(GenServer.server(), String.t(), map()) :: :ok
+  def send(server, event_name, event_data \\ %{}) do
+    StateMachine.send_event(server, event_name, event_data)
+  end
+
+  @doc """
+  Send an event to a StateChart synchronously.
+
+  This processes the event immediately and returns the updated StateChart.
+  Use this for synchronous, functional-style state chart processing.
+
+  ## Examples
+
+      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
+      {:ok, new_state_chart} = Statifier.send_sync(state_chart, "start")
+      {:ok, final_state_chart} = Statifier.send_sync(new_state_chart, "process", %{data: "value"})
+
+  """
+  @spec send_sync(Statifier.StateChart.t(), String.t(), map()) ::
+          {:ok, Statifier.StateChart.t()} | {:error, term()}
+  def send_sync(state_chart, event_name, event_data \\ %{}) do
+    event = Event.new(event_name, event_data)
+    Interpreter.send_event(state_chart, event)
   end
 
   @doc """
