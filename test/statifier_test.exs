@@ -2,7 +2,7 @@ defmodule StatifierTest do
   use ExUnit.Case
   doctest Statifier
 
-  alias Statifier.{Configuration, Document, Interpreter, Validator}
+  alias Statifier.{Configuration, Document, Interpreter, StateMachine, Validator}
 
   describe "Statifier.parse/2" do
     test "parses basic SCXML document successfully" do
@@ -213,6 +213,95 @@ defmodule StatifierTest do
       # Verify initial state is active
       active_states = Configuration.active_leaf_states(state_chart.configuration)
       assert MapSet.member?(active_states, "idle")
+    end
+  end
+
+  describe "Statifier.send/2-3" do
+    test "sends events to StateMachine asynchronously" do
+      xml = """
+      <scxml initial="idle">
+        <state id="idle">
+          <transition event="start" target="running"/>
+        </state>
+        <state id="running"/>
+      </scxml>
+      """
+
+      {:ok, pid} = StateMachine.start_link(xml)
+
+      # Send event via top-level API
+      assert :ok = Statifier.send(pid, "start")
+
+      Process.sleep(10)
+      assert MapSet.member?(StateMachine.active_states(pid), "running")
+    end
+
+    test "sends events with data" do
+      xml = """
+      <scxml initial="waiting">
+        <state id="waiting">
+          <transition event="process" target="done"/>
+        </state>
+        <state id="done"/>
+      </scxml>
+      """
+
+      {:ok, pid} = StateMachine.start_link(xml)
+
+      assert :ok = Statifier.send(pid, "process", %{data: "test"})
+
+      Process.sleep(10)
+      assert MapSet.member?(StateMachine.active_states(pid), "done")
+    end
+  end
+
+  describe "Statifier.send_sync/2-3" do
+    test "sends events to StateChart synchronously" do
+      xml = """
+      <scxml initial="idle">
+        <state id="idle">
+          <transition event="start" target="running"/>
+        </state>
+        <state id="running">
+          <transition event="stop" target="idle"/>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document, _warnings} = Statifier.parse(xml)
+      {:ok, state_chart} = Interpreter.initialize(document)
+
+      # Send event synchronously
+      assert {:ok, new_state_chart} = Statifier.send_sync(state_chart, "start")
+
+      # Verify state changed
+      active_states = Configuration.active_leaf_states(new_state_chart.configuration)
+      assert MapSet.member?(active_states, "running")
+
+      # Send another event
+      assert {:ok, final_state_chart} = Statifier.send_sync(new_state_chart, "stop")
+
+      final_active = Configuration.active_leaf_states(final_state_chart.configuration)
+      assert MapSet.member?(final_active, "idle")
+    end
+
+    test "sends events with data synchronously" do
+      xml = """
+      <scxml initial="waiting">
+        <state id="waiting">
+          <transition event="data" target="processing"/>
+        </state>
+        <state id="processing"/>
+      </scxml>
+      """
+
+      {:ok, document, _warnings} = Statifier.parse(xml)
+      {:ok, state_chart} = Interpreter.initialize(document)
+
+      assert {:ok, new_state_chart} = Statifier.send_sync(state_chart, "data", %{payload: "test"})
+
+      active_states = Configuration.active_leaf_states(new_state_chart.configuration)
+      assert MapSet.member?(active_states, "processing")
     end
   end
 end
