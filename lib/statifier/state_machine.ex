@@ -112,7 +112,16 @@ defmodule Statifier.StateMachine do
 
   @impl GenServer
   def init(init_arg) do
-    case initialize_state_chart(init_arg) do
+    # Handle both direct init_arg and {init_arg, opts} tuple from supervisors
+    actual_init_arg =
+      case init_arg do
+        # From supervisor
+        {arg, _opts} -> arg
+        # Direct call
+        arg -> arg
+      end
+
+    case initialize_state_chart(actual_init_arg) do
       {:ok, state_chart} ->
         state = %__MODULE__{state_chart: state_chart}
         {:ok, state}
