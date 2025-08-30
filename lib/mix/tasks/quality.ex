@@ -251,6 +251,7 @@ defmodule Mix.Tasks.Quality do
     end
   end
 
+  @spec handle_markdown_autofix_failure(String.t(), [String.t()]) :: no_return()
   defp handle_markdown_autofix_failure(fix_error, md_files) do
     Mix.shell().error("❌ Automatic markdown fixing failed!")
     Mix.shell().info("💡 Manual fix may be required. Error output:")
@@ -326,26 +327,26 @@ defmodule Mix.Tasks.Quality do
   defp run_static_analysis do
     Mix.shell().info("🔍 Running static analysis (Credo)...")
 
-    case Mix.Task.run("credo", ["--strict"]) do
-      :ok ->
-        Mix.shell().info("✅ Static analysis passed")
-
-      _error ->
+    try do
+      Mix.Task.run("credo", ["--strict"])
+      Mix.shell().info("✅ Static analysis passed")
+    rescue
+      e in Mix.Error ->
         Mix.shell().error("❌ Credo analysis failed. Fix issues before proceeding.")
-        Mix.raise("Static analysis failed")
+        Mix.raise("Static analysis failed: #{Exception.message(e)}")
     end
   end
 
   defp run_type_checking do
     Mix.shell().info("🔬 Running type checking (Dialyzer)...")
 
-    case Mix.Task.run("dialyzer", []) do
-      :ok ->
-        Mix.shell().info("✅ Type checking passed")
-
-      _error ->
+    try do
+      Mix.Task.run("dialyzer", [])
+      Mix.shell().info("✅ Type checking passed")
+    rescue
+      e in Mix.Error ->
         Mix.shell().error("❌ Dialyzer type checking failed.")
-        Mix.raise("Type checking failed")
+        Mix.raise("Type checking failed: #{Exception.message(e)}")
     end
   end
 end
