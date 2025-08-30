@@ -10,14 +10,14 @@ defmodule Statifier.Supervisor do
 
       # Start the supervisor
       {:ok, supervisor_pid} = Statifier.Supervisor.start_link()
-      
+
       # Start a supervised StateMachine
       {:ok, machine_pid} = Statifier.Supervisor.start_child(supervisor_pid, "machine.xml")
-      
+
       # Start with options
       {:ok, machine_pid} = Statifier.Supervisor.start_child(
-        supervisor_pid, 
-        xml_string, 
+        supervisor_pid,
+        xml_string,
         name: :my_machine
       )
 
@@ -28,7 +28,7 @@ defmodule Statifier.Supervisor do
       children = [
         {Statifier.Supervisor, name: :statifier_supervisor}
       ]
-      
+
       {:ok, _} = Supervisor.start_link(children, strategy: :one_for_one)
 
   """
