@@ -231,7 +231,7 @@ defmodule StatifierTest do
       assert {:ok, state_chart} = Statifier.interpret(document)
 
       # Verify initial state is active
-      active_states = Configuration.active_states(state_chart.configuration)
+      active_states = Configuration.active_leaf_states(state_chart.configuration)
       assert MapSet.member?(active_states, "idle")
     end
 
@@ -256,7 +256,7 @@ defmodule StatifierTest do
       assert {:ok, state_chart} = Statifier.interpret(document)
 
       # Verify initial state is active
-      active_states = Configuration.active_states(state_chart.configuration)
+      active_states = Configuration.active_leaf_states(state_chart.configuration)
       assert MapSet.member?(active_states, "idle")
     end
   end

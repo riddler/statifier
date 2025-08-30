@@ -86,7 +86,7 @@ defmodule Statifier.HistoryResolutionTest do
       {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
       # Should resolve to default target (child1) since no history exists
-      active_config = Configuration.active_states(new_state_chart.configuration)
+      active_config = Configuration.active_leaf_states(new_state_chart.configuration)
       assert MapSet.member?(active_config, "child1")
 
       # Should NOT have the history state itself active (it's a pseudo-state)
@@ -106,7 +106,7 @@ defmodule Statifier.HistoryResolutionTest do
       {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
       # Should resolve to default target (child2) since no history exists
-      active_config = Configuration.active_states(new_state_chart.configuration)
+      active_config = Configuration.active_leaf_states(new_state_chart.configuration)
       assert MapSet.member?(active_config, "child2")
 
       # Should NOT have the history state itself active
@@ -141,7 +141,7 @@ defmodule Statifier.HistoryResolutionTest do
 
       # Should restore the immediate children from history (child2 and nested)
       # When nested is restored, it should enter its initial state (grandchild1)
-      active_config = Configuration.active_states(new_state_chart.configuration)
+      active_config = Configuration.active_leaf_states(new_state_chart.configuration)
       assert MapSet.member?(active_config, "child2")
       # nested's initial state
       assert MapSet.member?(active_config, "grandchild1")
@@ -176,7 +176,7 @@ defmodule Statifier.HistoryResolutionTest do
       {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
       # Should restore all atomic descendants from deep history
-      active_config = Configuration.active_states(new_state_chart.configuration)
+      active_config = Configuration.active_leaf_states(new_state_chart.configuration)
       assert MapSet.member?(active_config, "child2")
       assert MapSet.member?(active_config, "grandchild2")
 
@@ -224,7 +224,7 @@ defmodule Statifier.HistoryResolutionTest do
       {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
       # Since there's no history and no default, the history should resolve to nothing
-      active_config = Configuration.active_states(new_state_chart.configuration)
+      active_config = Configuration.active_leaf_states(new_state_chart.configuration)
 
       # Should not have any states from parent active (history resolved to empty)
       refute MapSet.member?(active_config, "child")
@@ -251,11 +251,11 @@ defmodule Statifier.HistoryResolutionTest do
       {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
       # Should restore the deep atomic state
-      active_config = Configuration.active_states(new_state_chart.configuration)
+      active_config = Configuration.active_leaf_states(new_state_chart.configuration)
       assert MapSet.member?(active_config, "grandchild2")
 
       # Check that ancestor computation works correctly
-      all_active = StateChart.active_states(new_state_chart)
+      all_active = Configuration.all_active_states(new_state_chart.configuration, new_state_chart.document)
       # Atomic state
       assert MapSet.member?(all_active, "grandchild2")
       # Its parent

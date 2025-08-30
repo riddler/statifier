@@ -22,7 +22,7 @@ defmodule Statifier.ConfigurationTest do
     test "returns the active states MapSet" do
       config = Configuration.new(["state_a", "state_b"])
 
-      active_states = Configuration.active_states(config)
+      active_states = Configuration.active_leaf_states(config)
       expected_states = MapSet.new(["state_a", "state_b"])
 
       assert active_states == expected_states
@@ -98,7 +98,7 @@ defmodule Statifier.ConfigurationTest do
 
       config = Configuration.new(["state_a"])
 
-      ancestors = Configuration.active_ancestors(config, document)
+      ancestors = Configuration.all_active_states(config, document)
 
       assert MapSet.equal?(ancestors, MapSet.new(["state_a"]))
     end
@@ -117,7 +117,7 @@ defmodule Statifier.ConfigurationTest do
 
       config = Configuration.new(["grandchild"])
 
-      ancestors = Configuration.active_ancestors(config, document)
+      ancestors = Configuration.all_active_states(config, document)
 
       # Should include the active state and all its ancestors
       expected = MapSet.new(["grandchild", "child", "parent"])
@@ -138,7 +138,7 @@ defmodule Statifier.ConfigurationTest do
 
       config = Configuration.new(["child1", "child2"])
 
-      ancestors = Configuration.active_ancestors(config, document)
+      ancestors = Configuration.all_active_states(config, document)
 
       # Should include both hierarchies
       expected = MapSet.new(["child1", "parent1", "child2", "parent2"])
@@ -157,7 +157,7 @@ defmodule Statifier.ConfigurationTest do
       # Reference a state that doesn't exist in the document
       config = Configuration.new(["state_a", "missing_state"])
 
-      ancestors = Configuration.active_ancestors(config, document)
+      ancestors = Configuration.all_active_states(config, document)
 
       # The function includes all active states, even missing ones, but doesn't find parents for missing states
       expected = MapSet.new(["state_a", "missing_state"])

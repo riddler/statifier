@@ -174,7 +174,7 @@ xml = """
 {:ok, state_chart} = Statifier.interpret(document)
 
 # Check active states
-active_states = Statifier.Interpreter.active_states(state_chart)
+active_states = Statifier.Configuration.active_leaf_states(state_chart.configuration)
 # Returns: MapSet.new(["start"])
 
 # Send event
@@ -182,7 +182,7 @@ event = Statifier.Event.new("go")
 {:ok, new_state_chart} = Statifier.Interpreter.send_event(state_chart, event)
 
 # Check new active states
-active_states = Statifier.Interpreter.active_states(new_state_chart)
+active_states = Statifier.Configuration.active_leaf_states(new_state_chart.configuration)
 # Returns: MapSet.new(["end"])
 ```
 
@@ -207,7 +207,7 @@ xml = """
 {:ok, state_chart} = Statifier.interpret(document)
 
 # Eventless transitions processed automatically during initialization
-active_states = Statifier.Interpreter.active_states(state_chart)
+active_states = Statifier.Configuration.active_leaf_states(state_chart.configuration)
 # Returns: MapSet.new(["processing"]) - automatically moved from start
 ```
 
@@ -240,7 +240,7 @@ xml = """
 {:ok, state_chart} = Statifier.interpret(document)
 
 # Both parallel regions active simultaneously
-active_states = Statifier.Interpreter.active_states(state_chart)
+active_states = Statifier.Configuration.active_leaf_states(state_chart.configuration)
 # Returns: MapSet.new(["idle", "offline"])
 ```
 
@@ -325,7 +325,7 @@ xml = """
 {:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, Statifier.Event.new("activate"))
 
 # Check active states - multiple states active simultaneously
-active_states = Statifier.Interpreter.active_states(state_chart)
+active_states = Statifier.Configuration.active_leaf_states(state_chart.configuration)
 # Returns: MapSet.new(["target1", "target2"]) - both targets entered
 ```
 
@@ -567,11 +567,11 @@ The implementation includes several key optimizations for production use:
 ```elixir
 # Automatic hierarchical entry
 {:ok, state_chart} = Statifier.interpret(document)
-active_states = Statifier.Interpreter.active_states(state_chart)
+active_states = Statifier.Configuration.active_leaf_states(state_chart.configuration)
 # Returns only leaf states (compound/parallel states entered automatically)
 
 # Fast ancestor computation when needed
-ancestors = Statifier.Interpreter.active_ancestors(state_chart) 
+ancestors = Statifier.Configuration.all_active_states(state_chart.configuration, state_chart.document) 
 # O(1) state lookups + O(d) ancestor traversal
 
 # Parallel states enter ALL child regions simultaneously

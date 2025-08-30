@@ -1,7 +1,7 @@
 defmodule Statifier.InterpreterTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.{Event, Interpreter}
+  alias Statifier.{Configuration, Event, Interpreter}
 
   describe "initialize/1" do
     test "initializes simple state chart with initial state" do
@@ -45,7 +45,7 @@ defmodule Statifier.InterpreterTest do
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should have no active states
-      active = Interpreter.active_states(state_chart)
+      active = Configuration.active_leaf_states(state_chart.configuration)
       assert MapSet.size(active) == 0
     end
 
@@ -164,8 +164,8 @@ defmodule Statifier.InterpreterTest do
       {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
-      active_states = Interpreter.active_states(state_chart)
-      active_ancestors = Interpreter.active_ancestors(state_chart)
+      active_states = Configuration.active_leaf_states(state_chart.configuration)
+      active_ancestors = Configuration.all_active_states(state_chart.configuration, state_chart.document)
 
       # active_states should only include leaf states
       assert MapSet.equal?(active_states, MapSet.new(["child"]))

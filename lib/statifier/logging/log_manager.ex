@@ -163,7 +163,7 @@ defmodule Statifier.Logging.LogManager do
       if state_chart.configuration != nil do
         active_states =
           state_chart.configuration
-          |> Configuration.active_states()
+          |> Configuration.active_leaf_states()
           |> MapSet.to_list()
 
         # Only add current_state if there are active states

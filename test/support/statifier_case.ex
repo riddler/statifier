@@ -97,7 +97,7 @@ defmodule Statifier.Case do
 
   defp assert_configuration(state_chart, expected_state_ids) do
     expected = MapSet.new(expected_state_ids)
-    actual = Interpreter.active_states(state_chart)
+    actual = Configuration.active_leaf_states(state_chart.configuration)
 
     # Convert to sorted lists for better error messages
     expected_list = expected |> Enum.sort()

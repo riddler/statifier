@@ -1,7 +1,7 @@
 defmodule Statifier.Interpreter.EventlessTransitionsTest do
   use Statifier.Case
 
-  alias Statifier.Interpreter
+  alias Statifier.{Configuration, Interpreter}
 
   @moduletag :unit
 
@@ -148,7 +148,7 @@ defmodule Statifier.Interpreter.EventlessTransitionsTest do
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Just ensure we don't crash and have some stable state
-      assert Interpreter.active_states(state_chart) |> MapSet.size() > 0
+      assert Configuration.active_leaf_states(state_chart.configuration) |> MapSet.size() > 0
     end
   end
 end

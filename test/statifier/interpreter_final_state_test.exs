@@ -1,7 +1,7 @@
 defmodule Statifier.InterpreterFinalStateTest do
   use ExUnit.Case
 
-  alias Statifier.{Event, Interpreter}
+  alias Statifier.{Configuration, Event, Interpreter}
 
   test "interprets final state as atomic state" do
     xml = """
@@ -14,7 +14,7 @@ defmodule Statifier.InterpreterFinalStateTest do
     {:ok, state_chart} = Interpreter.initialize(document)
 
     # Final state should be active as initial state
-    active_states = Interpreter.active_states(state_chart)
+    active_states = Configuration.active_leaf_states(state_chart.configuration)
     assert MapSet.member?(active_states, "final_state")
   end
 
@@ -32,7 +32,7 @@ defmodule Statifier.InterpreterFinalStateTest do
     {:ok, state_chart} = Interpreter.initialize(document)
 
     # Initially in s1
-    active_states = Interpreter.active_states(state_chart)
+    active_states = Configuration.active_leaf_states(state_chart.configuration)
     assert MapSet.member?(active_states, "s1")
     refute MapSet.member?(active_states, "final_state")
 
@@ -41,7 +41,7 @@ defmodule Statifier.InterpreterFinalStateTest do
     {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
     # Should now be in final state
-    active_states = Interpreter.active_states(new_state_chart)
+    active_states = Configuration.active_leaf_states(new_state_chart.configuration)
     refute MapSet.member?(active_states, "s1")
     assert MapSet.member?(active_states, "final_state")
   end
@@ -66,7 +66,7 @@ defmodule Statifier.InterpreterFinalStateTest do
     {:ok, state_chart} = Interpreter.send_event(state_chart, event)
 
     # Verify in final state
-    active_states = Interpreter.active_states(state_chart)
+    active_states = Configuration.active_leaf_states(state_chart.configuration)
     assert MapSet.member?(active_states, "final_state")
 
     # Transition back from final state
@@ -74,7 +74,7 @@ defmodule Statifier.InterpreterFinalStateTest do
     {:ok, final_state_chart} = Interpreter.send_event(state_chart, restart_event)
 
     # Should be back in s1
-    active_states = Interpreter.active_states(final_state_chart)
+    active_states = Configuration.active_leaf_states(final_state_chart.configuration)
     assert MapSet.member?(active_states, "s1")
     refute MapSet.member?(active_states, "final_state")
   end
@@ -95,11 +95,11 @@ defmodule Statifier.InterpreterFinalStateTest do
     {:ok, state_chart} = Interpreter.initialize(document)
 
     # Initially in child1
-    active_states = Interpreter.active_states(state_chart)
+    active_states = Configuration.active_leaf_states(state_chart.configuration)
     assert MapSet.member?(active_states, "child1")
 
     # Check ancestors include compound state
-    active_ancestors = Interpreter.active_ancestors(state_chart)
+    active_ancestors = Configuration.all_active_states(state_chart.configuration, state_chart.document)
     assert MapSet.member?(active_ancestors, "compound")
     assert MapSet.member?(active_ancestors, "child1")
 
@@ -108,12 +108,12 @@ defmodule Statifier.InterpreterFinalStateTest do
     {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
     # Should be in child_final
-    active_states = Interpreter.active_states(new_state_chart)
+    active_states = Configuration.active_leaf_states(new_state_chart.configuration)
     assert MapSet.member?(active_states, "child_final")
     refute MapSet.member?(active_states, "child1")
 
     # Check ancestors still include compound state
-    active_ancestors = Interpreter.active_ancestors(new_state_chart)
+    active_ancestors = Configuration.all_active_states(new_state_chart.configuration, new_state_chart.document)
     assert MapSet.member?(active_ancestors, "compound")
     assert MapSet.member?(active_ancestors, "child_final")
   end

@@ -26,8 +26,8 @@ defmodule Statifier.Configuration do
   @doc """
   Get the set of active leaf states.
   """
-  @spec active_states(t()) :: MapSet.t(String.t())
-  def active_states(%__MODULE__{active_states: states}) do
+  @spec active_leaf_states(t()) :: MapSet.t(String.t())
+  def active_leaf_states(%__MODULE__{active_states: states}) do
     states
   end
 
@@ -62,8 +62,8 @@ defmodule Statifier.Configuration do
   where d is the maximum depth and n is the number of states. This optimization is
   critical since active configuration is computed frequently during interpretation.
   """
-  @spec active_ancestors(t(), Statifier.Document.t()) :: MapSet.t(String.t())
-  def active_ancestors(%__MODULE__{} = config, %Statifier.Document{} = document) do
+  @spec all_active_states(t(), Statifier.Document.t()) :: MapSet.t(String.t())
+  def all_active_states(%__MODULE__{} = config, %Statifier.Document{} = document) do
     config.active_states
     |> Enum.reduce(MapSet.new(), fn state_id, acc ->
       ancestors = get_state_ancestors(state_id, document)
