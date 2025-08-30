@@ -9,6 +9,7 @@ defmodule Mix.Tasks.Quality do
   - Trailing whitespace check (and auto-fix if needed)
   - Markdown linting (and auto-fix if needed, if markdownlint-cli2 is available)
   - Regression tests (critical tests that should always pass)
+  - Test coverage check (requires >90% coverage)
   - Static code analysis with Credo (strict mode)
   - Type checking with Dialyzer
 
@@ -60,10 +61,13 @@ defmodule Mix.Tasks.Quality do
     # Step 4: Regression tests
     run_regression_tests()
 
-    # Step 5: Static analysis
+    # Step 5: Coverage check
+    run_coverage_check()
+
+    # Step 6: Static analysis
     run_static_analysis()
 
-    # Step 6: Type checking (unless skipped)
+    # Step 7: Type checking (unless skipped)
     unless opts[:skip_dialyzer] do
       run_type_checking()
     end
@@ -295,6 +299,34 @@ defmodule Mix.Tasks.Quality do
       _error ->
         Mix.shell().error("❌ Regression tests failed. These tests should always pass!")
         Mix.raise("Regression tests failed")
+    end
+  end
+
+  defp run_coverage_check do
+    Mix.shell().info("📊 Running test coverage check...")
+
+    case System.cmd("env", ["MIX_ENV=test", "mix", "coveralls"], stderr_to_stdout: true) do
+      {_output, 0} ->
+        Mix.shell().info("✅ Coverage check passed (>90% required)")
+
+      {output, _exit_code} ->
+        # Extract the coverage percentage from the output
+        coverage_line =
+          output
+          |> String.split("\n")
+          |> Enum.find(&String.contains?(&1, "[TOTAL]"))
+
+        case coverage_line do
+          nil ->
+            Mix.shell().error("❌ Coverage check failed - could not determine coverage percentage")
+
+          line ->
+            Mix.shell().error("❌ Coverage check failed: #{String.trim(line)}")
+        end
+
+        Mix.shell().info("💡 Run 'MIX_ENV=test mix coveralls.detail' to see uncovered lines")
+        Mix.shell().info("💡 Add more tests to increase coverage above 90%")
+        Mix.raise("Coverage check failed")
     end
   end
 
