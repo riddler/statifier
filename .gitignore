@@ -29,4 +29,4 @@ statifier-*.tar
 /priv/plts/
 
 # Keep granted permissions local to the person
-.claude
+.claude/*.local.json
