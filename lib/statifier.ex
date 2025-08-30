@@ -6,7 +6,7 @@ defmodule Statifier do
   and optimization, including relaxed parsing mode for simplified tests.
   """
 
-  alias Statifier.{Interpreter, Parser.SCXML, Validator}
+  alias Statifier.{Parser.SCXML, Validator}
 
   @doc """
   Parse and validate an SCXML document in one step.
@@ -81,7 +81,4 @@ defmodule Statifier do
     end
   end
 
-  # Legacy delegates
-  defdelegate validate(document), to: Validator
-  defdelegate interpret(document), to: Interpreter, as: :initialize
 end

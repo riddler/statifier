@@ -2,7 +2,7 @@ defmodule StatifierTest do
   use ExUnit.Case
   doctest Statifier
 
-  alias Statifier.{Configuration, Document}
+  alias Statifier.{Configuration, Document, Interpreter, Validator}
 
   describe "Statifier.parse/2" do
     test "parses basic SCXML document successfully" do
@@ -31,7 +31,7 @@ defmodule StatifierTest do
     end
   end
 
-  describe "Statifier.validate/1" do
+  describe "Validator.validate/1" do
     test "validates a valid document successfully" do
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
@@ -41,7 +41,7 @@ defmodule StatifierTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml, validate: false)
-      assert {:ok, _optimized_document, _warnings} = Statifier.validate(document)
+      assert {:ok, _optimized_document, _warnings} = Validator.validate(document)
     end
 
     test "returns error for document with missing initial state" do
@@ -53,33 +53,7 @@ defmodule StatifierTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml, validate: false)
-      assert {:error, _errors, _warnings} = Statifier.validate(document)
-    end
-  end
-
-  describe "Statifier.interpret/1" do
-    test "initializes interpreter with valid document" do
-      xml = """
-      <?xml version="1.0" encoding="UTF-8"?>
-      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="start">
-        <state id="start"/>
-      </scxml>
-      """
-
-      {:ok, document, _warnings} = Statifier.parse(xml)
-      assert {:ok, state_chart} = Statifier.interpret(document)
-      assert %Statifier.StateChart{} = state_chart
-    end
-
-    test "returns error for invalid document" do
-      # Create an invalid document by manually constructing it
-      invalid_document = %Statifier.Document{
-        states: [],
-        initial: "nonexistent",
-        name: nil
-      }
-
-      assert {:error, _errors, _warnings} = Statifier.interpret(invalid_document)
+      assert {:error, _errors, _warnings} = Validator.validate(document)
     end
   end
 
@@ -193,7 +167,7 @@ defmodule StatifierTest do
   end
 
   describe "integration tests" do
-    test "full workflow: parse -> validate -> interpret" do
+    test "full workflow: parse -> interpret" do
       xml = """
       <?xml version="1.0" encoding="UTF-8"?>
       <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="idle">
@@ -209,11 +183,8 @@ defmodule StatifierTest do
       # Parse
       assert {:ok, document, _warnings} = Statifier.parse(xml, validate: false)
 
-      # Validate
-      assert {:ok, _optimized_document, _warnings} = Statifier.validate(document)
-
       # Interpret
-      assert {:ok, state_chart} = Statifier.interpret(document)
+      assert {:ok, state_chart} = Interpreter.initialize(document)
 
       # Verify initial state is active
       active_states = Configuration.active_leaf_states(state_chart.configuration)
@@ -238,7 +209,7 @@ defmodule StatifierTest do
       assert document.validated == true
 
       # Interpret
-      assert {:ok, state_chart} = Statifier.interpret(document)
+      assert {:ok, state_chart} = Interpreter.initialize(document)
 
       # Verify initial state is active
       active_states = Configuration.active_leaf_states(state_chart.configuration)

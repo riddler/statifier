@@ -18,7 +18,7 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml)
-      {:ok, state_chart} = Statifier.interpret(document)
+      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
 
       event = %Event{name: "start"}
       transitions = TransitionResolver.find_enabled_transitions(state_chart, event)
@@ -40,7 +40,7 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml)
-      {:ok, state_chart} = Statifier.interpret(document)
+      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
 
       event = %Event{name: "unknown"}
       transitions = TransitionResolver.find_enabled_transitions(state_chart, event)
@@ -64,7 +64,7 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml)
-      {:ok, state_chart} = Statifier.interpret(document)
+      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
 
       # Should find reset transition from app state even when in idle
       event = %Event{name: "reset"}
@@ -118,7 +118,7 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml)
-      {:ok, state_chart} = Statifier.interpret(document)
+      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
 
       transitions = TransitionResolver.find_eventless_transitions(state_chart)
 
@@ -142,7 +142,7 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml)
-      {:ok, _state_chart} = Statifier.interpret(document)
+      {:ok, _state_chart} = Statifier.Interpreter.initialize(document)
 
       # Create mock transitions for testing conflict resolution
       parent_transition = %{
@@ -237,7 +237,7 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml)
-      {:ok, state_chart} = Statifier.interpret(document)
+      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
 
       # Get the actual transition from the document to test with real compiled condition
       transitions = Document.get_transitions_from_state(document, "idle")
@@ -264,7 +264,7 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml)
-      {:ok, state_chart} = Statifier.interpret(document)
+      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
 
       event = %Event{name: "test"}
       transitions = TransitionResolver.find_enabled_transitions(state_chart, event)
@@ -293,7 +293,7 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml)
-      {:ok, state_chart} = Statifier.interpret(document)
+      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
 
       # Local event should only trigger the deepest transition due to conflict resolution
       local_event = %Event{name: "local"}

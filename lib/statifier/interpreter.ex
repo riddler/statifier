@@ -100,8 +100,17 @@ defmodule Statifier.Interpreter do
       # Execute microsteps (eventless transitions and internal events) after initialization
       |> execute_microsteps()
 
-    # Log warnings if any (TODO: Use proper logging)
-    if warnings != [], do: :ok
+    # Log warnings if any using proper logging infrastructure
+    state_chart = 
+      if warnings != [] do
+        LogManager.warn(state_chart, "Document validation warnings", %{
+          warning_count: length(warnings),
+          warnings: warnings
+        })
+      else
+        state_chart
+      end
+
     {:ok, state_chart}
   end
 
