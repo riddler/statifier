@@ -9,14 +9,14 @@ defmodule Statifier.StateMachine do
 
       defmodule MyMachine do
         use Statifier.StateMachine, scxml: "my_machine.xml"
-        
+
         def handle_state_enter(state_id, state_chart, _context) do
           Logger.info("Entered: \#{state_id}")
         end
-        
+
         def handle_send_action(target, event, data, _state_chart) do
           case target do
-            "external_api" -> MyAPI.send(event, data)  
+            "external_api" -> MyAPI.send(event, data)
             _ -> :ok
           end
         end
@@ -39,10 +39,10 @@ defmodule Statifier.StateMachine do
 
       # Start from SCXML file
       {:ok, pid} = Statifier.StateMachine.start_link("path/to/machine.xml")
-      
+
       # Start from SCXML string
       {:ok, pid} = Statifier.StateMachine.start_link(xml_string)
-      
+
       # Send events asynchronously
       Statifier.send(pid, "start_event")
       Statifier.send(pid, "data_event", %{key: "value"})
@@ -90,7 +90,7 @@ defmodule Statifier.StateMachine do
 
   The macro generates:
   - `start_link/1` - Start the StateMachine GenServer
-  - `child_spec/1` - OTP child specification for supervisors  
+  - `child_spec/1` - OTP child specification for supervisors
   - Default callback implementations from StateMachineBehaviour
 
   """

@@ -12,7 +12,7 @@ defmodule Statifier.StateMachineBehaviour do
   ### State Transition Callbacks
 
   - `handle_state_enter/3` - Called when entering any state
-  - `handle_state_exit/3` - Called when exiting any state  
+  - `handle_state_exit/3` - Called when exiting any state
   - `handle_transition/4` - Called for any state transition
 
   ### Action Callbacks
@@ -30,11 +30,11 @@ defmodule Statifier.StateMachineBehaviour do
 
       defmodule MyMachine do
         use Statifier.StateMachine, scxml: "my_machine.xml"
-        
+
         def handle_state_enter(state_id, state_chart, context) do
           Logger.info("Entered state: \#{state_id}")
         end
-        
+
         def handle_send_action(target, event, data, state_chart) do
           case target do
             "external_api" -> MyAPI.send_event(event, data)
@@ -42,7 +42,7 @@ defmodule Statifier.StateMachineBehaviour do
             _ -> :ok
           end
         end
-        
+
         def handle_snapshot(state_chart, context) do
           MyDB.save_state_chart(state_chart)
         end
@@ -89,7 +89,7 @@ defmodule Statifier.StateMachineBehaviour do
   ## Parameters
 
   - `from_states` - List of state IDs being exited
-  - `to_states` - List of state IDs being entered  
+  - `to_states` - List of state IDs being entered
   - `event` - The event that triggered the transition (may be nil)
   - `state_chart` - The updated StateChart after transition
 
