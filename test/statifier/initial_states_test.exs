@@ -2,6 +2,7 @@ defmodule Statifier.InitialStatesTest do
   use ExUnit.Case
 
   alias Statifier.{
+    Configuration,
     Document,
     FeatureDetector,
     Interpreter,
@@ -232,7 +233,9 @@ defmodule Statifier.InitialStatesTest do
       {:ok, document} = SCXML.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
-      active_states = Interpreter.active_states(state_chart) |> MapSet.to_list()
+      active_states =
+        Configuration.active_leaf_states(state_chart.configuration) |> MapSet.to_list()
+
       # Should enter child2 as specified by initial element, not child1 (first child)
       assert active_states == ["child2"]
     end
@@ -252,7 +255,9 @@ defmodule Statifier.InitialStatesTest do
       {:ok, document} = SCXML.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
-      active_states = Interpreter.active_states(state_chart) |> MapSet.to_list()
+      active_states =
+        Configuration.active_leaf_states(state_chart.configuration) |> MapSet.to_list()
+
       # Should enter first non-initial child
       assert active_states == ["child1"]
     end

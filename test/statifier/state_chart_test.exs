@@ -219,11 +219,12 @@ defmodule Statifier.StateChartTest do
       document: document,
       configuration: configuration
     } do
-      # Mock the Configuration.active_ancestors function behavior
+      # Mock the Configuration.all_active_states function behavior
       state_chart = StateChart.new(document, configuration)
 
-      # This calls Statifier.Configuration.active_ancestors/2 which should return the computed ancestors
-      active_states = StateChart.active_states(state_chart)
+      # This calls Statifier.Configuration.all_active_states/2 which should return the computed ancestors
+      active_states =
+        Configuration.all_active_states(state_chart.configuration, state_chart.document)
 
       # Since we're using a simple configuration, this should work
       assert is_struct(active_states, MapSet)

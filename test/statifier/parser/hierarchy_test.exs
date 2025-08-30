@@ -61,7 +61,7 @@ defmodule Statifier.Parser.HierarchyTest do
       config = Configuration.new(["grandchild"])
 
       # Get all active states including ancestors
-      active_ancestors = Configuration.active_ancestors(config, document)
+      active_ancestors = Configuration.all_active_states(config, document)
 
       # Should include the active state plus all its ancestors
       expected = MapSet.new(["grandchild", "child", "parent"])

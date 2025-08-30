@@ -35,7 +35,7 @@ defmodule Statifier.DatamodelTest do
     event = %Event{name: event_name}
     {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
-    active_states = Configuration.active_states(new_state_chart.configuration)
+    active_states = Configuration.active_leaf_states(new_state_chart.configuration)
     assert MapSet.member?(active_states, expected_state)
     refute MapSet.member?(active_states, rejected_state)
   end

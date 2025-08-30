@@ -6,7 +6,7 @@ defmodule Statifier do
   and optimization, including relaxed parsing mode for simplified tests.
   """
 
-  alias Statifier.{Interpreter, Parser.SCXML, Validator}
+  alias Statifier.{Parser.SCXML, Validator}
 
   @doc """
   Parse and validate an SCXML document in one step.
@@ -55,17 +55,6 @@ defmodule Statifier do
   end
 
   @doc """
-  Parse an SCXML document without validation (not recommended).
-
-  This is a convenience function for cases where you need only parsing
-  without validation. For most use cases, use `parse/2` instead.
-  """
-  @spec parse_only(String.t(), keyword()) :: {:ok, Statifier.Document.t()} | {:error, term()}
-  def parse_only(xml_string, opts \\ []) do
-    SCXML.parse(xml_string, opts)
-  end
-
-  @doc """
   Check if a document has been validated.
 
   Returns true if the document has been processed through the validator,
@@ -90,8 +79,4 @@ defmodule Statifier do
         {:error, {:validation_errors, errors, warnings}}
     end
   end
-
-  # Legacy delegates
-  defdelegate validate(document), to: Validator
-  defdelegate interpret(document), to: Interpreter, as: :initialize
 end

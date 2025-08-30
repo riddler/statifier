@@ -83,7 +83,7 @@ defmodule Statifier.Interpreter do
   # Helper function to avoid code duplication
   defp initialize_state_chart(optimized_document, warnings, opts) do
     initial_config = get_initial_configuration(optimized_document)
-    initial_states = MapSet.to_list(Configuration.active_states(initial_config))
+    initial_states = MapSet.to_list(Configuration.active_leaf_states(initial_config))
 
     state_chart = StateChart.new(optimized_document, initial_config)
 
@@ -100,8 +100,17 @@ defmodule Statifier.Interpreter do
       # Execute microsteps (eventless transitions and internal events) after initialization
       |> execute_microsteps()
 
-    # Log warnings if any (TODO: Use proper logging)
-    if warnings != [], do: :ok
+    # Log warnings if any using proper logging infrastructure
+    state_chart =
+      if warnings != [] do
+        LogManager.warn(state_chart, "Document validation warnings", %{
+          warning_count: length(warnings),
+          warnings: warnings
+        })
+      else
+        state_chart
+      end
+
     {:ok, state_chart}
   end
 
@@ -141,27 +150,11 @@ defmodule Statifier.Interpreter do
   end
 
   @doc """
-  Get all currently active leaf states (not including ancestors).
-  """
-  @spec active_states(StateChart.t()) :: MapSet.t(String.t())
-  def active_states(%StateChart{} = state_chart) do
-    Configuration.active_states(state_chart.configuration)
-  end
-
-  @doc """
-  Get all currently active states including ancestors.
-  """
-  @spec active_ancestors(StateChart.t()) :: MapSet.t(String.t())
-  def active_ancestors(%StateChart{} = state_chart) do
-    StateChart.active_states(state_chart)
-  end
-
-  @doc """
   Check if a specific state is currently active (including ancestors).
   """
   @spec active?(StateChart.t(), String.t()) :: boolean()
   def active?(%StateChart{} = state_chart, state_id) do
-    active_ancestors(state_chart)
+    Configuration.all_active_states(state_chart.configuration, state_chart.document)
     |> MapSet.member?(state_id)
   end
 
@@ -390,7 +383,7 @@ defmodule Statifier.Interpreter do
          new_target_states
        ) do
     # Get the current active leaf states
-    current_active = Configuration.active_states(state_chart.configuration)
+    current_active = Configuration.active_leaf_states(state_chart.configuration)
 
     # Compute exit set for these specific transitions
     exit_set = compute_exit_set(transitions, current_active, document)

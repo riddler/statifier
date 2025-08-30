@@ -1,7 +1,7 @@
 defmodule Statifier.Interpreter.CompoundStateTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.{Event, Interpreter}
+  alias Statifier.{Configuration, Event, Interpreter}
 
   describe "compound state entry" do
     test "enters initial child state automatically" do
@@ -18,7 +18,7 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should automatically enter child1 when entering parent
-      active_states = Interpreter.active_states(state_chart)
+      active_states = Configuration.active_leaf_states(state_chart.configuration)
       assert MapSet.equal?(active_states, MapSet.new(["child1"]))
     end
 
@@ -35,7 +35,7 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
-      active_states = Interpreter.active_states(state_chart)
+      active_states = Configuration.active_leaf_states(state_chart.configuration)
       assert MapSet.equal?(active_states, MapSet.new(["first_child"]))
     end
 
@@ -54,7 +54,7 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Should automatically enter the deepest child (level3)
-      active_states = Interpreter.active_states(state_chart)
+      active_states = Configuration.active_leaf_states(state_chart.configuration)
       assert MapSet.equal?(active_states, MapSet.new(["level3"]))
     end
 
@@ -71,11 +71,13 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Leaf states: ["child"]
-      active_states = Interpreter.active_states(state_chart)
+      active_states = Configuration.active_leaf_states(state_chart.configuration)
       assert MapSet.equal?(active_states, MapSet.new(["child"]))
 
       # Including ancestors: ["child", "parent"]
-      active_ancestors = Interpreter.active_ancestors(state_chart)
+      active_ancestors =
+        Configuration.all_active_states(state_chart.configuration, state_chart.document)
+
       assert MapSet.equal?(active_ancestors, MapSet.new(["child", "parent"]))
     end
   end
@@ -98,7 +100,7 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       {:ok, state_chart} = Interpreter.initialize(document)
 
       # Initially in simple state
-      active_states = Interpreter.active_states(state_chart)
+      active_states = Configuration.active_leaf_states(state_chart.configuration)
       assert MapSet.equal?(active_states, MapSet.new(["simple"]))
 
       # Transition to compound state
@@ -106,11 +108,13 @@ defmodule Statifier.Interpreter.CompoundStateTest do
       {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
 
       # Should automatically enter child1 (initial child of compound state)
-      active_states = Interpreter.active_states(new_state_chart)
+      active_states = Configuration.active_leaf_states(new_state_chart.configuration)
       assert MapSet.equal?(active_states, MapSet.new(["child1"]))
 
       # Ancestors should include both child1 and compound
-      active_ancestors = Interpreter.active_ancestors(new_state_chart)
+      active_ancestors =
+        Configuration.all_active_states(new_state_chart.configuration, new_state_chart.document)
+
       assert MapSet.equal?(active_ancestors, MapSet.new(["child1", "compound"]))
     end
   end

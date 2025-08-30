@@ -22,7 +22,7 @@ defmodule Statifier.Interpreter.TransitionResolver do
   - Condition evaluation with state chart context
   """
 
-  alias Statifier.{Document, Evaluator, Event, StateChart, StateHierarchy}
+  alias Statifier.{Configuration, Document, Evaluator, Event, StateChart, StateHierarchy}
 
   @doc """
   Find enabled transitions for a given event.
@@ -127,7 +127,8 @@ defmodule Statifier.Interpreter.TransitionResolver do
         ]
   defp find_enabled_transitions_for_event(%StateChart{} = state_chart, event_or_nil) do
     # Get all currently active states (including ancestors)
-    active_states_with_ancestors = StateChart.active_states(state_chart)
+    active_states_with_ancestors =
+      Configuration.all_active_states(state_chart.configuration, state_chart.document)
 
     # Update the state chart with current event for context building
     state_chart_with_event = %{state_chart | current_event: event_or_nil}

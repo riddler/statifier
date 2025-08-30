@@ -122,14 +122,6 @@ defmodule Statifier.StateChart do
   end
 
   @doc """
-  Get all currently active states including ancestors.
-  """
-  @spec active_states(t()) :: MapSet.t(String.t())
-  def active_states(%__MODULE__{} = state_chart) do
-    Configuration.active_ancestors(state_chart.configuration, state_chart.document)
-  end
-
-  @doc """
   Update the datamodel of the state chart.
   """
   @spec update_datamodel(t(), Statifier.Datamodel.t()) :: t()
@@ -182,7 +174,8 @@ defmodule Statifier.StateChart do
   @spec record_history(t(), String.t()) :: t()
   def record_history(%__MODULE__{} = state_chart, parent_state_id)
       when is_binary(parent_state_id) do
-    active_states = active_states(state_chart)
+    active_states =
+      Configuration.all_active_states(state_chart.configuration, state_chart.document)
 
     updated_tracker =
       HistoryTracker.record_history(

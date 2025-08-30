@@ -7,7 +7,7 @@ defmodule Statifier.MixProject do
   @source_url "https://github.com/riddler/statifier"
   @deps [
     # Documentation (split out to reduce compile time in dev/test)
-    {:ex_doc, "~> 0.31", only: :docs, runtime: false},
+    {:ex_doc, "~> 0.31", only: :dev, runtime: false},
 
     # Development, Test, Local
     {:castore, "~> 1.0", only: [:dev, :test]},
@@ -60,7 +60,7 @@ defmodule Statifier.MixProject do
   defp package do
     [
       name: @app,
-      files: ~w(lib mix.exs README.md LICENSE CHANGELOG.md),
+      files: ~w(lib/statifier* mix.exs README.md LICENSE CHANGELOG.md),
       licenses: ["MIT"],
       links: %{"GitHub" => @source_url},
       maintainers: ["Riddler Team"]

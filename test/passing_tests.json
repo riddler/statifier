@@ -5,7 +5,7 @@
     "test/statifier/**/*_test.exs",
     "test/mix/**/*_test.exs"
   ],
-  "last_updated": "2025-08-29",
+  "last_updated": "2025-08-30",
   "scion_tests": [
     "test/scion_tests/actionSend/send2_test.exs",
     "test/scion_tests/actionSend/send3_test.exs",
@@ -67,18 +67,26 @@
     "test/scion_tests/parallel_interrupt/test29_test.exs",
     "test/scion_tests/parallel_interrupt/test6_test.exs",
     "test/scion_tests/parallel_interrupt/test8_test.exs",
-    "test/scion_tests/parallel_interrupt/test9_test.exs"
+    "test/scion_tests/parallel_interrupt/test9_test.exs",
+    "test/scion_tests/send_internal/test0_test.exs"
   ],
   "w3c_tests": [
     "test/scxml_tests/mandatory/EvaluationofExecutableContent/test158_test.exs",
+    "test/scxml_tests/mandatory/SelectingTransitions/test403a_test.exs",
     "test/scxml_tests/mandatory/SelectingTransitions/test407_test.exs",
+    "test/scxml_tests/mandatory/SelectingTransitions/test411_test.exs",
+    "test/scxml_tests/mandatory/SelectingTransitions/test419_test.exs",
+    "test/scxml_tests/mandatory/data/test280_test.exs",
     "test/scxml_tests/mandatory/events/test396_test.exs",
     "test/scxml_tests/mandatory/foreach/test153_test.exs",
+    "test/scxml_tests/mandatory/history/test387_test.exs",
     "test/scxml_tests/mandatory/if/test147_test.exs",
     "test/scxml_tests/mandatory/if/test148_test.exs",
     "test/scxml_tests/mandatory/if/test149_test.exs",
     "test/scxml_tests/mandatory/onentry/test375_test.exs",
+    "test/scxml_tests/mandatory/onentry/test376_test.exs",
     "test/scxml_tests/mandatory/onexit/test377_test.exs",
+    "test/scxml_tests/mandatory/onexit/test378_test.exs",
     "test/scxml_tests/mandatory/raise/test144_test.exs",
     "test/scxml_tests/mandatory/scxml/test355_test.exs"
   ]

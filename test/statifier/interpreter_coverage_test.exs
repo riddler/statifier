@@ -16,7 +16,7 @@ defmodule Statifier.InterpreterCoverageTest do
       result = Interpreter.initialize(empty_document)
       assert {:ok, %StateChart{}} = result
 
-      assert result |> elem(1) |> Map.get(:configuration) |> Configuration.active_states() ==
+      assert result |> elem(1) |> Map.get(:configuration) |> Configuration.active_leaf_states() ==
                MapSet.new()
     end
 
@@ -45,7 +45,8 @@ defmodule Statifier.InterpreterCoverageTest do
       assert {:ok, updated_chart} = result
 
       # Should stay in same state
-      assert Configuration.active_states(updated_chart.configuration) == MapSet.new(["state1"])
+      assert Configuration.active_leaf_states(updated_chart.configuration) ==
+               MapSet.new(["state1"])
     end
 
     test "initialize with validation errors" do
