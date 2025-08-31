@@ -337,4 +337,103 @@ defmodule Statifier.Parser.SCXML.StateStackTest do
       [{"state", _state}] = result.stack
     end
   end
+
+  describe "handle_characters/2" do
+    test "adds text content to content element" do
+      content = %Statifier.Actions.SendContent{
+        expr: nil,
+        content: nil,
+        source_location: %{}
+      }
+
+      parsing_state = %{
+        stack: [{"content", content}],
+        result: %{}
+      }
+
+      {:ok, result} = StateStack.handle_characters("More content.", parsing_state)
+
+      # Should update the content element with text
+      [{"content", updated_content}] = result.stack
+      assert updated_content.content == "More content."
+    end
+
+    test "trims whitespace from content" do
+      content = %Statifier.Actions.SendContent{
+        expr: nil,
+        content: nil,
+        source_location: %{}
+      }
+
+      parsing_state = %{
+        stack: [{"content", content}],
+        result: %{}
+      }
+
+      {:ok, result} = StateStack.handle_characters("  \n  Trimmed content  \t  ", parsing_state)
+
+      [{"content", updated_content}] = result.stack
+      assert updated_content.content == "Trimmed content"
+    end
+
+    test "ignores whitespace-only content" do
+      content = %Statifier.Actions.SendContent{
+        expr: nil,
+        content: nil,
+        source_location: %{}
+      }
+
+      parsing_state = %{
+        stack: [{"content", content}],
+        result: %{}
+      }
+
+      {:ok, result} = StateStack.handle_characters("  \n\t  ", parsing_state)
+
+      # Should leave content as nil for whitespace-only
+      [{"content", updated_content}] = result.stack
+      assert updated_content.content == nil
+    end
+
+    test "returns :not_handled for non-content elements" do
+      state_element = %State{id: "test_state", type: :atomic}
+
+      parsing_state = %{
+        stack: [{"state", state_element}],
+        result: %{}
+      }
+
+      result = StateStack.handle_characters("Some text", parsing_state)
+      assert result == :not_handled
+    end
+
+    test "returns :not_handled for empty stack" do
+      parsing_state = %{
+        stack: [],
+        result: %{}
+      }
+
+      result = StateStack.handle_characters("Some text", parsing_state)
+      assert result == :not_handled
+    end
+
+    test "handles multiple text chunks by replacing content" do
+      content = %Statifier.Actions.SendContent{
+        expr: nil,
+        content: "First content",
+        source_location: %{}
+      }
+
+      parsing_state = %{
+        stack: [{"content", content}],
+        result: %{}
+      }
+
+      {:ok, result} = StateStack.handle_characters("Second content", parsing_state)
+
+      # Should replace existing content with new content
+      [{"content", updated_content}] = result.stack
+      assert updated_content.content == "Second content"
+    end
+  end
 end

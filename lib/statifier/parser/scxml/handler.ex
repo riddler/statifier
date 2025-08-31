@@ -72,9 +72,13 @@ defmodule Statifier.Parser.SCXML.Handler do
     do: {:ok, StateStack.pop_element(state)}
 
   @impl Saxy.Handler
-  def handle_event(:characters, _character_data, state) do
-    # Ignore text content for now since SCXML elements don't have mixed content
-    {:ok, state}
+  def handle_event(:characters, character_data, state) do
+    # Handle text content for elements that need it (like <content>)
+    case StateStack.handle_characters(character_data, state) do
+      {:ok, updated_state} -> {:ok, updated_state}
+      # Ignore text for other elements
+      :not_handled -> {:ok, state}
+    end
   end
 
   # Private helper functions for element handling

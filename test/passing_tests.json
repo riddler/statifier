@@ -69,6 +69,7 @@
     "test/scion_tests/parallel_interrupt/test6_test.exs",
     "test/scion_tests/parallel_interrupt/test8_test.exs",
     "test/scion_tests/parallel_interrupt/test9_test.exs",
+    "test/scion_tests/send_internal/test0_test.exs",
     "test/scion_tests/targetless_transition/test0_test.exs"
   ],
   "w3c_tests": [
