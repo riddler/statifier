@@ -86,8 +86,8 @@ defmodule Statifier.FeatureDetector do
       event_expressions: :unsupported,
       target_expressions: :unsupported,
 
-      # Wildcard and pattern events (supported)
-      wildcard_events: :supported,
+      # Wildcard and pattern events (unsupported)
+      wildcard_events: :unsupported,
 
       # Invocation and external processes (unsupported)
       invoke_elements: :unsupported,
