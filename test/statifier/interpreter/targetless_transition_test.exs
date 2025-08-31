@@ -1,7 +1,7 @@
 defmodule Statifier.Interpreter.TargetlessTransitionTest do
   use Statifier.Case
 
-  alias Statifier.{Configuration, Datamodel}
+  alias Statifier.{Configuration, Datamodel, Event, Interpreter, Parser.SCXML, Validator}
 
   describe "targetless transitions" do
     test "targetless transition executes actions without state change" do
@@ -18,9 +18,9 @@ defmodule Statifier.Interpreter.TargetlessTransitionTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.Parser.SCXML.parse(xml)
-      {:ok, document, _} = Statifier.Validator.validate(document)
-      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
+      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Validator.validate(document)
+      {:ok, state_chart} = Interpreter.initialize(document)
 
       # Initial state should be "a" with x = 0
       assert Configuration.active_leaf_states(state_chart.configuration) |> MapSet.to_list() == [
@@ -30,8 +30,8 @@ defmodule Statifier.Interpreter.TargetlessTransitionTest do
       assert Datamodel.get(state_chart.datamodel, "x") == 0
 
       # Process increment event - should stay in state "a" but increment x
-      event = %Statifier.Event{name: "increment", origin: :external}
-      {:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, event)
+      event = %Event{name: "increment", origin: :external}
+      {:ok, state_chart} = Interpreter.send_event(state_chart, event)
 
       assert Configuration.active_leaf_states(state_chart.configuration) |> MapSet.to_list() == [
                "a"
@@ -40,7 +40,7 @@ defmodule Statifier.Interpreter.TargetlessTransitionTest do
       assert Datamodel.get(state_chart.datamodel, "x") == 1
 
       # Process another increment event
-      {:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, event)
+      {:ok, state_chart} = Interpreter.send_event(state_chart, event)
 
       assert Configuration.active_leaf_states(state_chart.configuration) |> MapSet.to_list() == [
                "a"
@@ -71,9 +71,9 @@ defmodule Statifier.Interpreter.TargetlessTransitionTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.Parser.SCXML.parse(xml)
-      {:ok, document, _} = Statifier.Validator.validate(document)
-      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
+      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Validator.validate(document)
+      {:ok, state_chart} = Interpreter.initialize(document)
 
       # Initial entry
       assert Datamodel.get(state_chart.datamodel, "entry_count") == 1
@@ -81,15 +81,15 @@ defmodule Statifier.Interpreter.TargetlessTransitionTest do
       assert Datamodel.get(state_chart.datamodel, "transition_count") == 0
 
       # Targetless transition shouldn't trigger exit/entry but should execute transition action
-      event = %Statifier.Event{name: "test", origin: :external}
-      {:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, event)
+      event = %Event{name: "test", origin: :external}
+      {:ok, state_chart} = Interpreter.send_event(state_chart, event)
 
       assert Datamodel.get(state_chart.datamodel, "entry_count") == 1
       assert Datamodel.get(state_chart.datamodel, "exit_count") == 0
       assert Datamodel.get(state_chart.datamodel, "transition_count") == 1
 
       # Process again to verify
-      {:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, event)
+      {:ok, state_chart} = Interpreter.send_event(state_chart, event)
 
       assert Datamodel.get(state_chart.datamodel, "entry_count") == 1
       assert Datamodel.get(state_chart.datamodel, "exit_count") == 0
@@ -112,23 +112,26 @@ defmodule Statifier.Interpreter.TargetlessTransitionTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.Parser.SCXML.parse(xml)
-      {:ok, document, _} = Statifier.Validator.validate(document)
-      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
+      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Validator.validate(document)
+      {:ok, state_chart} = Interpreter.initialize(document)
 
-      event = %Statifier.Event{name: "test", origin: :external}
+      event = %Event{name: "test", origin: :external}
 
       # First 5 events should trigger targetless transition
       state_chart =
         Enum.reduce(1..5, state_chart, fn i, acc ->
-          {:ok, new_chart} = Statifier.Interpreter.send_event(acc, event)
-          assert Configuration.active_leaf_states(new_chart.configuration) |> MapSet.to_list() == ["a"]
+          {:ok, new_chart} = Interpreter.send_event(acc, event)
+
+          assert Configuration.active_leaf_states(new_chart.configuration) |> MapSet.to_list() ==
+                   ["a"]
+
           assert Datamodel.get(new_chart.datamodel, "x") == i
           new_chart
         end)
 
       # 6th event should trigger transition to b (condition fails for targetless)
-      {:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, event)
+      {:ok, state_chart} = Interpreter.send_event(state_chart, event)
 
       assert Configuration.active_leaf_states(state_chart.configuration) |> MapSet.to_list() == [
                "b"
@@ -157,13 +160,13 @@ defmodule Statifier.Interpreter.TargetlessTransitionTest do
       </scxml>
       """
 
-      {:ok, document} = Statifier.Parser.SCXML.parse(xml)
-      {:ok, document, _} = Statifier.Validator.validate(document)
-      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
+      {:ok, document} = SCXML.parse(xml)
+      {:ok, document, _warnings} = Validator.validate(document)
+      {:ok, state_chart} = Interpreter.initialize(document)
 
       # Process parent event
-      parent_event = %Statifier.Event{name: "parent_event", origin: :external}
-      {:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, parent_event)
+      parent_event = %Event{name: "parent_event", origin: :external}
+      {:ok, state_chart} = Interpreter.send_event(state_chart, parent_event)
 
       assert Configuration.active_leaf_states(state_chart.configuration) |> MapSet.to_list() == [
                "child"
@@ -173,8 +176,8 @@ defmodule Statifier.Interpreter.TargetlessTransitionTest do
       assert Datamodel.get(state_chart.datamodel, "child_count") == 0
 
       # Process child event
-      child_event = %Statifier.Event{name: "child_event", origin: :external}
-      {:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, child_event)
+      child_event = %Event{name: "child_event", origin: :external}
+      {:ok, state_chart} = Interpreter.send_event(state_chart, child_event)
 
       assert Configuration.active_leaf_states(state_chart.configuration) |> MapSet.to_list() == [
                "child"

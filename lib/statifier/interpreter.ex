@@ -541,9 +541,9 @@ defmodule Statifier.Interpreter do
     # Get all currently active states (including ancestors)
     current_config = Configuration.new(MapSet.to_list(current_active_leaves))
     all_currently_active = Configuration.all_active_states(current_config, document)
-    
+
     # For each target state, include it and all ancestors that need to be entered
-    entering_states = 
+    entering_states =
       target_states
       |> Enum.flat_map(fn state_id ->
         # Include the state itself and all its ancestors
@@ -553,7 +553,7 @@ defmodule Statifier.Interpreter do
       |> MapSet.new()
       # Only include states that aren't already active
       |> MapSet.difference(all_currently_active)
-    
+
     entering_states
   end
 
@@ -562,11 +562,16 @@ defmodule Statifier.Interpreter do
     # Use StateHierarchy.get_ancestor_path which has O(1) cache lookups
     # The path includes the state itself at the end, so we exclude it
     path = StateHierarchy.get_ancestor_path(state_id, document)
-    
+
     case path do
-      [] -> []
-      [^state_id] -> []  # Only the state itself, no ancestors
-      path -> 
+      [] ->
+        []
+
+      # Only the state itself, no ancestors
+      [^state_id] ->
+        []
+
+      path ->
         # Remove the state itself (last element) to get just ancestors
         List.delete_at(path, -1)
     end
