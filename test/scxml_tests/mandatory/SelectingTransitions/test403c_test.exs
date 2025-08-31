@@ -15,7 +15,8 @@ defmodule SCXMLTest.SelectingTransitions.Test403c do
          :parallel_states,
          :raise_elements,
          :send_elements,
-         :targetless_transitions
+         :targetless_transitions,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "SelectingTransitions"
   test "test403c" do

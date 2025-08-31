@@ -10,8 +10,11 @@ defmodule SCXMLTest.SelectingTransitions.Test422 do
          :datamodel,
          :event_transitions,
          :final_states,
+         :invoke_elements,
          :log_elements,
          :onentry_actions,
+         :send_content_elements,
+         :send_delay_expressions,
          :send_elements,
          :targetless_transitions
        ]

@@ -5,8 +5,10 @@ defmodule SCXMLTest.Data.Test276 do
          :basic_states,
          :event_transitions,
          :final_states,
+         :invoke_elements,
          :log_elements,
-         :onentry_actions
+         :onentry_actions,
+         :send_param_elements
        ]
   @tag conformance: "mandatory", spec: "data"
   test "test276" do

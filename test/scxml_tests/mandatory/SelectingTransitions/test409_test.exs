@@ -7,10 +7,12 @@ defmodule SCXMLTest.SelectingTransitions.Test409 do
          :conditional_transitions,
          :event_transitions,
          :final_states,
+         :if_elements,
          :log_elements,
          :onentry_actions,
          :onexit_actions,
          :raise_elements,
+         :send_delay_expressions,
          :send_elements
        ]
   @tag conformance: "mandatory", spec: "SelectingTransitions"

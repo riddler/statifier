@@ -7,7 +7,8 @@ defmodule SCXMLTest.Onentry.Test375 do
          :final_states,
          :log_elements,
          :onentry_actions,
-         :raise_elements
+         :raise_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "onentry"
   test "test375" do

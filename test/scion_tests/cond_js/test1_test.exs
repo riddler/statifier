@@ -1,7 +1,11 @@
 defmodule SCIONTest.CondJs.Test1Test do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [:basic_states, :conditional_transitions, :event_transitions]
+  @tag required_features: [
+         :basic_states,
+         :conditional_transitions,
+         :event_transitions
+       ]
   @tag spec: "cond_js"
   test "test1" do
     xml = """

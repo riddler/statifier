@@ -1,7 +1,10 @@
 defmodule SCIONTest.DefaultInitialState.Initial2Test do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [:basic_states, :event_transitions]
+  @tag required_features: [
+         :basic_states,
+         :event_transitions
+       ]
   @tag spec: "default_initial_state"
   test "initial2" do
     xml = """

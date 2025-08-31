@@ -15,7 +15,9 @@ defmodule SCXMLTest.History.Test579 do
          :onentry_actions,
          :onexit_actions,
          :raise_elements,
-         :send_elements
+         :send_delay_expressions,
+         :send_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "history"
   test "test579" do

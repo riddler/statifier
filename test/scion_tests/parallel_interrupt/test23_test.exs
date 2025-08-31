@@ -1,7 +1,11 @@
 defmodule SCIONTest.ParallelInterrupt.Test23Test do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [:basic_states, :event_transitions, :parallel_states]
+  @tag required_features: [
+         :basic_states,
+         :event_transitions,
+         :parallel_states
+       ]
   @tag spec: "parallel+interrupt"
   test "test23" do
     xml = """

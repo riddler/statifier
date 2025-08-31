@@ -15,7 +15,8 @@ defmodule SCXMLTest.Final.Test570 do
          :parallel_states,
          :raise_elements,
          :send_elements,
-         :targetless_transitions
+         :targetless_transitions,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "final"
   test "test570" do

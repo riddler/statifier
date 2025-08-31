@@ -8,6 +8,7 @@ defmodule SCIONTest.Foreach.Test1Test do
          :data_elements,
          :datamodel,
          :event_transitions,
+         :foreach_elements,
          :log_elements,
          :onentry_actions
        ]

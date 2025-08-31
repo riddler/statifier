@@ -8,7 +8,8 @@ defmodule SCXMLTest.Onexit.Test377 do
          :log_elements,
          :onentry_actions,
          :onexit_actions,
-         :raise_elements
+         :raise_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "onexit"
   test "test377" do

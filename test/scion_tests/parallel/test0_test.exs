@@ -1,7 +1,10 @@
 defmodule SCIONTest.Parallel.Test0Test do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [:basic_states, :parallel_states]
+  @tag required_features: [
+         :basic_states,
+         :parallel_states
+       ]
   @tag spec: "parallel"
   test "test0" do
     xml = """

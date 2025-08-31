@@ -11,7 +11,8 @@ defmodule SCXMLTest.SelectingTransitions.Test405 do
          :onexit_actions,
          :parallel_states,
          :raise_elements,
-         :send_elements
+         :send_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "SelectingTransitions"
   test "test405" do

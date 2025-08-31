@@ -10,7 +10,8 @@ defmodule SCXMLTest.History.Test387 do
          :log_elements,
          :onentry_actions,
          :raise_elements,
-         :send_elements
+         :send_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "history"
   test "test387" do

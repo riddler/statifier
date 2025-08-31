@@ -7,7 +7,8 @@ defmodule SCXMLTest.Raise.Test144 do
          :final_states,
          :log_elements,
          :onentry_actions,
-         :raise_elements
+         :raise_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "raise"
   test "test144" do

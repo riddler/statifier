@@ -8,7 +8,9 @@ defmodule SCXMLTest.SelectingTransitions.Test423 do
          :log_elements,
          :onentry_actions,
          :raise_elements,
-         :send_elements
+         :send_delay_expressions,
+         :send_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "SelectingTransitions"
   test "test423" do

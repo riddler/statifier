@@ -8,7 +8,10 @@ defmodule SCIONTest.SendData.Send1Test do
          :datamodel,
          :event_transitions,
          :log_elements,
-         :send_elements
+         :send_content_elements,
+         :send_delay_expressions,
+         :send_elements,
+         :send_param_elements
        ]
   @tag spec: "send_data"
   test "send1" do

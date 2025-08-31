@@ -1,7 +1,12 @@
 defmodule SCIONTest.History.History0Test do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [:basic_states, :compound_states, :event_transitions, :history_states]
+  @tag required_features: [
+         :basic_states,
+         :compound_states,
+         :event_transitions,
+         :history_states
+       ]
   @tag spec: "history"
   test "history0" do
     xml = """

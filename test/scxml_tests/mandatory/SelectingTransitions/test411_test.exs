@@ -7,6 +7,7 @@ defmodule SCXMLTest.SelectingTransitions.Test411 do
          :conditional_transitions,
          :event_transitions,
          :final_states,
+         :if_elements,
          :log_elements,
          :onentry_actions,
          :raise_elements,

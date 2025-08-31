@@ -9,7 +9,8 @@ defmodule SCXMLTest.Events.Test399 do
          :log_elements,
          :onentry_actions,
          :raise_elements,
-         :send_elements
+         :send_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "events"
   test "test399" do
