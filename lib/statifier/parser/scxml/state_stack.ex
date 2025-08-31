@@ -369,6 +369,15 @@ defmodule Statifier.Parser.SCXML.StateStack do
     {:ok, %{state | stack: [{"if", updated_container} | rest]}}
   end
 
+  # Handle log action within transition
+  def handle_log_end(
+        %{stack: [{_element_name, log_action} | [{"transition", transition} | rest]]} = state
+      ) do
+    # Add log action to transition's actions list
+    updated_transition = %{transition | actions: transition.actions ++ [log_action]}
+    {:ok, %{state | stack: [{"transition", updated_transition} | rest]}}
+  end
+
   def handle_log_end(state) do
     # Log element not in an onentry/onexit context, just pop it
     {:ok, pop_element(state)}
@@ -415,6 +424,15 @@ defmodule Statifier.Parser.SCXML.StateStack do
     # Add raise action to current conditional block within if container
     updated_container = add_action_to_current_block(if_container, raise_action)
     {:ok, %{state | stack: [{"if", updated_container} | rest]}}
+  end
+
+  # Handle raise action within transition
+  def handle_raise_end(
+        %{stack: [{_element_name, raise_action} | [{"transition", transition} | rest]]} = state
+      ) do
+    # Add raise action to transition's actions list
+    updated_transition = %{transition | actions: transition.actions ++ [raise_action]}
+    {:ok, %{state | stack: [{"transition", updated_transition} | rest]}}
   end
 
   def handle_raise_end(state) do
@@ -465,6 +483,15 @@ defmodule Statifier.Parser.SCXML.StateStack do
     {:ok, %{state | stack: [{"if", updated_container} | rest]}}
   end
 
+  # Handle assign action within transition
+  def handle_assign_end(
+        %{stack: [{_element_name, assign_action} | [{"transition", transition} | rest]]} = state
+      ) do
+    # Add assign action to transition's actions list
+    updated_transition = %{transition | actions: transition.actions ++ [assign_action]}
+    {:ok, %{state | stack: [{"transition", updated_transition} | rest]}}
+  end
+
   def handle_assign_end(state) do
     # Assign element not in an onentry/onexit context, just pop it
     {:ok, pop_element(state)}
@@ -508,6 +535,16 @@ defmodule Statifier.Parser.SCXML.StateStack do
     # First action in onexit block
     if_action = create_if_action_from_container(if_container)
     {:ok, %{state | stack: [{"onexit", [if_action]} | rest]}}
+  end
+
+  # Handle if action within transition
+  def handle_if_end(
+        %{stack: [{_element_name, if_container} | [{"transition", transition} | rest]]} = state
+      ) do
+    # Create IfAction from collected conditional blocks and add to transition
+    if_action = create_if_action_from_container(if_container)
+    updated_transition = %{transition | actions: transition.actions ++ [if_action]}
+    {:ok, %{state | stack: [{"transition", updated_transition} | rest]}}
   end
 
   def handle_if_end(state) do

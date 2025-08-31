@@ -71,8 +71,8 @@ defmodule Statifier.FeatureDetector do
       log_elements: :supported,
       raise_elements: :supported,
 
-      # Advanced transitions (unsupported)
-      targetless_transitions: :unsupported,
+      # Advanced transitions
+      targetless_transitions: :supported,
       internal_transitions: :unsupported,
 
       # History (supported)

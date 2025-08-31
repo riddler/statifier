@@ -357,20 +357,33 @@ defmodule Statifier.Interpreter do
         end
       end)
 
-    # Execute the selected transitions
+    # Separate targetless and targeted transitions
+    {targetless_transitions, targeted_transitions} =
+      Enum.split_with(selected_transitions, fn t -> t.targets == [] end)
+
+    # Handle targetless transitions (execute actions only, no state change)
+    state_chart =
+      if targetless_transitions != [] do
+        # Execute actions for targetless transitions without exit/entry
+        ActionExecutor.execute_transition_actions(state_chart, targetless_transitions)
+      else
+        state_chart
+      end
+
+    # Execute targeted transitions
     target_leaf_states =
-      selected_transitions
+      targeted_transitions
       |> Enum.flat_map(&execute_single_transition(&1, state_chart))
 
     case target_leaf_states do
-      # No valid transitions
+      # No targeted transitions (might have had targetless ones)
       [] ->
         state_chart
 
       states ->
         update_configuration_with_parallel_preservation(
           state_chart,
-          selected_transitions,
+          targeted_transitions,
           states
         )
     end
