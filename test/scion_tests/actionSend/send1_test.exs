@@ -1,11 +1,7 @@
 defmodule SCIONTest.ActionSend.Send1Test do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [
-         :basic_states,
-         :event_transitions,
-         :raise_elements
-       ]
+  @tag required_features: [:basic_states, :event_transitions, :raise_elements]
   @tag spec: "action_send"
   test "send1" do
     xml = """

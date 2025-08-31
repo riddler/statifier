@@ -1,10 +1,7 @@
 defmodule SCIONTest.ScxmlPrefixEventNameMatching.Test1Test do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [
-         :basic_states,
-         :event_transitions
-       ]
+  @tag required_features: [:basic_states, :event_transitions]
   @tag spec: "scxml_prefix_event_name_matching"
   test "test1" do
     xml = """

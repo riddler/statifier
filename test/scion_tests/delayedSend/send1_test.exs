@@ -1,11 +1,7 @@
 defmodule SCIONTest.DelayedSend.Send1Test do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [
-         :basic_states,
-         :event_transitions,
-         :send_elements
-       ]
+  @tag required_features: [:basic_states, :event_transitions, :send_elements]
   @tag spec: "delayed_send"
   test "send1" do
     xml = """

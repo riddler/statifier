@@ -1,12 +1,7 @@
 defmodule SCIONTest.Misc.DeepInitialTest do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [
-         :basic_states,
-         :event_transitions,
-         :log_elements,
-         :onentry_actions
-       ]
+  @tag required_features: [:basic_states, :event_transitions, :log_elements, :onentry_actions]
   @tag spec: "misc"
   test "deep-initial" do
     xml = """

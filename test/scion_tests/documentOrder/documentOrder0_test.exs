@@ -1,10 +1,7 @@
 defmodule SCIONTest.DocumentOrder.DocumentOrder0Test do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [
-         :basic_states,
-         :event_transitions
-       ]
+  @tag required_features: [:basic_states, :event_transitions]
   @tag spec: "document_order"
   test "documentOrder0" do
     xml = """

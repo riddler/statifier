@@ -1,9 +1,7 @@
 defmodule SCIONTest.Basic.Basic0Test do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [
-         :basic_states
-       ]
+  @tag required_features: [:basic_states]
   @tag spec: "basic"
   test "basic0" do
     xml = """

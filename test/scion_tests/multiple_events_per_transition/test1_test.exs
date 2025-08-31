@@ -1,10 +1,7 @@
 defmodule SCIONTest.MultipleEventsPerTransition.Test1Test do
   use Statifier.Case
   @tag :scion
-  @tag required_features: [
-         :basic_states,
-         :event_transitions
-       ]
+  @tag required_features: [:basic_states, :event_transitions]
   @tag spec: "multiple_events_per_transition"
   test "test1" do
     xml = """

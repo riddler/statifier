@@ -107,10 +107,10 @@ defmodule RequiredFeaturesUpdater do
   end
 
   defp update_required_features_attribute(content, detected_features) do
-    # Format the features list for Elixir code
+    # Format the features list for Elixir code as single line
     formatted_features = format_features_list(detected_features)
 
-    new_required_features = "  @tag required_features: [\n#{formatted_features}\n       ]"
+    new_required_features = "  @tag required_features: [#{formatted_features}]"
 
     cond do
       # Case 1: Existing @required_features attribute (multi-line)
@@ -153,9 +153,9 @@ defmodule RequiredFeaturesUpdater do
   defp format_features_list(features) do
     features
     |> Enum.map(fn feature ->
-      "       :#{feature}"
+      ":#{feature}"
     end)
-    |> Enum.join(",\n")
+    |> Enum.join(", ")
   end
 end
 
