@@ -84,7 +84,23 @@ defmodule Statifier.FeatureDetector do
       # Advanced attributes (unsupported)
       send_idlocation: :unsupported,
       event_expressions: :unsupported,
-      target_expressions: :unsupported
+      target_expressions: :unsupported,
+
+      # Wildcard and pattern events (supported)
+      wildcard_events: :supported,
+
+      # Invocation and external processes (unsupported)
+      invoke_elements: :unsupported,
+      finalize_elements: :unsupported,
+      cancel_elements: :unsupported,
+
+      # Advanced send features (unsupported)
+      send_content_elements: :partial,
+      send_param_elements: :partial,
+      send_delay_expressions: :partial,
+
+      # State machine lifecycle (unsupported)
+      donedata_elements: :unsupported
     }
   end
 
@@ -144,6 +160,12 @@ defmodule Statifier.FeatureDetector do
     |> add_if_present(xml, ~r/<log(\s|>)/, :log_elements)
     |> add_if_present(xml, ~r/<raise(\s|>)/, :raise_elements)
     |> add_if_present(xml, ~r/<foreach(\s|>)/, :foreach_elements)
+    |> add_if_present(xml, ~r/<invoke(\s|>)/, :invoke_elements)
+    |> add_if_present(xml, ~r/<finalize(\s|>)/, :finalize_elements)
+    |> add_if_present(xml, ~r/<cancel(\s|>)/, :cancel_elements)
+    |> add_if_present(xml, ~r/<content(\s|>)/, :send_content_elements)
+    |> add_if_present(xml, ~r/<param(\s|>)/, :send_param_elements)
+    |> add_if_present(xml, ~r/<donedata(\s|>)/, :donedata_elements)
   end
 
   defp detect_xml_attributes(features, xml) do
@@ -151,6 +173,8 @@ defmodule Statifier.FeatureDetector do
     |> add_if_present(xml, ~r/cond\s*=/, :conditional_transitions)
     |> add_if_present(xml, ~r/idlocation\s*=/, :send_idlocation)
     |> add_if_present(xml, ~r/type\s*=\s*["']internal["']/, :internal_transitions)
+    |> add_if_present(xml, ~r/event\s*=\s*["']\*["']/, :wildcard_events)
+    |> add_if_present(xml, ~r/delayexpr\s*=/, :send_delay_expressions)
     |> detect_compound_states(xml)
     |> detect_targetless_transitions(xml)
   end
@@ -271,7 +295,14 @@ defmodule Statifier.FeatureDetector do
   end
 
   defp add_if_has_event(features, %Transition{event: event}) when not is_nil(event) do
-    MapSet.put(features, :event_transitions)
+    features = MapSet.put(features, :event_transitions)
+
+    # Check for wildcard events
+    if event == "*" do
+      MapSet.put(features, :wildcard_events)
+    else
+      features
+    end
   end
 
   defp add_if_has_event(features, _transition), do: features

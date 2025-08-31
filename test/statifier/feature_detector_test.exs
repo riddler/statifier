@@ -108,6 +108,23 @@ defmodule Statifier.FeatureDetectorTest do
       assert MapSet.member?(features, :conditional_transitions)
     end
 
+    test "detects wildcard events" do
+      xml = """
+      <scxml initial="s1">
+        <state id="s1">
+          <transition event="*" target="s2"/>
+        </state>
+        <state id="s2"/>
+      </scxml>
+      """
+
+      features = FeatureDetector.detect_features(xml)
+
+      assert MapSet.member?(features, :basic_states)
+      assert MapSet.member?(features, :event_transitions)
+      assert MapSet.member?(features, :wildcard_events)
+    end
+
     test "detects executable content" do
       xml = """
       <scxml initial="s1">
