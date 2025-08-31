@@ -724,4 +724,33 @@ defmodule Statifier.Parser.SCXML.StateStack do
     alias Statifier.Actions.IfAction
     IfAction.new(conditional_blocks, if_container[:location])
   end
+
+  @doc """
+  Handle text content for elements that support it (like <content>).
+  """
+  @spec handle_characters(String.t(), map()) :: {:ok, map()} | :not_handled
+  def handle_characters(character_data, %{stack: [{element_name, element} | _rest]} = state) do
+    case element_name do
+      "content" ->
+        # Add text content to content element
+        trimmed_content = String.trim(character_data)
+
+        if trimmed_content != "" do
+          updated_content = %{element | content: trimmed_content}
+          updated_stack = replace_top_element(state.stack, {"content", updated_content})
+          {:ok, %{state | stack: updated_stack}}
+        else
+          # Ignore whitespace-only content
+          {:ok, state}
+        end
+
+      _other_element ->
+        :not_handled
+    end
+  end
+
+  def handle_characters(_character_data, _state), do: :not_handled
+
+  # Helper to replace the top element on the stack
+  defp replace_top_element([_head | tail], new_head), do: [new_head | tail]
 end
