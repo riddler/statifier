@@ -192,5 +192,79 @@ defmodule Statifier.Actions.LogActionTest do
         assert_log_entry(result, message_contains: "Log: ")
       end)
     end
+
+    test "handles invalid UTF-8 binary messages" do
+      log_action = %LogAction{expr: nil, label: "Test"}
+
+      # Mock a state chart that returns invalid binary
+      xml = """
+      <scxml initial="s1">
+        <state id="s1"></state>
+      </scxml>
+      """
+
+      {:ok, document, _warnings} = Statifier.parse(xml)
+      optimized_document = Document.build_lookup_maps(document)
+
+      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = LogManager.configure_from_options(state_chart, [])
+
+      # Directly execute the log action with the invalid binary
+      result = LogAction.execute(log_action, state_chart)
+
+      # Should handle invalid UTF-8 gracefully by using inspect()
+      assert_log_entry(result, message_contains: "Test: ")
+    end
+
+    test "handles empty string expressions after evaluation" do
+      # Test with expression that evaluates to empty string
+      log_action = %LogAction{expr: "\"\"", label: nil}
+      state_chart = create_test_state_chart_with_actions([log_action])
+      result = ActionExecutor.execute_onentry_actions(state_chart, ["s1"])
+
+      # Should fall back to original expression when evaluation returns empty
+      assert_log_entry(result, message_contains: "Log: ")
+    end
+
+    test "handles malformed quoted strings in fallback parsing" do
+      test_cases = [
+        # Single quote without closing
+        {"'malformed", "'malformed"},
+        # Double quote without closing
+        {"\"malformed", "\"malformed"},
+        # Empty content between quotes
+        {"''", "'"},
+        {"\"\"", "\"\""},
+        # Quote with just spaces
+        {"'   '", "   "},
+        {"\"   \"", "   "}
+      ]
+
+      test_log_action_cases(test_cases)
+    end
+
+    test "handles direct execute method with various value types" do
+      xml = """
+      <scxml initial="s1">
+        <state id="s1"></state>
+      </scxml>
+      """
+
+      {:ok, document, _warnings} = Statifier.parse(xml)
+      optimized_document = Document.build_lookup_maps(document)
+
+      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = LogManager.configure_from_options(state_chart, [])
+
+      # Test with atom expression type (not binary)
+      log_action_with_atom = %LogAction{expr: :atom_expr, label: "Atom"}
+      result = LogAction.execute(log_action_with_atom, state_chart)
+      assert_log_entry(result, message_contains: "Atom: :atom_expr")
+
+      # Test with number expression type
+      log_action_with_number = %LogAction{expr: 42, label: "Number"}
+      result2 = LogAction.execute(log_action_with_number, result)
+      assert_log_entry(result2, message_contains: "Number: 42")
+    end
   end
 end

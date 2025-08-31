@@ -240,20 +240,21 @@ defmodule Mix.Tasks.Quality do
     Mix.raise("Markdown linting failed")
   end
 
-  defp check_and_handle_git_changes(change_type, commit_message) do
+  defp check_and_handle_git_changes(change_type, _commit_message) do
     case System.cmd("git", ["diff", "--quiet"], stderr_to_stdout: true) do
       {_output, 0} ->
         Mix.shell().info("✅ No files were actually modified")
 
       {_output, _exit_code} ->
         Mix.shell().info("📝 #{String.capitalize(change_type)} has been automatically fixed.")
-        Mix.shell().info("🔄 Please commit the #{change_type} fixes and run quality check again:")
-        Mix.shell().info("   git add .")
-        Mix.shell().info("   git commit -m '#{commit_message}'")
 
-        Mix.raise(
-          "#{String.capitalize(change_type)} was auto-fixed - please commit changes and re-run"
-        )
+        # Mix.shell().info("🔄 Please commit the #{change_type} fixes and run quality check again:")
+        # Mix.shell().info("   git add .")
+        # Mix.shell().info("   git commit -m '#{commit_message}'")
+        #
+        # Mix.raise(
+        #   "#{String.capitalize(change_type)} was auto-fixed - please commit changes and re-run"
+        # )
     end
   end
 

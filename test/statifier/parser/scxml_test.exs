@@ -424,4 +424,258 @@ defmodule Statifier.Parser.SCXMLTest do
       assert history_state.history_type_location != nil
     end
   end
+
+  describe "foreach parsing" do
+    test "parses basic foreach element in onentry" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+        <state id="s1">
+          <onentry>
+            <foreach array="myArray" item="currentItem" index="currentIndex">
+              <log expr="currentItem"/>
+            </foreach>
+          </onentry>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      state = Enum.find(document.states, &(&1.id == "s1"))
+
+      assert length(state.onentry_actions) == 1
+      [foreach_action] = state.onentry_actions
+
+      assert foreach_action.__struct__ == Statifier.Actions.ForeachAction
+      assert foreach_action.array == "myArray"
+      assert foreach_action.item == "currentItem"
+      assert foreach_action.index == "currentIndex"
+      assert length(foreach_action.actions) == 1
+
+      # Check nested log action
+      [log_action] = foreach_action.actions
+      assert log_action.__struct__ == Statifier.Actions.LogAction
+      assert log_action.expr == "currentItem"
+    end
+
+    test "parses foreach element without index attribute" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+        <state id="s1">
+          <onentry>
+            <foreach array="items" item="item">
+              <log expr="'processing item'"/>
+            </foreach>
+          </onentry>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      state = Enum.find(document.states, &(&1.id == "s1"))
+
+      [foreach_action] = state.onentry_actions
+      assert foreach_action.array == "items"
+      assert foreach_action.item == "item"
+      assert foreach_action.index == nil
+      assert length(foreach_action.actions) == 1
+    end
+
+    test "parses foreach element in onexit" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+        <state id="s1">
+          <onexit>
+            <foreach array="cleanupItems" item="item">
+              <log expr="'cleaning up'"/>
+            </foreach>
+          </onexit>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      state = Enum.find(document.states, &(&1.id == "s1"))
+
+      assert length(state.onexit_actions) == 1
+      [foreach_action] = state.onexit_actions
+      assert foreach_action.array == "cleanupItems"
+      assert foreach_action.item == "item"
+    end
+
+    test "parses foreach with multiple nested actions" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+        <state id="s1">
+          <onentry>
+            <foreach array="myArray" item="item" index="index">
+              <log expr="item"/>
+              <raise event="itemProcessed"/>
+              <assign location="counter" expr="counter + 1"/>
+            </foreach>
+          </onentry>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      state = Enum.find(document.states, &(&1.id == "s1"))
+
+      [foreach_action] = state.onentry_actions
+      assert length(foreach_action.actions) == 3
+
+      [log_action, raise_action, assign_action] = foreach_action.actions
+      assert log_action.__struct__ == Statifier.Actions.LogAction
+      assert raise_action.__struct__ == Statifier.Actions.RaiseAction
+      assert assign_action.__struct__ == Statifier.Actions.AssignAction
+    end
+
+    test "parses nested foreach elements" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+        <state id="s1">
+          <onentry>
+            <foreach array="outerArray" item="outerItem">
+              <foreach array="innerArray" item="innerItem">
+                <log expr="'nested processing'"/>
+              </foreach>
+            </foreach>
+          </onentry>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      state = Enum.find(document.states, &(&1.id == "s1"))
+
+      [outer_foreach] = state.onentry_actions
+      assert outer_foreach.array == "outerArray"
+      assert outer_foreach.item == "outerItem"
+
+      [inner_foreach] = outer_foreach.actions
+      assert inner_foreach.__struct__ == Statifier.Actions.ForeachAction
+      assert inner_foreach.array == "innerArray"
+      assert inner_foreach.item == "innerItem"
+    end
+
+    test "parses foreach within if conditional" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+        <state id="s1">
+          <onentry>
+            <if cond="hasItems">
+              <foreach array="conditionalArray" item="item">
+                <log expr="item"/>
+              </foreach>
+            </if>
+          </onentry>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      state = Enum.find(document.states, &(&1.id == "s1"))
+
+      [if_action] = state.onentry_actions
+      assert if_action.__struct__ == Statifier.Actions.IfAction
+
+      # Check first conditional block contains foreach
+      [first_block | _rest_blocks] = if_action.conditional_blocks
+      [foreach_action] = first_block.actions
+      assert foreach_action.__struct__ == Statifier.Actions.ForeachAction
+      assert foreach_action.array == "conditionalArray"
+    end
+
+    test "parses foreach in transition actions" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+        <state id="s1">
+          <transition event="process" target="s2">
+            <foreach array="transitionArray" item="item">
+              <log expr="'transition processing'"/>
+            </foreach>
+          </transition>
+        </state>
+        <state id="s2"/>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      state = Enum.find(document.states, &(&1.id == "s1"))
+
+      [transition] = state.transitions
+      assert length(transition.actions) == 1
+
+      [foreach_action] = transition.actions
+      assert foreach_action.__struct__ == Statifier.Actions.ForeachAction
+      assert foreach_action.array == "transitionArray"
+    end
+
+    test "includes location tracking for foreach elements" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+        <state id="s1">
+          <onentry>
+            <foreach array="myArray" item="item" index="index">
+              <log expr="'test'"/>
+            </foreach>
+          </onentry>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      state = Enum.find(document.states, &(&1.id == "s1"))
+
+      [foreach_action] = state.onentry_actions
+      assert foreach_action.source_location != nil
+      assert foreach_action.source_location.source != nil
+      assert foreach_action.source_location.array != nil
+      assert foreach_action.source_location.item != nil
+      assert foreach_action.source_location.index != nil
+    end
+
+    test "parses foreach as first action in onentry block" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+        <state id="s1">
+          <onentry>
+            <foreach array="firstArray" item="firstItem">
+              <log expr="'first action'"/>
+            </foreach>
+          </onentry>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      state = Enum.find(document.states, &(&1.id == "s1"))
+
+      assert length(state.onentry_actions) == 1
+      [foreach_action] = state.onentry_actions
+      assert foreach_action.array == "firstArray"
+      assert foreach_action.item == "firstItem"
+    end
+
+    test "parses foreach as first action in onexit block" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" initial="s1">
+        <state id="s1">
+          <onexit>
+            <foreach array="exitArray" item="exitItem">
+              <log expr="'exit action'"/>
+            </foreach>
+          </onexit>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document} = SCXML.parse(xml)
+      state = Enum.find(document.states, &(&1.id == "s1"))
+
+      assert length(state.onexit_actions) == 1
+      [foreach_action] = state.onexit_actions
+      assert foreach_action.array == "exitArray"
+      assert foreach_action.item == "exitItem"
+    end
+  end
 end
