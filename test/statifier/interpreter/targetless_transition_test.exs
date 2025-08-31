@@ -122,7 +122,7 @@ defmodule Statifier.Interpreter.TargetlessTransitionTest do
       state_chart =
         Enum.reduce(1..5, state_chart, fn i, acc ->
           {:ok, new_chart} = Statifier.Interpreter.send_event(acc, event)
-          assert Configuration.active_states(new_chart.configuration, new_chart.document) == ["a"]
+          assert Configuration.active_leaf_states(new_chart.configuration) |> MapSet.to_list() == ["a"]
           assert Datamodel.get(new_chart.datamodel, "x") == i
           new_chart
         end)

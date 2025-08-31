@@ -165,9 +165,9 @@ defmodule Statifier.Interpreter do
     execute_microsteps(state_chart, 0)
   end
 
-  # Recursive helper with cycle detection (max 100 iterations)
+  # Recursive helper with cycle detection (max 1000 iterations)
   defp execute_microsteps(%StateChart{} = state_chart, iterations)
-       when iterations >= 100 do
+       when iterations >= 1000 do
     # Prevent infinite loops - return current state
     state_chart
   end
@@ -401,9 +401,9 @@ defmodule Statifier.Interpreter do
     # Compute exit set for these specific transitions
     exit_set = compute_exit_set(transitions, current_active, document)
 
-    # Determine which states are actually being entered
+    # Determine which states are actually being entered (including ancestors)
     new_target_set = MapSet.new(new_target_states)
-    entering_states = MapSet.difference(new_target_set, current_active)
+    entering_states = compute_entering_states(new_target_set, current_active, document)
     entering_states_list = MapSet.to_list(entering_states)
 
     # Record history BEFORE executing onexit actions (per W3C SCXML specification)
@@ -533,6 +533,43 @@ defmodule Statifier.Interpreter do
   # Find parent states that have history children and need history recorded
   defp find_parents_with_history(exiting_states, document) do
     StateHierarchy.find_parents_with_history(exiting_states, document)
+  end
+
+  # Compute all states that need onentry actions when entering target states
+  # This includes the target states themselves plus any ancestors that aren't currently active
+  defp compute_entering_states(target_states, current_active_leaves, document) do
+    # Get all currently active states (including ancestors)
+    current_config = Configuration.new(MapSet.to_list(current_active_leaves))
+    all_currently_active = Configuration.all_active_states(current_config, document)
+    
+    # For each target state, include it and all ancestors that need to be entered
+    entering_states = 
+      target_states
+      |> Enum.flat_map(fn state_id ->
+        # Include the state itself and all its ancestors
+        ancestors = get_ancestors(state_id, document)
+        [state_id | ancestors]
+      end)
+      |> MapSet.new()
+      # Only include states that aren't already active
+      |> MapSet.difference(all_currently_active)
+    
+    entering_states
+  end
+
+  # Get all ancestor state IDs for a given state (uses hierarchy cache when available)
+  defp get_ancestors(state_id, document) do
+    # Use StateHierarchy.get_ancestor_path which has O(1) cache lookups
+    # The path includes the state itself at the end, so we exclude it
+    path = StateHierarchy.get_ancestor_path(state_id, document)
+    
+    case path do
+      [] -> []
+      [^state_id] -> []  # Only the state itself, no ancestors
+      path -> 
+        # Remove the state itself (last element) to get just ancestors
+        List.delete_at(path, -1)
+    end
   end
 
   # Restore stored history configuration by recursively entering the stored states
