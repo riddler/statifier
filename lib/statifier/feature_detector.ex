@@ -83,8 +83,8 @@ defmodule Statifier.FeatureDetector do
       event_expressions: :unsupported,
       target_expressions: :unsupported,
 
-      # Loop constructs (unsupported)
-      foreach_elements: :unsupported
+      # Loop constructs (supported)
+      foreach_elements: :supported
     }
   end
 

@@ -377,6 +377,129 @@ defmodule Statifier.Actions.ActionExecutorTest do
     end
   end
 
+  describe "execute_transition_actions/2" do
+    test "executes transition actions" do
+      xml = """
+      <scxml initial="s1">
+        <state id="s1">
+          <transition event="test" target="s2">
+            <log expr="'transition action'"/>
+            <raise event="transition_event"/>
+          </transition>
+        </state>
+        <state id="s2"/>
+      </scxml>
+      """
+
+      {:ok, document, _warnings} = Statifier.parse(xml)
+      optimized_document = Document.build_lookup_maps(document)
+
+      # Get the transition with actions
+      transitions = Document.get_transitions_from_state(optimized_document, "s1")
+      transition_with_actions = hd(transitions)
+
+      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = LogManager.configure_from_options(state_chart, [])
+
+      result = ActionExecutor.execute_transition_actions(state_chart, [transition_with_actions])
+
+      # Should have event from raise action
+      assert length(result.internal_queue) == 1
+      assert hd(result.internal_queue).name == "transition_event"
+
+      # Should have log entry
+      assert_log_entry(result, message_contains: "Log: transition action")
+    end
+
+    test "handles empty transition list" do
+      xml = """
+      <scxml initial="s1">
+        <state id="s1"/>
+      </scxml>
+      """
+
+      state_chart = create_configured_state_chart(xml)
+
+      result = ActionExecutor.execute_transition_actions(state_chart, [])
+
+      # Should return unchanged state chart
+      assert result == state_chart
+    end
+
+    test "handles transitions without actions" do
+      xml = """
+      <scxml initial="s1">
+        <state id="s1">
+          <transition event="test" target="s2"/>
+        </state>
+        <state id="s2"/>
+      </scxml>
+      """
+
+      {:ok, document, _warnings} = Statifier.parse(xml)
+      optimized_document = Document.build_lookup_maps(document)
+
+      # Get the transition without actions
+      transitions = Document.get_transitions_from_state(optimized_document, "s1")
+      transition_without_actions = hd(transitions)
+
+      state_chart = StateChart.new(optimized_document, %Configuration{})
+      state_chart = LogManager.configure_from_options(state_chart, [])
+
+      result =
+        ActionExecutor.execute_transition_actions(state_chart, [transition_without_actions])
+
+      # Should return unchanged state chart
+      assert result == state_chart
+      assert Enum.empty?(result.internal_queue)
+    end
+  end
+
+  describe "execute_single_action/2 public function" do
+    test "executes single action without context" do
+      log_action = %LogAction{expr: "'single action test'", label: nil}
+
+      xml = """
+      <scxml initial="s1">
+        <state id="s1"/>
+      </scxml>
+      """
+
+      state_chart = create_configured_state_chart(xml)
+
+      result = ActionExecutor.execute_single_action(state_chart, log_action)
+
+      # Should have log entry
+      assert_log_entry(result, message_contains: "Log: single action test")
+      # Should have debug log with unknown context
+      assert_log_entry(result, level: :debug, state_id: "unknown", phase: :action)
+    end
+
+    test "executes unknown action type through public function" do
+      unknown_action = %{__struct__: UnknownPublicActionType, data: "test"}
+
+      xml = """
+      <scxml initial="s1">
+        <state id="s1"/>
+      </scxml>
+      """
+
+      state_chart = create_configured_state_chart(xml)
+
+      result = ActionExecutor.execute_single_action(state_chart, unknown_action)
+
+      # Should handle unknown action gracefully - return unchanged except for logs
+      assert %StateChart{} = result
+      assert result.internal_queue == state_chart.internal_queue
+      assert result.datamodel == state_chart.datamodel
+      # Should have debug log about unknown action
+      assert_log_entry(result, message_contains: "Unknown action type encountered")
+      debug_log = assert_log_entry(result, level: :debug, action_type: "unknown_action")
+      assert debug_log.metadata.state_id == "unknown"
+      assert debug_log.metadata.phase == :action
+    end
+  end
+
   describe "edge cases and error handling" do
     test "handles nil and empty action lists" do
       xml = """

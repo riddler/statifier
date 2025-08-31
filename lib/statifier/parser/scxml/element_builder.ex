@@ -8,6 +8,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
 
   alias Statifier.{
     Actions.AssignAction,
+    Actions.ForeachAction,
     Actions.LogAction,
     Actions.RaiseAction,
     Actions.SendAction,
@@ -449,6 +450,36 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
         expr: expr_location
       }
     }
+  end
+
+  @doc """
+  Build an Statifier.ForeachAction from XML attributes and location info.
+  """
+  @spec build_foreach_action(list(), map(), String.t(), map()) :: ForeachAction.t()
+  def build_foreach_action(attributes, location, xml_string, _element_counts) do
+    attrs_map = attributes_to_map(attributes)
+
+    # Calculate attribute-specific locations
+    array_location = LocationTracker.attribute_location(xml_string, "array", location)
+    item_location = LocationTracker.attribute_location(xml_string, "item", location)
+    index_location = LocationTracker.attribute_location(xml_string, "index", location)
+
+    # Store detailed location information
+    detailed_location = %{
+      source: location,
+      array: array_location,
+      item: item_location,
+      index: index_location
+    }
+
+    ForeachAction.new(
+      get_attr_value(attrs_map, "array") || "",
+      get_attr_value(attrs_map, "item") || "",
+      get_attr_value(attrs_map, "index"),
+      # Actions will be populated by child elements during parsing
+      [],
+      detailed_location
+    )
   end
 
   # Private utility functions

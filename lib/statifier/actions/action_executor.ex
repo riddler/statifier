@@ -8,6 +8,7 @@ defmodule Statifier.Actions.ActionExecutor do
 
   alias Statifier.{
     Actions.AssignAction,
+    Actions.ForeachAction,
     Actions.IfAction,
     Actions.LogAction,
     Actions.RaiseAction,
@@ -140,6 +141,23 @@ defmodule Statifier.Actions.ActionExecutor do
 
     # Use the IfAction's execute method which handles all the conditional logic
     IfAction.execute(if_action, state_chart)
+  end
+
+  defp execute_single_action(%ForeachAction{} = foreach_action, state_id, phase, state_chart) do
+    # Log context information for debugging
+    state_chart =
+      LogManager.debug(state_chart, "Executing foreach action", %{
+        action_type: "foreach_action",
+        state_id: state_id,
+        phase: phase,
+        array: foreach_action.array,
+        item: foreach_action.item,
+        index: foreach_action.index,
+        actions_count: length(foreach_action.actions)
+      })
+
+    # Use the ForeachAction's execute method which handles all the iteration logic
+    ForeachAction.execute(foreach_action, state_chart)
   end
 
   defp execute_single_action(%SendAction{} = send_action, state_id, phase, state_chart) do

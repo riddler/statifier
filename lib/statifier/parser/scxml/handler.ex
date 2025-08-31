@@ -62,6 +62,7 @@ defmodule Statifier.Parser.SCXML.Handler do
   def handle_event(:end_element, "if", state), do: StateStack.handle_if_end(state)
   def handle_event(:end_element, "elseif", state), do: StateStack.handle_elseif_end(state)
   def handle_event(:end_element, "else", state), do: StateStack.handle_else_end(state)
+  def handle_event(:end_element, "foreach", state), do: StateStack.handle_foreach_end(state)
 
   def handle_event(:end_element, state_type, state)
       when state_type in ["state", "parallel", "final", "initial", "history"],
@@ -394,6 +395,23 @@ defmodule Statifier.Parser.SCXML.Handler do
 
     # Push else as marker - will be handled by StateStack to add to if container
     {:ok, StateStack.push_element(updated_state, "else", else_block)}
+  end
+
+  defp dispatch_element_start("foreach", attributes, location, state) do
+    foreach_action =
+      ElementBuilder.build_foreach_action(
+        attributes,
+        location,
+        state.xml_string,
+        state.element_counts
+      )
+
+    updated_state = %{
+      state
+      | current_element: {:foreach, foreach_action}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "foreach", foreach_action)}
   end
 
   defp dispatch_element_start(unknown_element_name, _attributes, _location, state) do

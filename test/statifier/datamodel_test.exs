@@ -298,5 +298,176 @@ defmodule Statifier.DatamodelTest do
       # Invalid expressions should fall back to the literal string
       assert state_chart.datamodel["invalid"] == "this is not valid"
     end
+
+    test "handles data elements without valid id" do
+      # Create a mock data element without id to test initialize_variable fallback
+      xml =
+        create_scxml_with_datamodel("""
+          <data id="valid" expr="42"/>
+        """)
+
+      {:ok, state_chart} = initialize_from_xml(xml)
+
+      # Mock data element without id should be skipped
+      mock_invalid_data = %{expr: "test"}
+
+      result_model = Datamodel.initialize([mock_invalid_data], state_chart)
+
+      # Should return empty datamodel since invalid data is skipped
+      assert result_model == %{}
+    end
+
+    test "handles empty expression strings" do
+      xml =
+        create_scxml_with_datamodel("""
+          <data id="empty_expr" expr=""/>
+          <data id="nil_expr"/>
+        """)
+
+      {:ok, state_chart} = initialize_from_xml(xml)
+
+      # Empty expressions should result in nil
+      assert state_chart.datamodel["empty_expr"] == nil
+      assert state_chart.datamodel["nil_expr"] == nil
+    end
+  end
+
+  describe "put_in_path/3 function" do
+    test "successfully sets nested paths" do
+      datamodel = %{}
+
+      # Test single level
+      {:ok, result1} = Datamodel.put_in_path(datamodel, ["key"], "value")
+      assert result1 == %{"key" => "value"}
+
+      # Test nested path
+      {:ok, result2} = Datamodel.put_in_path(datamodel, ["user", "profile", "name"], "John")
+      assert result2 == %{"user" => %{"profile" => %{"name" => "John"}}}
+
+      # Test updating existing nested structure
+      existing = %{"user" => %{"age" => 30}}
+      {:ok, result3} = Datamodel.put_in_path(existing, ["user", "name"], "Jane")
+      assert result3 == %{"user" => %{"age" => 30, "name" => "Jane"}}
+    end
+
+    test "handles non-map structures with error" do
+      # Try to assign to a non-map value
+      datamodel = %{"user" => "not_a_map"}
+
+      {:error, msg} = Datamodel.put_in_path(datamodel, ["user", "name"], "John")
+      assert msg == "Cannot assign to non-map structure"
+
+      # Try to assign to primitive value
+      {:error, msg2} = Datamodel.put_in_path("string", ["key"], "value")
+      assert msg2 == "Cannot assign to non-map structure"
+    end
+  end
+
+  describe "event data handling" do
+    test "handles nil event data gracefully" do
+      state_chart = %StateChart{
+        current_event: nil,
+        configuration: Configuration.new(["test"]),
+        document: %Document{name: "test"}
+      }
+
+      datamodel = %{"counter" => 5}
+      context = Datamodel.build_evaluation_context(datamodel, state_chart)
+
+      # Should have empty _event structure
+      assert context["_event"]["name"] == ""
+      assert context["_event"]["data"] == %{}
+      assert context["counter"] == 5
+    end
+
+    test "handles event with nil data" do
+      state_chart = %StateChart{
+        current_event: %Event{name: "test", data: nil},
+        configuration: Configuration.new(["test"]),
+        document: %Document{name: "test"}
+      }
+
+      datamodel = %{"counter" => 5}
+      context = Datamodel.build_evaluation_context(datamodel, state_chart)
+
+      # Should handle nil data gracefully
+      assert context["_event"]["name"] == "test"
+      assert context["_event"]["data"] == %{}
+      assert context["counter"] == 5
+    end
+
+    test "handles event with non-map data" do
+      state_chart = %StateChart{
+        current_event: %Event{name: "test", data: "string_data"},
+        configuration: Configuration.new(["test"]),
+        document: %Document{name: "test"}
+      }
+
+      datamodel = %{"counter" => 5}
+      context = Datamodel.build_evaluation_context(datamodel, state_chart)
+
+      # Should include non-map data in _event but not merge it
+      assert context["_event"]["name"] == "test"
+      assert context["_event"]["data"] == "string_data"
+      assert context["counter"] == 5
+      # Should not have top-level data merged since it's not a map
+      refute Map.has_key?(context, "string_data")
+    end
+  end
+
+  describe "SCXML builtins and session management" do
+    test "handles nil document gracefully" do
+      state_chart = %StateChart{
+        current_event: nil,
+        configuration: Configuration.new(["test"]),
+        document: nil
+      }
+
+      datamodel = %{}
+      context = Datamodel.build_evaluation_context(datamodel, state_chart)
+
+      # Should handle nil document
+      assert context["_name"] == ""
+      assert context["_ioprocessors"] == []
+      assert is_binary(context["_sessionid"])
+    end
+
+    test "handles document without name" do
+      state_chart = %StateChart{
+        current_event: nil,
+        configuration: Configuration.new(["test"]),
+        document: %Document{name: nil}
+      }
+
+      datamodel = %{}
+      context = Datamodel.build_evaluation_context(datamodel, state_chart)
+
+      # Should handle nil document name
+      assert context["_name"] == ""
+    end
+
+    test "generates unique session IDs" do
+      configuration = Configuration.new(["test"])
+
+      state_chart1 = %StateChart{
+        current_event: nil,
+        configuration: configuration,
+        document: %Document{name: "test1"}
+      }
+
+      state_chart2 = %StateChart{
+        current_event: nil,
+        configuration: configuration,
+        document: %Document{name: "test2"}
+      }
+
+      context1 = Datamodel.build_evaluation_context(%{}, state_chart1)
+      context2 = Datamodel.build_evaluation_context(%{}, state_chart2)
+
+      # Session IDs should be different
+      assert context1["_sessionid"] != context2["_sessionid"]
+      assert String.starts_with?(context1["_sessionid"], "statifier_")
+      assert String.starts_with?(context2["_sessionid"], "statifier_")
+    end
   end
 end

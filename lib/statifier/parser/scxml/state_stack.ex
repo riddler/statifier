@@ -369,6 +369,15 @@ defmodule Statifier.Parser.SCXML.StateStack do
     {:ok, %{state | stack: [{"if", updated_container} | rest]}}
   end
 
+  # Handle log action within foreach container
+  def handle_log_end(
+        %{stack: [{_element_name, log_action} | [{"foreach", foreach_action} | rest]]} = state
+      ) do
+    # Add log action to foreach's actions list
+    updated_foreach = %{foreach_action | actions: foreach_action.actions ++ [log_action]}
+    {:ok, %{state | stack: [{"foreach", updated_foreach} | rest]}}
+  end
+
   # Handle log action within transition
   def handle_log_end(
         %{stack: [{_element_name, log_action} | [{"transition", transition} | rest]]} = state
@@ -424,6 +433,15 @@ defmodule Statifier.Parser.SCXML.StateStack do
     # Add raise action to current conditional block within if container
     updated_container = add_action_to_current_block(if_container, raise_action)
     {:ok, %{state | stack: [{"if", updated_container} | rest]}}
+  end
+
+  # Handle raise action within foreach container
+  def handle_raise_end(
+        %{stack: [{_element_name, raise_action} | [{"foreach", foreach_action} | rest]]} = state
+      ) do
+    # Add raise action to foreach's actions list
+    updated_foreach = %{foreach_action | actions: foreach_action.actions ++ [raise_action]}
+    {:ok, %{state | stack: [{"foreach", updated_foreach} | rest]}}
   end
 
   # Handle raise action within transition
@@ -483,6 +501,15 @@ defmodule Statifier.Parser.SCXML.StateStack do
     {:ok, %{state | stack: [{"if", updated_container} | rest]}}
   end
 
+  # Handle assign action within foreach container
+  def handle_assign_end(
+        %{stack: [{_element_name, assign_action} | [{"foreach", foreach_action} | rest]]} = state
+      ) do
+    # Add assign action to foreach's actions list
+    updated_foreach = %{foreach_action | actions: foreach_action.actions ++ [assign_action]}
+    {:ok, %{state | stack: [{"foreach", updated_foreach} | rest]}}
+  end
+
   # Handle assign action within transition
   def handle_assign_end(
         %{stack: [{_element_name, assign_action} | [{"transition", transition} | rest]]} = state
@@ -535,6 +562,16 @@ defmodule Statifier.Parser.SCXML.StateStack do
     # First action in onexit block
     if_action = create_if_action_from_container(if_container)
     {:ok, %{state | stack: [{"onexit", [if_action]} | rest]}}
+  end
+
+  # Handle if action within foreach container
+  def handle_if_end(
+        %{stack: [{_element_name, if_container} | [{"foreach", foreach_action} | rest]]} = state
+      ) do
+    # Create IfAction from collected conditional blocks and add to foreach
+    if_action = create_if_action_from_container(if_container)
+    updated_foreach = %{foreach_action | actions: foreach_action.actions ++ [if_action]}
+    {:ok, %{state | stack: [{"foreach", updated_foreach} | rest]}}
   end
 
   # Handle if action within transition
@@ -645,6 +682,15 @@ defmodule Statifier.Parser.SCXML.StateStack do
     {:ok, %{state | stack: [{"if", updated_container} | rest]}}
   end
 
+  # Handle send action within foreach container
+  def handle_send_end(
+        %{stack: [{_element_name, send_action} | [{"foreach", foreach_action} | rest]]} = state
+      ) do
+    # Add send action to foreach's actions list
+    updated_foreach = %{foreach_action | actions: foreach_action.actions ++ [send_action]}
+    {:ok, %{state | stack: [{"foreach", updated_foreach} | rest]}}
+  end
+
   # Handle send action within transition
   def handle_send_end(
         %{stack: [{_element_name, send_action} | [{"transition", transition} | rest]]} = state
@@ -690,6 +736,81 @@ defmodule Statifier.Parser.SCXML.StateStack do
 
   def handle_content_end(state) do
     # Content not in a send context, just pop it
+    {:ok, pop_element(state)}
+  end
+
+  @doc """
+  Handle the end of a foreach element by creating a ForeachAction from collected actions.
+  """
+  @spec handle_foreach_end(map()) :: {:ok, map()}
+  def handle_foreach_end(
+        %{stack: [{_element_name, foreach_action} | [{"onentry", actions} | rest]]} = state
+      )
+      when is_list(actions) do
+    # Create final ForeachAction with collected child actions
+    final_foreach = %{foreach_action | actions: foreach_action.actions}
+    updated_actions = actions ++ [final_foreach]
+    {:ok, %{state | stack: [{"onentry", updated_actions} | rest]}}
+  end
+
+  def handle_foreach_end(
+        %{stack: [{_element_name, foreach_action} | [{"onentry", :onentry_block} | rest]]} = state
+      ) do
+    # First action in this onentry block
+    final_foreach = %{foreach_action | actions: foreach_action.actions}
+    {:ok, %{state | stack: [{"onentry", [final_foreach]} | rest]}}
+  end
+
+  def handle_foreach_end(
+        %{stack: [{_element_name, foreach_action} | [{"onexit", actions} | rest]]} = state
+      )
+      when is_list(actions) do
+    # Create final ForeachAction with collected child actions
+    final_foreach = %{foreach_action | actions: foreach_action.actions}
+    updated_actions = actions ++ [final_foreach]
+    {:ok, %{state | stack: [{"onexit", updated_actions} | rest]}}
+  end
+
+  def handle_foreach_end(
+        %{stack: [{_element_name, foreach_action} | [{"onexit", :onexit_block} | rest]]} = state
+      ) do
+    # First action in this onexit block
+    final_foreach = %{foreach_action | actions: foreach_action.actions}
+    {:ok, %{state | stack: [{"onexit", [final_foreach]} | rest]}}
+  end
+
+  # Handle foreach action within if container
+  def handle_foreach_end(
+        %{stack: [{_element_name, foreach_action} | [{"if", if_container} | rest]]} = state
+      ) do
+    # Add foreach action to current conditional block within if container
+    final_foreach = %{foreach_action | actions: foreach_action.actions}
+    updated_container = add_action_to_current_block(if_container, final_foreach)
+    {:ok, %{state | stack: [{"if", updated_container} | rest]}}
+  end
+
+  # Handle nested foreach action within parent foreach container
+  def handle_foreach_end(
+        %{stack: [{_element_name, child_foreach} | [{"foreach", parent_foreach} | rest]]} = state
+      ) do
+    # Add nested foreach action to parent foreach's actions list
+    final_child_foreach = %{child_foreach | actions: child_foreach.actions}
+    updated_parent = %{parent_foreach | actions: parent_foreach.actions ++ [final_child_foreach]}
+    {:ok, %{state | stack: [{"foreach", updated_parent} | rest]}}
+  end
+
+  # Handle foreach action within transition
+  def handle_foreach_end(
+        %{stack: [{_element_name, foreach_action} | [{"transition", transition} | rest]]} = state
+      ) do
+    # Add foreach action to transition's actions list
+    final_foreach = %{foreach_action | actions: foreach_action.actions}
+    updated_transition = %{transition | actions: transition.actions ++ [final_foreach]}
+    {:ok, %{state | stack: [{"transition", updated_transition} | rest]}}
+  end
+
+  def handle_foreach_end(state) do
+    # Foreach element not in an onentry/onexit/if/transition context, just pop it
     {:ok, pop_element(state)}
   end
 
