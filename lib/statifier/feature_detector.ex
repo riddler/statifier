@@ -71,8 +71,8 @@ defmodule Statifier.FeatureDetector do
       log_elements: :supported,
       raise_elements: :supported,
 
-      # Advanced transitions (unsupported)
-      targetless_transitions: :unsupported,
+      # Advanced transitions
+      targetless_transitions: :supported,
       internal_transitions: :unsupported,
 
       # History (supported)
@@ -81,7 +81,10 @@ defmodule Statifier.FeatureDetector do
       # Advanced attributes (unsupported)
       send_idlocation: :unsupported,
       event_expressions: :unsupported,
-      target_expressions: :unsupported
+      target_expressions: :unsupported,
+
+      # Loop constructs (unsupported)
+      foreach_elements: :unsupported
     }
   end
 
@@ -140,6 +143,7 @@ defmodule Statifier.FeatureDetector do
     |> add_if_present(xml, ~r/<send(\s|>)/, :send_elements)
     |> add_if_present(xml, ~r/<log(\s|>)/, :log_elements)
     |> add_if_present(xml, ~r/<raise(\s|>)/, :raise_elements)
+    |> add_if_present(xml, ~r/<foreach(\s|>)/, :foreach_elements)
   end
 
   defp detect_xml_attributes(features, xml) do

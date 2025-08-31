@@ -68,7 +68,7 @@ defmodule Statifier.Actions.LogAction do
   defp evaluate_log_expression(expr, state_chart) when is_binary(expr) do
     case Evaluator.evaluate_value(expr, state_chart) do
       {:ok, value} ->
-        result = to_string(value)
+        result = safe_to_string(value)
         if result == "", do: expr, else: result
 
       {:error, _reason} ->
@@ -78,6 +78,14 @@ defmodule Statifier.Actions.LogAction do
   end
 
   defp evaluate_log_expression(other, _state_chart), do: inspect(other)
+
+  # Safely convert values to string, handling complex types
+  defp safe_to_string(value) when is_binary(value), do: value
+  defp safe_to_string(value) when is_number(value), do: to_string(value)
+  defp safe_to_string(value) when is_boolean(value), do: to_string(value)
+  defp safe_to_string(value) when is_atom(value), do: to_string(value)
+  defp safe_to_string(value) when is_map(value) or is_list(value), do: inspect(value)
+  defp safe_to_string(value), do: inspect(value)
 
   # Extract quoted string parsing to reduce complexity
   defp parse_quoted_string_fallback(expr) do

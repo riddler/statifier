@@ -535,3 +535,8 @@ This logging system will integrate seamlessly with both the current functional A
 
 - Always refer to state machines as state charts
 - Always run 'mix format' after writing an Elixir file.
+- When creating git commit messages:
+  - be concise but informative, and highlight the functional changes
+  - no need to mention code quality improvements as they are expected (unless the functional change is about code quality improvements)
+  - commit titles should be less than 50 characters and be in the simple present tense (active voice) - examples: 'Adds ..., Fixes ...'
+  - commit descriptions should wrap at about 72 characters and also be in the simple present tense (active voice)
