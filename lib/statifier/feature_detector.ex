@@ -78,13 +78,13 @@ defmodule Statifier.FeatureDetector do
       # History (supported)
       history_states: :supported,
 
+      # Loop constructs (supported)
+      foreach_elements: :supported,
+
       # Advanced attributes (unsupported)
       send_idlocation: :unsupported,
       event_expressions: :unsupported,
-      target_expressions: :unsupported,
-
-      # Loop constructs (supported)
-      foreach_elements: :supported
+      target_expressions: :unsupported
     }
   end
 
