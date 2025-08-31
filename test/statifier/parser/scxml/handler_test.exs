@@ -480,4 +480,93 @@ defmodule Statifier.Parser.SCXML.HandlerTest do
       assert is_map(final_state.element_counts)
     end
   end
+
+  describe "handle_event :characters" do
+    test "handles characters for content element via StateStack" do
+      # Create a content element on the stack
+      content = %Statifier.Actions.SendContent{
+        expr: nil,
+        content: nil,
+        source_location: %{}
+      }
+
+      state = create_handler_state([{"content", content}])
+
+      {:ok, result} = Handler.handle_event(:characters, "Test content", state)
+
+      # Should have updated the content via StateStack.handle_characters
+      [{"content", updated_content}] = result.stack
+      assert updated_content.content == "Test content"
+    end
+
+    test "ignores characters for non-content elements" do
+      # Create a state element on the stack
+      state_element = %Statifier.State{id: "test", type: :atomic}
+      state = create_handler_state([{"state", state_element}])
+
+      {:ok, result} = Handler.handle_event(:characters, "Some text", state)
+
+      # Should return unchanged state since StateStack returns :not_handled
+      assert result.stack == state.stack
+      [{"state", unchanged_state}] = result.stack
+      assert unchanged_state == state_element
+    end
+
+    test "handles empty character data gracefully" do
+      content = %Statifier.Actions.SendContent{
+        expr: nil,
+        content: nil,
+        source_location: %{}
+      }
+
+      state = create_handler_state([{"content", content}])
+
+      {:ok, result} = Handler.handle_event(:characters, "", state)
+
+      # Should leave content as nil for empty string
+      [{"content", updated_content}] = result.stack
+      assert updated_content.content == nil
+    end
+
+    test "handles whitespace-only characters" do
+      content = %Statifier.Actions.SendContent{
+        expr: nil,
+        content: nil,
+        source_location: %{}
+      }
+
+      state = create_handler_state([{"content", content}])
+
+      {:ok, result} = Handler.handle_event(:characters, "   \n\t   ", state)
+
+      # Should leave content as nil for whitespace-only
+      [{"content", updated_content}] = result.stack
+      assert updated_content.content == nil
+    end
+
+    test "handles characters with empty stack" do
+      state = create_handler_state([])
+
+      {:ok, result} = Handler.handle_event(:characters, "Some text", state)
+
+      # Should return unchanged state
+      assert result.stack == []
+      assert result == state
+    end
+
+    test "trims whitespace from content characters" do
+      content = %Statifier.Actions.SendContent{
+        expr: nil,
+        content: nil,
+        source_location: %{}
+      }
+
+      state = create_handler_state([{"content", content}])
+
+      {:ok, result} = Handler.handle_event(:characters, "  \n  Test content  \t  ", state)
+
+      [{"content", updated_content}] = result.stack
+      assert updated_content.content == "Test content"
+    end
+  end
 end
