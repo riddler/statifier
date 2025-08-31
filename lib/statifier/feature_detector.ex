@@ -109,7 +109,7 @@ defmodule Statifier.FeatureDetector do
 
   Returns `{:ok, features}` if all features are supported or partial,
   or `{:error, unsupported_features}` if any completely unsupported features are detected.
-  
+
   Partial features are allowed to run as they may work in simple cases.
   """
   @spec validate_features(MapSet.t(atom())) ::
@@ -122,7 +122,8 @@ defmodule Statifier.FeatureDetector do
       |> Enum.filter(fn feature ->
         case Map.get(registry, feature, :unsupported) do
           :supported -> false
-          :partial -> false  # Allow partial features to run
+          # Allow partial features to run
+          :partial -> false
           :unsupported -> true
         end
       end)
