@@ -9,6 +9,10 @@ defmodule Statifier.Logging.ElixirLoggerAdapterTest do
 
   describe "log/5" do
     test "logs to Elixir Logger and returns unchanged state chart" do
+      # Set Logger level to debug to ensure info messages are captured
+      original_level = Logger.level()
+      Logger.configure(level: :debug)
+
       adapter = %ElixirLoggerAdapter{logger_module: Logger}
       state_chart = %StateChart{}
       metadata = %{action_type: "test"}
@@ -23,9 +27,16 @@ defmodule Statifier.Logging.ElixirLoggerAdapterTest do
 
       # Verify the message was logged
       assert log_output =~ "Test message"
+
+      # Restore original level
+      Logger.configure(level: original_level)
     end
 
     test "passes metadata to Logger" do
+      # Set Logger level to debug to ensure info messages are captured
+      original_level = Logger.level()
+      Logger.configure(level: :debug)
+
       adapter = %ElixirLoggerAdapter{logger_module: Logger}
       state_chart = %StateChart{}
       metadata = %{action_type: "test", custom: "value"}
@@ -39,6 +50,9 @@ defmodule Statifier.Logging.ElixirLoggerAdapterTest do
       # Note: Testing exact metadata format can be tricky with Logger
       # The main thing is that it doesn't crash and the message appears
       assert log_output =~ "Test message"
+
+      # Restore original level
+      Logger.configure(level: original_level)
     end
 
     test "works with different log levels" do

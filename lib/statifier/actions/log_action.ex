@@ -71,7 +71,15 @@ defmodule Statifier.Actions.LogAction do
         result = safe_to_string(value)
         if result == "", do: expr, else: result
 
-      {:error, _reason} ->
+      {:error, reason} ->
+        # Log the evaluation error for debugging
+        LogManager.warn(state_chart, "Log expression evaluation failed", %{
+          action_type: "log_evaluation_error",
+          expression: expr,
+          error: inspect(reason),
+          fallback: "using string parsing"
+        })
+
         # Fall back to simple string parsing for basic quoted strings
         parse_quoted_string_fallback(expr)
     end

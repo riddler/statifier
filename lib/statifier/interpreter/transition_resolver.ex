@@ -23,19 +23,21 @@ defmodule Statifier.Interpreter.TransitionResolver do
   """
 
   alias Statifier.{Configuration, Document, Evaluator, Event, StateChart, StateHierarchy}
+  alias Statifier.Logging.LogManager
 
   @doc """
   Find enabled transitions for a given event.
 
-  Returns transitions that match the event and have enabled conditions,
-  filtered by SCXML conflict resolution rules.
+  Returns a tuple with updated state chart (with logging) and transitions that match
+  the event and have enabled conditions, filtered by SCXML conflict resolution rules.
 
   ## Examples
 
-      {:ok, transitions} = TransitionResolver.find_enabled_transitions(state_chart, event)
+      {state_chart, transitions} = TransitionResolver.find_enabled_transitions(state_chart, event)
 
   """
-  @spec find_enabled_transitions(StateChart.t(), Event.t()) :: [Statifier.Transition.t()]
+  @spec find_enabled_transitions(StateChart.t(), Event.t()) ::
+          {StateChart.t(), [Statifier.Transition.t()]}
   def find_enabled_transitions(%StateChart{} = state_chart, %Event{} = event) do
     find_enabled_transitions_for_event(state_chart, event)
   end
@@ -43,15 +45,15 @@ defmodule Statifier.Interpreter.TransitionResolver do
   @doc """
   Find eventless transitions (also called NULL transitions in SCXML spec).
 
-  Returns transitions without event attributes that have enabled conditions,
-  filtered by SCXML conflict resolution rules.
+  Returns a tuple with updated state chart (with logging) and transitions without
+  event attributes that have enabled conditions, filtered by SCXML conflict resolution rules.
 
   ## Examples
 
-      transitions = TransitionResolver.find_eventless_transitions(state_chart)
+      {state_chart, transitions} = TransitionResolver.find_eventless_transitions(state_chart)
 
   """
-  @spec find_eventless_transitions(StateChart.t()) :: [Statifier.Transition.t()]
+  @spec find_eventless_transitions(StateChart.t()) :: {StateChart.t(), [Statifier.Transition.t()]}
   def find_eventless_transitions(%StateChart{} = state_chart) do
     find_enabled_transitions_for_event(state_chart, nil)
   end
@@ -122,31 +124,138 @@ defmodule Statifier.Interpreter.TransitionResolver do
   # Private helper functions
 
   # Unified transition finding logic for both named events and eventless transitions
-  @spec find_enabled_transitions_for_event(StateChart.t(), Event.t() | nil) :: [
-          Statifier.Transition.t()
-        ]
+  @spec find_enabled_transitions_for_event(StateChart.t(), Event.t() | nil) :: {
+          StateChart.t(),
+          [Statifier.Transition.t()]
+        }
   defp find_enabled_transitions_for_event(%StateChart{} = state_chart, event_or_nil) do
     # Get all currently active states (including ancestors)
     active_states_with_ancestors =
       Configuration.all_active_states(state_chart.configuration, state_chart.document)
 
+    # Log the start of transition evaluation
+    event_name = if event_or_nil, do: event_or_nil.name, else: "eventless"
+
+    state_chart =
+      LogManager.trace(state_chart, "Starting transition evaluation", %{
+        action_type: "transition_evaluation",
+        event: event_name,
+        active_states: MapSet.to_list(active_states_with_ancestors),
+        search_type: if(event_or_nil, do: "event_triggered", else: "eventless")
+      })
+
     # Update the state chart with current event for context building
     state_chart_with_event = %{state_chart | current_event: event_or_nil}
 
     # Find transitions from all active states (including ancestors) that match the event/NULL and condition
-    active_states_with_ancestors
-    |> Enum.flat_map(fn state_id ->
-      # Use O(1) lookup for transitions from this state
-      transitions = Document.get_transitions_from_state(state_chart.document, state_id)
+    enabled_transitions =
+      active_states_with_ancestors
+      |> Enum.flat_map(fn state_id ->
+        # Use O(1) lookup for transitions from this state
+        transitions = Document.get_transitions_from_state(state_chart.document, state_id)
 
-      transitions
-      |> Enum.filter(fn transition ->
-        matches_event_or_eventless?(transition, event_or_nil) and
-          transition_condition_enabled?(transition, state_chart_with_event)
+        LogManager.trace(state_chart, "Evaluating transitions from state", %{
+          action_type: "state_transition_check",
+          source_state: state_id,
+          transition_count: length(transitions)
+        })
+
+        transitions
+        |> Enum.filter(
+          &transition_enabled?(&1, event_or_nil, state_chart, state_chart_with_event)
+        )
       end)
-    end)
-    # Process in document order
-    |> Enum.sort_by(& &1.document_order)
+      # Process in document order
+      |> Enum.sort_by(& &1.document_order)
+
+    state_chart =
+      LogManager.debug(state_chart, "Transition evaluation completed", %{
+        action_type: "transition_evaluation_result",
+        event: event_name,
+        total_enabled: length(enabled_transitions),
+        enabled_transitions: Enum.map(enabled_transitions, &transition_summary/1)
+      })
+
+    {state_chart, enabled_transitions}
+  end
+
+  # Create a summary of a transition for logging
+  defp transition_summary(%Statifier.Transition{} = transition) do
+    %{
+      source: transition.source,
+      event: transition.event,
+      targets: transition.targets,
+      type: transition.type,
+      condition: transition.cond
+    }
+  end
+
+  # Check if a transition is enabled (matches event and passes condition)
+  @spec transition_enabled?(
+          Statifier.Transition.t(),
+          Event.t() | nil,
+          StateChart.t(),
+          StateChart.t()
+        ) :: boolean()
+  defp transition_enabled?(transition, event_or_nil, state_chart, state_chart_with_event) do
+    event_matches = matches_event_or_eventless?(transition, event_or_nil)
+
+    condition_enabled =
+      if event_matches do
+        evaluate_transition_condition(transition, state_chart, state_chart_with_event)
+      else
+        false
+      end
+
+    log_transition_evaluation(transition, state_chart, event_matches, condition_enabled)
+
+    event_matches and condition_enabled
+  end
+
+  # Evaluate transition condition
+  defp evaluate_transition_condition(transition, state_chart, state_chart_with_event) do
+    case transition.compiled_cond do
+      nil ->
+        true
+
+      _compiled_cond ->
+        result = transition_condition_enabled?(transition, state_chart_with_event)
+
+        # Log condition evaluation failures for debugging
+        if not result and transition.cond do
+          LogManager.warn(
+            state_chart,
+            "Condition evaluation failed or returned false",
+            %{
+              action_type: "condition_evaluation",
+              source_state: transition.source,
+              condition: transition.cond,
+              event: transition.event,
+              targets: transition.targets,
+              result: result
+            }
+          )
+        end
+
+        result
+    end
+  end
+
+  # Log transition evaluation results if tracing is enabled
+  defp log_transition_evaluation(transition, state_chart, event_matches, condition_enabled) do
+    if LogManager.enabled?(state_chart, :trace) do
+      LogManager.trace(state_chart, "Transition evaluation result", %{
+        action_type: "transition_check",
+        source_state: transition.source,
+        event_pattern: transition.event,
+        condition: transition.cond,
+        type: transition.type,
+        targets: transition.targets,
+        event_matches: event_matches,
+        condition_enabled: condition_enabled,
+        overall_enabled: event_matches and condition_enabled
+      })
+    end
   end
 
   # Check if transition matches the event (or eventless for transitions without event attribute)

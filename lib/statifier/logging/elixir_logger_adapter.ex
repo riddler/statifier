@@ -76,8 +76,11 @@ defmodule Statifier.Logging.ElixirLoggerAdapter do
     """
     @spec enabled?(Statifier.Logging.ElixirLoggerAdapter.t(), atom()) :: boolean()
     def enabled?(%{logger_module: Logger}, level) do
+      # Map our trace level to debug since Elixir's Logger doesn't support trace
+      elixir_level = map_to_elixir_level(level)
+
       # Handle Elixir's Logger specifically - it uses compare_levels
-      Logger.compare_levels(level, Logger.level()) != :lt
+      Logger.compare_levels(elixir_level, Logger.level()) != :lt
     end
 
     def enabled?(%{logger_module: logger_module}, level) do
@@ -89,5 +92,9 @@ defmodule Statifier.Logging.ElixirLoggerAdapter do
         true
       end
     end
+
+    # Map Statifier log levels to Elixir Logger levels
+    defp map_to_elixir_level(:trace), do: :debug
+    defp map_to_elixir_level(level), do: level
   end
 end
