@@ -84,6 +84,11 @@ defmodule Statifier.Interpreter do
   defp initialize_state_chart(optimized_document, warnings, opts) do
     initial_config = get_initial_configuration(optimized_document)
 
+    initial_leaf_states =
+      initial_config
+      |> Configuration.active_leaf_states()
+      |> MapSet.to_list()
+
     state_chart = StateChart.new(optimized_document, initial_config)
 
     # Initialize data model from datamodel_elements
@@ -95,7 +100,7 @@ defmodule Statifier.Interpreter do
       # Configure logging based on options or defaults
       |> LogManager.configure_from_options(opts)
       # Execute onentry actions for initial leaf states and queue any raised events
-      |> ActionExecutor.execute_onentry_actions(MapSet.to_list(Configuration.active_leaf_states(initial_config)))
+      |> ActionExecutor.execute_onentry_actions(initial_leaf_states)
       # Execute microsteps (eventless transitions and internal events) after initialization
       |> execute_microsteps()
 
@@ -112,7 +117,6 @@ defmodule Statifier.Interpreter do
 
     {:ok, state_chart}
   end
-
 
   @doc """
   Send an event to the state chart and return the new state (macrostep execution).
