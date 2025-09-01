@@ -13,15 +13,13 @@ defmodule Statifier.Interpreter do
     Datamodel,
     Document,
     Event,
+    Interpreter.TransitionResolver,
+    Logging.LogManager,
     State,
     StateChart,
     StateHierarchy,
     Validator
   }
-
-  alias Statifier.Interpreter.TransitionResolver
-
-  alias Statifier.Logging.LogManager
 
   @doc """
   Initialize a state chart from a parsed document.
