@@ -253,6 +253,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
       targets: targets,
       cond: cond_attr,
       compiled_cond: compiled_cond,
+      type: get_attr_value(attrs_map, "type"),
       document_order: document_order,
       # Location information
       source_location: location,

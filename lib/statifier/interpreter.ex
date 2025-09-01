@@ -13,15 +13,13 @@ defmodule Statifier.Interpreter do
     Datamodel,
     Document,
     Event,
+    Interpreter.TransitionResolver,
+    Logging.LogManager,
     State,
     StateChart,
     StateHierarchy,
     Validator
   }
-
-  alias Statifier.Interpreter.TransitionResolver
-
-  alias Statifier.Logging.LogManager
 
   @doc """
   Initialize a state chart from a parsed document.
@@ -83,7 +81,11 @@ defmodule Statifier.Interpreter do
   # Helper function to avoid code duplication
   defp initialize_state_chart(optimized_document, warnings, opts) do
     initial_config = get_initial_configuration(optimized_document)
-    initial_states = MapSet.to_list(Configuration.active_leaf_states(initial_config))
+
+    initial_leaf_states =
+      initial_config
+      |> Configuration.active_leaf_states()
+      |> MapSet.to_list()
 
     state_chart = StateChart.new(optimized_document, initial_config)
 
@@ -95,8 +97,8 @@ defmodule Statifier.Interpreter do
       |> StateChart.update_datamodel(datamodel)
       # Configure logging based on options or defaults
       |> LogManager.configure_from_options(opts)
-      # Execute onentry actions for initial states and queue any raised events
-      |> ActionExecutor.execute_onentry_actions(initial_states)
+      # Execute onentry actions for initial leaf states and queue any raised events
+      |> ActionExecutor.execute_onentry_actions(initial_leaf_states)
       # Execute microsteps (eventless transitions and internal events) after initialization
       |> execute_microsteps()
 
@@ -357,9 +359,12 @@ defmodule Statifier.Interpreter do
         end
       end)
 
-    # Separate targetless and targeted transitions
-    {targetless_transitions, targeted_transitions} =
+    # Separate transitions by type: targetless, internal, and external
+    {targetless_transitions, transitions_with_targets} =
       Enum.split_with(selected_transitions, fn t -> t.targets == [] end)
+
+    {internal_transitions, external_transitions} =
+      Enum.split_with(transitions_with_targets, fn t -> t.type == "internal" end)
 
     # Handle targetless transitions (execute actions only, no state change)
     state_chart =
@@ -370,23 +375,96 @@ defmodule Statifier.Interpreter do
         state_chart
       end
 
-    # Execute targeted transitions
+    # Handle internal transitions (execute actions and change configuration without exit/entry of source)
+    state_chart =
+      if internal_transitions != [] do
+        # For internal transitions, we process them like external transitions
+        # but modify the exit set computation to exclude the source states
+        internal_target_states =
+          internal_transitions
+          |> Enum.flat_map(&execute_single_transition(&1, state_chart))
+
+        if internal_target_states != [] do
+          update_configuration_for_internal_transitions(
+            state_chart,
+            internal_transitions,
+            internal_target_states
+          )
+        else
+          # No targets, just execute actions
+          ActionExecutor.execute_transition_actions(state_chart, internal_transitions)
+        end
+      else
+        state_chart
+      end
+
+    # Execute external transitions (with exit/entry)
     target_leaf_states =
-      targeted_transitions
+      external_transitions
       |> Enum.flat_map(&execute_single_transition(&1, state_chart))
 
     case target_leaf_states do
-      # No targeted transitions (might have had targetless ones)
+      # No external transitions (might have had targetless or internal ones)
       [] ->
         state_chart
 
       states ->
         update_configuration_with_parallel_preservation(
           state_chart,
-          targeted_transitions,
+          external_transitions,
           states
         )
     end
+  end
+
+  # Update configuration for internal transitions: replace descendants without exiting source
+  defp update_configuration_for_internal_transitions(
+         %StateChart{document: document} = state_chart,
+         internal_transitions,
+         new_target_states
+       ) do
+    # Get current active leaf states
+    current_active = Configuration.active_leaf_states(state_chart.configuration)
+    new_target_set = MapSet.new(new_target_states)
+    source_state_ids = MapSet.new(internal_transitions, & &1.source)
+
+    # For internal transitions: exit descendants of source states (except targets)
+    # but don't exit the source states themselves
+    states_to_exit =
+      current_active
+      |> Enum.filter(fn active_state ->
+        # Exit if this state is a descendant of a source state
+        # and is not one of the new target states
+        Enum.any?(source_state_ids, fn source_id ->
+          StateHierarchy.descendant_of?(document, active_state, source_id) and
+            not MapSet.member?(new_target_set, active_state)
+        end)
+      end)
+      |> MapSet.new()
+
+    # States to enter: target states that aren't already active
+    states_to_enter = MapSet.difference(new_target_set, current_active)
+    states_to_enter_list = MapSet.to_list(states_to_enter)
+
+    # Execute the transition
+    state_chart =
+      state_chart
+      |> record_history_for_exiting_states(MapSet.to_list(states_to_exit))
+      # Execute onexit actions for descendant states being exited
+      |> ActionExecutor.execute_onexit_actions(MapSet.to_list(states_to_exit))
+      # Execute transition actions
+      |> ActionExecutor.execute_transition_actions(internal_transitions)
+      # Execute onentry actions for target states being entered
+      |> ActionExecutor.execute_onentry_actions(states_to_enter_list)
+
+    # Update configuration: remove exited states, add target states
+    final_active_states =
+      current_active
+      |> MapSet.difference(states_to_exit)
+      |> MapSet.union(new_target_set)
+
+    new_config = Configuration.new(MapSet.to_list(final_active_states))
+    StateChart.update_configuration(state_chart, new_config)
   end
 
   # Update configuration with proper SCXML exit set computation while preserving unaffected parallel regions

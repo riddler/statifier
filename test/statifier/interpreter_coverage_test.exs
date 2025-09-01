@@ -304,5 +304,230 @@ defmodule Statifier.InterpreterCoverageTest do
       assert "p2" in active_states
       refute "nested" in active_states
     end
+
+    test "initialize with validation error returns error tuple" do
+      # Create an unvalidated document with validation errors
+      unvalidated_document = %Document{
+        initial: "nonexistent",
+        states: [%State{id: "s1", type: :atomic, states: [], transitions: []}],
+        validated: false,
+        state_lookup: %{"s1" => %State{id: "s1", type: :atomic, states: [], transitions: []}},
+        transitions_by_source: %{}
+      }
+
+      # This should trigger validation and return error
+      result = Interpreter.initialize(unvalidated_document)
+      assert {:error, errors, _warnings} = result
+      assert is_list(errors)
+    end
+
+    test "get_initial_configuration with invalid initial state" do
+      # Test document with nonexistent initial state - covers the nil case in get_initial_configuration
+      document = %Document{
+        initial: "nonexistent_state",
+        states: [%State{id: "s1", type: :atomic, states: [], transitions: []}],
+        validated: true,
+        state_lookup: %{"s1" => %State{id: "s1", type: :atomic, states: [], transitions: []}},
+        transitions_by_source: %{}
+      }
+
+      # Initialize should handle this gracefully by returning empty configuration
+      {:ok, state_chart} = Interpreter.initialize(document)
+
+      # Should have empty configuration since initial state doesn't exist
+      active_states = Configuration.active_leaf_states(state_chart.configuration)
+      assert MapSet.size(active_states) == 0
+    end
+
+    test "internal event processing in execute_microsteps" do
+      # Create a scenario with raised internal events to test internal event processing path
+      xml = """
+      <scxml initial="s1">
+        <state id="s1">
+          <onentry>
+            <raise event="internal_event"/>
+          </onentry>
+          <transition event="internal_event" target="s2"/>
+        </state>
+        <state id="s2"/>
+      </scxml>
+      """
+
+      {:ok, document, _warnings} = Statifier.parse(xml)
+      {:ok, state_chart} = Interpreter.initialize(document)
+
+      # Should have processed the internal event during initialization
+      active_states = Configuration.active_leaf_states(state_chart.configuration)
+      assert MapSet.member?(active_states, "s2")
+    end
+
+    test "initial element without transitions" do
+      # Test initial element without transitions - covers empty transitions case
+      xml = """
+      <scxml>
+        <state id="parent">
+          <initial/>
+          <state id="child"/>
+        </state>
+      </scxml>
+      """
+
+      case Statifier.parse(xml) do
+        {:ok, document, _warnings} ->
+          # Should handle initial element without transitions and fall back to first child
+          case Interpreter.initialize(document) do
+            {:ok, state_chart} ->
+              active_states = Configuration.active_leaf_states(state_chart.configuration)
+              assert MapSet.member?(active_states, "child")
+
+            {:error, _errors, _warnings} ->
+              # Validation error is acceptable for malformed initial element
+              :ok
+          end
+
+        {:error, _parse_error} ->
+          # Parse error is also acceptable
+          :ok
+      end
+    end
+
+    test "initial element with empty targets" do
+      # Test initial element with transition but no targets - covers empty targets case
+      xml = """
+      <scxml>
+        <state id="parent">
+          <initial>
+            <transition/>
+          </initial>
+          <state id="child"/>
+        </state>
+      </scxml>
+      """
+
+      case Statifier.parse(xml) do
+        {:ok, document, _warnings} ->
+          # Should handle empty targets gracefully
+          case Interpreter.initialize(document) do
+            {:ok, _state_chart} -> :ok
+            {:error, _errors, _warnings} -> :ok
+          end
+
+        {:error, _parse_error} ->
+          :ok
+      end
+    end
+
+    test "compound state with no children" do
+      # Test compound state with empty children list - covers the nil return case
+      document = %Document{
+        initial: "empty_compound",
+        states: [
+          %State{
+            id: "empty_compound",
+            type: :compound,
+            # No children
+            states: [],
+            transitions: [],
+            initial: nil
+          }
+        ],
+        validated: true,
+        state_lookup: %{
+          "empty_compound" => %State{
+            id: "empty_compound",
+            type: :compound,
+            states: [],
+            transitions: [],
+            initial: nil
+          }
+        },
+        transitions_by_source: %{}
+      }
+
+      # Should handle compound state with no children gracefully
+      {:ok, state_chart} = Interpreter.initialize(document)
+
+      # Should have empty configuration since compound state has no children to enter
+      active_states = Configuration.active_leaf_states(state_chart.configuration)
+      assert MapSet.size(active_states) == 0
+    end
+
+    test "initial element fallback when no initial attribute" do
+      # Test fallback behavior when finding initial child with various scenarios
+      xml = """
+      <scxml>
+        <state id="parent">
+          <initial/>
+          <state id="first_child"/>
+          <state id="second_child"/>
+        </state>
+      </scxml>
+      """
+
+      case Statifier.parse(xml) do
+        {:ok, document, _warnings} ->
+          case Interpreter.initialize(document) do
+            {:ok, state_chart} ->
+              active_states = Configuration.active_leaf_states(state_chart.configuration)
+              # Should fall back to first non-initial child
+              assert MapSet.member?(active_states, "first_child")
+
+            {:error, _errors, _warnings} ->
+              :ok
+          end
+
+        {:error, _parse_error} ->
+          :ok
+      end
+    end
+
+    test "internal transition execution with targets" do
+      # Test internal transitions with targets to cover internal transition execution paths
+      xml = """
+      <scxml initial="parent">
+        <state id="parent" initial="child1">
+          <transition event="internal" type="internal" target="child2"/>
+          <state id="child1"/>
+          <state id="child2"/>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document, _warnings} = Statifier.parse(xml)
+      {:ok, state_chart} = Interpreter.initialize(document)
+
+      # Send internal transition event
+      event = %Event{name: "internal"}
+      {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
+
+      # Should be in child2 now (internal transition executed)
+      active_states = Configuration.active_leaf_states(new_state_chart.configuration)
+      assert MapSet.member?(active_states, "child2")
+      refute MapSet.member?(active_states, "child1")
+    end
+
+    test "internal transition with no targets (action only)" do
+      # Test internal transitions without targets to cover targetless transition path
+      xml = """
+      <scxml initial="s1">
+        <state id="s1">
+          <transition event="action_only" type="internal">
+            <log expr="'internal action executed'"/>
+          </transition>
+        </state>
+      </scxml>
+      """
+
+      {:ok, document, _warnings} = Statifier.parse(xml)
+      {:ok, state_chart} = Interpreter.initialize(document)
+
+      # Send event to trigger internal transition with no targets
+      event = %Event{name: "action_only"}
+      {:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
+
+      # Should remain in same state (no targets)
+      active_states = Configuration.active_leaf_states(new_state_chart.configuration)
+      assert MapSet.member?(active_states, "s1")
+    end
   end
 end

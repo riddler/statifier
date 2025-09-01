@@ -73,7 +73,7 @@ defmodule Statifier.FeatureDetector do
 
       # Advanced transitions
       targetless_transitions: :supported,
-      internal_transitions: :unsupported,
+      internal_transitions: :supported,
 
       # History (supported)
       history_states: :supported,
@@ -329,7 +329,9 @@ defmodule Statifier.FeatureDetector do
 
   defp add_if_targetless(features, _transition), do: features
 
-  # Note: Statifier.Transition doesn't currently have a type field
-  # This is a placeholder for when internal transitions are implemented
+  defp add_if_internal(features, %Transition{type: "internal"}) do
+    MapSet.put(features, :internal_transitions)
+  end
+
   defp add_if_internal(features, _transition), do: features
 end
