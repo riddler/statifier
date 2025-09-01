@@ -12,77 +12,84 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Enhanced SCXML Feature Detection and Test Infrastructure
-- **Comprehensive Feature Detection**: Added detection for 8 new SCXML 
-  features including wildcard_events, invoke_elements, script_elements, 
-  cancel_elements, finalize_elements, donedata_elements, 
+
+- **Comprehensive Feature Detection**: Added detection for 8 new SCXML
+  features including wildcard_events, invoke_elements, script_elements,
+  cancel_elements, finalize_elements, donedata_elements,
   send_content_elements, send_param_elements, and send_delay_expressions
-- **Automated Test Updates**: Created script to automatically update 
-  @required_features attributes across 182 test files (123 SCION + 59 
+- **Automated Test Updates**: Created script to automatically update
+  @required_features attributes across 182 test files (123 SCION + 59
   W3C) based on actual XML content analysis
-- **Wildcard Events Support**: Full implementation of event="*" patterns 
+- **Wildcard Events Support**: Full implementation of event="*" patterns
   with proper transition processing and comprehensive test coverage
-- **Partial Feature Testing**: Modified test framework to allow :partial 
-  features to run, providing better feedback instead of automatic 
+- **Partial Feature Testing**: Modified test framework to allow :partial
+  features to run, providing better feedback instead of automatic
   exclusion
 
 #### New SCXML Elements and Features
-- **Foreach Element Support**: Complete SCXML `<foreach>` implementation 
-  with W3C-compliant variable scoping, permanent variable declaration, 
+
+- **Foreach Element Support**: Complete SCXML `<foreach>` implementation
+  with W3C-compliant variable scoping, permanent variable declaration,
   and nested action support
-- **Targetless Transitions**: Implementation of SCXML targetless 
-  transitions that execute actions without state changes, following W3C 
+- **Targetless Transitions**: Implementation of SCXML targetless
+  transitions that execute actions without state changes, following W3C
   specification requirements
-- **Enhanced Send Elements**: Improved `<send>` element parsing with 
-  proper content element text capture, fixing previously ignored text 
+- **Enhanced Send Elements**: Improved `<send>` element parsing with
+  proper content element text capture, fixing previously ignored text
   content in send actions
 
 #### Development Infrastructure
-- **Quality Mix Task**: Added comprehensive `mix quality` task with 
+
+- **Quality Mix Task**: Added comprehensive `mix quality` task with
   automated formatting, testing, static analysis, and coverage checking
-- **Coverage Improvements**: Significantly improved test coverage across 
-  multiple modules including parser components, action executors, and 
+- **Coverage Improvements**: Significantly improved test coverage across
+  multiple modules including parser components, action executors, and
   logging infrastructure
 
 ### Changed
 
 #### Test Framework Improvements
-- **Enhanced Feature Validation**: Updated FeatureDetector.validate_features/1 
+
+- **Enhanced Feature Validation**: Updated FeatureDetector.validate_features/1
   to treat :partial features as runnable rather than excluded
-- **Improved Test Accuracy**: All test files now have precise feature 
-  requirements based on actual SCXML content rather than manual 
+- **Improved Test Accuracy**: All test files now have precise feature
+  requirements based on actual SCXML content rather than manual
   specification
-- **Better Regression Coverage**: Regression test coverage improved from 
+- **Better Regression Coverage**: Regression test coverage improved from
   141/142 to 145/145 (100% pass rate)
 
 #### SCXML Compliance Enhancements
-- **History State Fixes**: Fixed history state restoration to properly 
+
+- **History State Fixes**: Fixed history state restoration to properly
   execute ancestor onentry actions per W3C specification
-- **Logging Improvements**: Implemented safe_to_string function to handle 
-  complex data types in log actions, preventing String.Chars protocol 
+- **Logging Improvements**: Implemented safe_to_string function to handle
+  complex data types in log actions, preventing String.Chars protocol
   errors
-- **Increased Iteration Limits**: Raised eventless transition iteration 
+- **Increased Iteration Limits**: Raised eventless transition iteration
   limit from 100 to 1000 to handle complex automatic transition chains
 
 ### Fixed
-- **Content Element Parsing**: Fixed SAX parser to capture text content 
+
+- **Content Element Parsing**: Fixed SAX parser to capture text content
   within `<content>` elements for send actions
-- **Variable Scoping**: Proper SCXML variable scoping in foreach loops 
+- **Variable Scoping**: Proper SCXML variable scoping in foreach loops
   with restoration of existing variables after iteration
-- **Feature Classification**: Corrected wildcard_events status from 
+- **Feature Classification**: Corrected wildcard_events status from
   :partial to :supported with full implementation
 
 ### Benefits
-- **Enhanced Test Coverage**: Comprehensive detection prevents false 
+
+- **Enhanced Test Coverage**: Comprehensive detection prevents false
   positive/negative test results with accurate feature requirements
-- **Better Development Feedback**: Partial features now provide real 
+- **Better Development Feedback**: Partial features now provide real
   feedback rather than being automatically excluded from testing
-- **SCXML Compliance**: Improved adherence to W3C SCXML specification 
-  with proper implementation of complex features like foreach and 
+- **SCXML Compliance**: Improved adherence to W3C SCXML specification
+  with proper implementation of complex features like foreach and
   targetless transitions
-- **Developer Experience**: Automated quality checking and enhanced test 
+- **Developer Experience**: Automated quality checking and enhanced test
   infrastructure provide better development workflow
 
-All 857+ tests continue to pass with enhanced regression coverage and 
+All 857+ tests continue to pass with enhanced regression coverage and
 improved SCXML feature support.
 
 ## [1.6.0] 2025-08-30
