@@ -385,14 +385,14 @@ defmodule Statifier.InterpreterCoverageTest do
               :ok
           end
 
-        {:error, _} ->
+        {:error, _parse_error} ->
           # Parse error is also acceptable
           :ok
       end
     end
 
     test "initial element with empty targets" do
-      # Test initial element with transition but no targets - covers empty targets case  
+      # Test initial element with transition but no targets - covers empty targets case
       xml = """
       <scxml>
         <state id="parent">
@@ -412,7 +412,7 @@ defmodule Statifier.InterpreterCoverageTest do
             {:error, _errors, _warnings} -> :ok
           end
 
-        {:error, _} ->
+        {:error, _parse_error} ->
           :ok
       end
     end
@@ -476,7 +476,7 @@ defmodule Statifier.InterpreterCoverageTest do
               :ok
           end
 
-        {:error, _} ->
+        {:error, _parse_error} ->
           :ok
       end
     end
