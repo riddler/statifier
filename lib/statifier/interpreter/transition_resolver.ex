@@ -24,6 +24,7 @@ defmodule Statifier.Interpreter.TransitionResolver do
 
   alias Statifier.{Configuration, Document, Evaluator, Event, StateChart, StateHierarchy}
   alias Statifier.Logging.LogManager
+  require LogManager
 
   @doc """
   Find enabled transitions for a given event.
@@ -243,19 +244,17 @@ defmodule Statifier.Interpreter.TransitionResolver do
 
   # Log transition evaluation results if tracing is enabled
   defp log_transition_evaluation(transition, state_chart, event_matches, condition_enabled) do
-    if LogManager.enabled?(state_chart, :trace) do
-      LogManager.trace(state_chart, "Transition evaluation result", %{
-        action_type: "transition_check",
-        source_state: transition.source,
-        event_pattern: transition.event,
-        condition: transition.cond,
-        type: transition.type,
-        targets: transition.targets,
-        event_matches: event_matches,
-        condition_enabled: condition_enabled,
-        overall_enabled: event_matches and condition_enabled
-      })
-    end
+    LogManager.trace(state_chart, "Transition evaluation result", %{
+      action_type: "transition_check",
+      source_state: transition.source,
+      event_pattern: transition.event,
+      condition: transition.cond,
+      type: transition.type,
+      targets: transition.targets,
+      event_matches: event_matches,
+      condition_enabled: condition_enabled,
+      overall_enabled: event_matches and condition_enabled
+    })
   end
 
   # Check if transition matches the event (or eventless for transitions without event attribute)

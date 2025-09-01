@@ -12,6 +12,7 @@ defmodule Statifier.Actions.LogAction do
 
   alias Statifier.Evaluator
   alias Statifier.Logging.LogManager
+  require LogManager
 
   defstruct [:label, :expr, :source_location]
 

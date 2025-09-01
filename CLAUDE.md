@@ -566,6 +566,25 @@ When debugging state chart execution, configure enhanced logging for detailed vi
 - `:warn` - Unusual conditions
 - `:error` - Execution errors
 
+### Performance-Optimized Logging
+
+All LogManager logging functions (`trace/3`, `debug/3`, `info/3`, `warn/3`, `error/3`) are implemented as macros that provide lazy evaluation for optimal performance:
+
+```elixir
+# Expensive computations are only performed if logging level is enabled
+state_chart = LogManager.debug(state_chart, "Complex operation", %{
+  expensive_data: build_debug_info(),        # Only called if debug enabled
+  complex_calculation: heavy_computation()   # Only called if debug enabled
+})
+
+# Zero overhead when logging is disabled - arguments are never evaluated
+state_chart = LogManager.trace(state_chart, "Detailed info", %{
+  massive_object: serialize_entire_state()  # Never called if trace disabled
+})
+```
+
+This provides significant performance benefits in hot code paths while maintaining the familiar `LogManager.level/3` API.
+
 ### Automatic Environment Configuration
 
 Statifier automatically detects your environment and configures appropriate logging defaults:

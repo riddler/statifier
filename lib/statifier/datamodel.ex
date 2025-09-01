@@ -29,6 +29,7 @@ defmodule Statifier.Datamodel do
 
   alias Statifier.{Configuration, Evaluator}
   alias Statifier.Logging.LogManager
+  require LogManager
 
   @type t :: map()
 

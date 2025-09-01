@@ -3,6 +3,7 @@ defmodule Statifier.Logging.LogManagerTest do
 
   alias Statifier.{Configuration, Document, Event, StateChart}
   alias Statifier.Logging.{LogManager, TestAdapter}
+  require LogManager
 
   describe "log/4" do
     test "logs message with automatic metadata extraction" do

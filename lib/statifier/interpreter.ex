@@ -21,6 +21,8 @@ defmodule Statifier.Interpreter do
     Validator
   }
 
+  require LogManager
+
   @doc """
   Initialize a state chart from a parsed document.
 

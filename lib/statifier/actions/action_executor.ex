@@ -17,6 +17,7 @@ defmodule Statifier.Actions.ActionExecutor do
   }
 
   alias Statifier.Logging.LogManager
+  require LogManager
 
   @doc """
   Execute onentry actions for a list of states being entered.

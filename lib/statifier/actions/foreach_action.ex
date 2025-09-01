@@ -46,6 +46,7 @@ defmodule Statifier.Actions.ForeachAction do
 
   alias Statifier.{Actions.ActionExecutor, Evaluator, Event, StateChart}
   alias Statifier.Logging.LogManager
+  require LogManager
 
   @enforce_keys [:array, :item, :actions]
   defstruct [:array, :item, :index, :actions, :compiled_array, :source_location]

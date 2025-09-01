@@ -35,16 +35,15 @@ defmodule Statifier.Logging.LogManager do
         condition: "x > 5"
       })
 
-      # Check if level is enabled before expensive operations
-      if LogManager.enabled?(state_chart, :debug) do
-        expensive_debug_info = build_complex_debug_data()
-        state_chart = LogManager.debug(state_chart, expensive_debug_info)
-      end
+      # No need to manually check - macros handle this automatically!
+      state_chart = LogManager.debug(state_chart, "Debug info", %{
+        expensive_data: build_complex_debug_data()  # Only evaluated if debug enabled
+      })
 
   """
 
   alias Statifier.{Configuration, StateChart}
-  alias Statifier.Logging.{Adapter, ElixirLoggerAdapter}
+  alias Statifier.Logging.{Adapter, ElixirLoggerAdapter, LogManager}
 
   @levels [:trace, :debug, :info, :warn, :error]
 
@@ -108,50 +107,114 @@ defmodule Statifier.Logging.LogManager do
   Logs a trace message with automatic metadata extraction.
 
   Trace level is for very detailed diagnostic information.
+  This is a macro that only evaluates the message and metadata arguments
+  if trace logging is enabled, providing optimal performance.
+
+  ## Examples
+
+      # Arguments are only evaluated if trace logging is enabled
+      state_chart = LogManager.trace(state_chart, "Complex operation", %{
+        expensive_data: build_debug_info()  # Only called if trace enabled
+      })
+
   """
-  @spec trace(StateChart.t(), String.t(), map()) :: StateChart.t()
-  def trace(state_chart, message, metadata \\ %{}) do
-    log(state_chart, :trace, message, metadata)
+  defmacro trace(state_chart, message, metadata \\ quote(do: %{})) do
+    build_logging_macro(:trace, state_chart, message, metadata)
   end
 
   @doc """
   Logs a debug message with automatic metadata extraction.
 
   Debug level is for information useful for debugging.
+  This is a macro that only evaluates the message and metadata arguments
+  if debug logging is enabled, providing optimal performance.
+
+  ## Examples
+
+      # Arguments are only evaluated if debug logging is enabled
+      state_chart = LogManager.debug(state_chart, "Processing step", %{
+        current_data: expensive_calculation()  # Only called if debug enabled
+      })
+
   """
-  @spec debug(StateChart.t(), String.t(), map()) :: StateChart.t()
-  def debug(state_chart, message, metadata \\ %{}) do
-    log(state_chart, :debug, message, metadata)
+  defmacro debug(state_chart, message, metadata \\ quote(do: %{})) do
+    build_logging_macro(:debug, state_chart, message, metadata)
   end
 
   @doc """
   Logs an info message with automatic metadata extraction.
 
   Info level is for general informational messages.
+  This is a macro that only evaluates the message and metadata arguments
+  if info logging is enabled, providing optimal performance.
+
+  ## Examples
+
+      # Arguments are only evaluated if info logging is enabled
+      state_chart = LogManager.info(state_chart, "Operation complete", %{
+        result_summary: summarize_results()  # Only called if info enabled
+      })
+
   """
-  @spec info(StateChart.t(), String.t(), map()) :: StateChart.t()
-  def info(state_chart, message, metadata \\ %{}) do
-    log(state_chart, :info, message, metadata)
+  defmacro info(state_chart, message, metadata \\ quote(do: %{})) do
+    build_logging_macro(:info, state_chart, message, metadata)
   end
 
   @doc """
   Logs a warning message with automatic metadata extraction.
 
   Warning level is for potentially problematic situations.
+  This is a macro that only evaluates the message and metadata arguments
+  if warn logging is enabled, providing optimal performance.
+
+  ## Examples
+
+      # Arguments are only evaluated if warn logging is enabled
+      state_chart = LogManager.warn(state_chart, "Unexpected condition", %{
+        diagnostic_info: gather_diagnostics()  # Only called if warn enabled
+      })
+
   """
-  @spec warn(StateChart.t(), String.t(), map()) :: StateChart.t()
-  def warn(state_chart, message, metadata \\ %{}) do
-    log(state_chart, :warn, message, metadata)
+  defmacro warn(state_chart, message, metadata \\ quote(do: %{})) do
+    build_logging_macro(:warn, state_chart, message, metadata)
   end
 
   @doc """
   Logs an error message with automatic metadata extraction.
 
   Error level is for error conditions that don't halt execution.
+  This is a macro that only evaluates the message and metadata arguments
+  if error logging is enabled, providing optimal performance.
+
+  ## Examples
+
+      # Arguments are only evaluated if error logging is enabled
+      state_chart = LogManager.error(state_chart, "Processing failed", %{
+        error_context: build_error_context()  # Only called if error enabled
+      })
+
   """
-  @spec error(StateChart.t(), String.t(), map()) :: StateChart.t()
-  def error(state_chart, message, metadata \\ %{}) do
-    log(state_chart, :error, message, metadata)
+  defmacro error(state_chart, message, metadata \\ quote(do: %{})) do
+    build_logging_macro(:error, state_chart, message, metadata)
+  end
+
+  # Builds the logging macro implementation that checks if level is enabled before evaluating arguments
+  defp build_logging_macro(level, state_chart, message, metadata) do
+    quote bind_quoted: [
+            level: level,
+            state_chart: state_chart,
+            message: message,
+            metadata: metadata
+          ] do
+      # Check if logging is enabled before evaluating expensive arguments
+      if LogManager.enabled?(state_chart, level) do
+        # Only evaluate message and metadata if logging is enabled
+        LogManager.log(state_chart, level, message, metadata)
+      else
+        # Return unchanged state chart if logging is disabled
+        state_chart
+      end
+    end
   end
 
   # Extracts core metadata from the StateChart
