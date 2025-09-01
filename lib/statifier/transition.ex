@@ -9,6 +9,8 @@ defmodule Statifier.Transition do
     :cond,
     # Compiled conditional expression for performance
     :compiled_cond,
+    # Transition type: "internal" | "external" | nil (defaults to external)
+    :type,
     # Executable content (actions) to execute during transition
     actions: [],
     # Source state ID - set during parsing
@@ -27,6 +29,7 @@ defmodule Statifier.Transition do
           targets: [String.t()],
           cond: String.t() | nil,
           compiled_cond: term() | nil,
+          type: String.t() | nil,
           actions: [term()],
           source: String.t() | nil,
           document_order: integer() | nil,
