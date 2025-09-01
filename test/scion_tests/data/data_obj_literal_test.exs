@@ -8,7 +8,8 @@ defmodule SCIONTest.Data.DataObjLiteralTest do
          :event_transitions,
          :final_states,
          :log_elements,
-         :onentry_actions
+         :onentry_actions,
+         :wildcard_events
        ]
   @tag spec: "data"
   test "data_obj_literal" do

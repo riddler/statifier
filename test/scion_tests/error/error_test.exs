@@ -9,7 +9,8 @@ defmodule SCIONTest.Error.ErrorTest do
          :log_elements,
          :onentry_actions,
          :script_elements,
-         :targetless_transitions
+         :targetless_transitions,
+         :wildcard_events
        ]
   @tag spec: "error"
   test "error" do

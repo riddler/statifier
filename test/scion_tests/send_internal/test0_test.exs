@@ -8,7 +8,9 @@ defmodule SCIONTest.SendInternal.Test0Test do
          :datamodel,
          :event_transitions,
          :log_elements,
-         :send_elements
+         :send_content_elements,
+         :send_elements,
+         :send_param_elements
        ]
   @tag spec: "send_internal"
   test "test0" do

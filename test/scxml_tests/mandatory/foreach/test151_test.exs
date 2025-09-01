@@ -8,9 +8,11 @@ defmodule SCXMLTest.Foreach.Test151 do
          :datamodel,
          :event_transitions,
          :final_states,
+         :foreach_elements,
          :log_elements,
          :onentry_actions,
-         :raise_elements
+         :raise_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "foreach"
   test "test151" do

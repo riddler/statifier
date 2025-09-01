@@ -9,9 +9,11 @@ defmodule SCXMLTest.If.Test148 do
          :datamodel,
          :event_transitions,
          :final_states,
+         :if_elements,
          :log_elements,
          :onentry_actions,
-         :raise_elements
+         :raise_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "if"
   test "test148" do

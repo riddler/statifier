@@ -9,6 +9,7 @@ defmodule SCXMLTest.Foreach.Test155 do
          :datamodel,
          :event_transitions,
          :final_states,
+         :foreach_elements,
          :log_elements,
          :onentry_actions
        ]

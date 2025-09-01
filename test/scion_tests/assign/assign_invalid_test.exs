@@ -9,7 +9,8 @@ defmodule SCIONTest.Assign.AssignInvalidTest do
          :event_transitions,
          :final_states,
          :log_elements,
-         :onentry_actions
+         :onentry_actions,
+         :wildcard_events
        ]
   @tag spec: "assign"
   test "assign_invalid" do

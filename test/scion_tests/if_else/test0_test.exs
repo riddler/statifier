@@ -8,6 +8,7 @@ defmodule SCIONTest.IfElse.Test0Test do
          :data_elements,
          :datamodel,
          :event_transitions,
+         :if_elements,
          :log_elements,
          :onentry_actions,
          :onexit_actions

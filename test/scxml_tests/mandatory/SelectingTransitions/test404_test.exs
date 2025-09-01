@@ -10,7 +10,8 @@ defmodule SCXMLTest.SelectingTransitions.Test404 do
          :onentry_actions,
          :onexit_actions,
          :parallel_states,
-         :raise_elements
+         :raise_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "SelectingTransitions"
   test "test404" do

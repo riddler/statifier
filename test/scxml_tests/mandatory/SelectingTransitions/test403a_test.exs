@@ -10,7 +10,8 @@ defmodule SCXMLTest.SelectingTransitions.Test403a do
          :log_elements,
          :onentry_actions,
          :raise_elements,
-         :send_elements
+         :send_elements,
+         :wildcard_events
        ]
   @tag conformance: "mandatory", spec: "SelectingTransitions"
   test "test403a" do
