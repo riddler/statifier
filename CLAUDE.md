@@ -533,6 +533,103 @@ The implementation plan transforms Statifier from a basic state machine library 
 
 This logging system will integrate seamlessly with both the current functional API and future GenServer-based persistent interpreters.
 
+## Debugging State Charts
+
+When debugging state chart execution, configure enhanced logging for detailed visibility:
+
+```elixir
+# Enable detailed tracing for debugging
+{:ok, state_chart} = Interpreter.initialize(document, [
+  log_adapter: :elixir,
+  log_level: :trace
+])
+
+# Alternative: use internal adapter for testing/development
+{:ok, state_chart} = Interpreter.initialize(document, [
+  log_adapter: :internal,  
+  log_level: :trace
+])
+```
+
+### Log Adapter Options
+
+- `:elixir` - Uses ElixirLoggerAdapter (integrates with Elixir's Logger system)
+- `:internal` - Uses TestAdapter for internal debugging
+- `:test` - Uses TestAdapter (alias for test environments)  
+- `:silent` - Uses TestAdapter with no log storage (disables logging)
+
+### Log Levels
+
+- `:trace` - Very detailed execution tracing (transitions, conditions, actions)
+- `:debug` - General debugging information (state changes, events)
+- `:info` - High-level execution flow
+- `:warn` - Unusual conditions
+- `:error` - Execution errors
+
+### Performance-Optimized Logging
+
+All LogManager logging functions (`trace/3`, `debug/3`, `info/3`, `warn/3`, `error/3`) are implemented as macros that provide lazy evaluation for optimal performance:
+
+```elixir
+# Expensive computations are only performed if logging level is enabled
+state_chart = LogManager.debug(state_chart, "Complex operation", %{
+  expensive_data: build_debug_info(),        # Only called if debug enabled
+  complex_calculation: heavy_computation()   # Only called if debug enabled
+})
+
+# Zero overhead when logging is disabled - arguments are never evaluated
+state_chart = LogManager.trace(state_chart, "Detailed info", %{
+  massive_object: serialize_entire_state()  # Never called if trace disabled
+})
+```
+
+This provides significant performance benefits in hot code paths while maintaining the familiar `LogManager.level/3` API.
+
+### Automatic Environment Configuration
+
+Statifier automatically detects your environment and configures appropriate logging defaults:
+
+- **Development (`MIX_ENV=dev`)**: `:trace` level with `:elixir` adapter for detailed debugging
+- **Test (`MIX_ENV=test`)**: `:debug` level with `:test` adapter for clean test output  
+- **Production (other)**: `:info` level with `:elixir` adapter for essential information
+
+Users can override these defaults via application configuration:
+
+```elixir
+# config/config.exs
+config :statifier,
+  default_log_adapter: :elixir,
+  default_log_level: :trace
+```
+
+### Debugging Examples
+
+```elixir
+# In dev environment, no additional configuration needed
+{:ok, document, _warnings} = Statifier.parse(xml)
+{:ok, state_chart} = Interpreter.initialize(document)  # Auto-configured for dev
+
+# Manual configuration for other environments
+{:ok, state_chart} = Interpreter.initialize(document, [
+  log_adapter: :elixir,
+  log_level: :trace
+])
+
+# Debug specific state chart behavior
+xml = """
+<scxml initial="s1">
+  <state id="s1">
+    <transition event="go" target="s2"/>
+  </state>
+  <state id="s2"/>
+</scxml>
+"""
+
+# Send event - will show detailed trace logs with full metadata
+event = %Event{name: "go"}
+{:ok, new_state_chart} = Interpreter.send_event(state_chart, event)
+```
+
 - Always refer to state machines as state charts
 - Always run 'mix format' after writing an Elixir file.
 - When creating git commit messages:

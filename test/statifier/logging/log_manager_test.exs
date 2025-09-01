@@ -3,6 +3,7 @@ defmodule Statifier.Logging.LogManagerTest do
 
   alias Statifier.{Configuration, Document, Event, StateChart}
   alias Statifier.Logging.{LogManager, TestAdapter}
+  require LogManager
 
   describe "log/4" do
     test "logs message with automatic metadata extraction" do
@@ -170,6 +171,58 @@ defmodule Statifier.Logging.LogManagerTest do
       assert log_entry.metadata.current_state == ["override_state"]
       assert log_entry.metadata.event == "override_event"
       assert log_entry.metadata.custom == "value"
+    end
+  end
+
+  describe "configure_from_options/2" do
+    test "supports atom-based adapter configuration" do
+      document = %Document{states: [], state_lookup: %{}}
+      configuration = Configuration.new([])
+      state_chart = StateChart.new(document, configuration)
+
+      # Test :elixir shorthand
+      result =
+        LogManager.configure_from_options(state_chart,
+          log_adapter: :elixir,
+          log_level: :debug
+        )
+
+      assert %Statifier.Logging.ElixirLoggerAdapter{} = result.log_adapter
+      assert result.log_level == :debug
+
+      # Test :internal shorthand
+      result =
+        LogManager.configure_from_options(state_chart,
+          log_adapter: :internal,
+          log_level: :trace
+        )
+
+      assert %Statifier.Logging.TestAdapter{} = result.log_adapter
+      assert result.log_level == :trace
+
+      # Test :silent shorthand
+      result =
+        LogManager.configure_from_options(state_chart,
+          log_adapter: :silent
+        )
+
+      assert %Statifier.Logging.TestAdapter{max_entries: 0} = result.log_adapter
+    end
+
+    test "maintains backward compatibility with tuple configuration" do
+      document = %Document{states: [], state_lookup: %{}}
+      configuration = Configuration.new([])
+      state_chart = StateChart.new(document, configuration)
+
+      # Test traditional {module, opts} format still works
+      result =
+        LogManager.configure_from_options(state_chart,
+          log_adapter: {TestAdapter, [max_entries: 50]},
+          log_level: :warn
+        )
+
+      assert %TestAdapter{max_entries: 50} = result.log_adapter
+      assert result.log_level == :warn
     end
   end
 end

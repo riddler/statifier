@@ -27,6 +27,7 @@ defmodule Statifier.MixProject do
       elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
+      config_path: "config/config.exs",
       deps: @deps,
       docs: docs(),
       description: @description,

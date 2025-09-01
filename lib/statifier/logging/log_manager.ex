@@ -35,16 +35,15 @@ defmodule Statifier.Logging.LogManager do
         condition: "x > 5"
       })
 
-      # Check if level is enabled before expensive operations
-      if LogManager.enabled?(state_chart, :debug) do
-        expensive_debug_info = build_complex_debug_data()
-        state_chart = LogManager.debug(state_chart, expensive_debug_info)
-      end
+      # No need to manually check - macros handle this automatically!
+      state_chart = LogManager.debug(state_chart, "Debug info", %{
+        expensive_data: build_complex_debug_data()  # Only evaluated if debug enabled
+      })
 
   """
 
   alias Statifier.{Configuration, StateChart}
-  alias Statifier.Logging.{Adapter, ElixirLoggerAdapter}
+  alias Statifier.Logging.{Adapter, ElixirLoggerAdapter, LogManager}
 
   @levels [:trace, :debug, :info, :warn, :error]
 
@@ -108,50 +107,114 @@ defmodule Statifier.Logging.LogManager do
   Logs a trace message with automatic metadata extraction.
 
   Trace level is for very detailed diagnostic information.
+  This is a macro that only evaluates the message and metadata arguments
+  if trace logging is enabled, providing optimal performance.
+
+  ## Examples
+
+      # Arguments are only evaluated if trace logging is enabled
+      state_chart = LogManager.trace(state_chart, "Complex operation", %{
+        expensive_data: build_debug_info()  # Only called if trace enabled
+      })
+
   """
-  @spec trace(StateChart.t(), String.t(), map()) :: StateChart.t()
-  def trace(state_chart, message, metadata \\ %{}) do
-    log(state_chart, :trace, message, metadata)
+  defmacro trace(state_chart, message, metadata \\ quote(do: %{})) do
+    build_logging_macro(:trace, state_chart, message, metadata)
   end
 
   @doc """
   Logs a debug message with automatic metadata extraction.
 
   Debug level is for information useful for debugging.
+  This is a macro that only evaluates the message and metadata arguments
+  if debug logging is enabled, providing optimal performance.
+
+  ## Examples
+
+      # Arguments are only evaluated if debug logging is enabled
+      state_chart = LogManager.debug(state_chart, "Processing step", %{
+        current_data: expensive_calculation()  # Only called if debug enabled
+      })
+
   """
-  @spec debug(StateChart.t(), String.t(), map()) :: StateChart.t()
-  def debug(state_chart, message, metadata \\ %{}) do
-    log(state_chart, :debug, message, metadata)
+  defmacro debug(state_chart, message, metadata \\ quote(do: %{})) do
+    build_logging_macro(:debug, state_chart, message, metadata)
   end
 
   @doc """
   Logs an info message with automatic metadata extraction.
 
   Info level is for general informational messages.
+  This is a macro that only evaluates the message and metadata arguments
+  if info logging is enabled, providing optimal performance.
+
+  ## Examples
+
+      # Arguments are only evaluated if info logging is enabled
+      state_chart = LogManager.info(state_chart, "Operation complete", %{
+        result_summary: summarize_results()  # Only called if info enabled
+      })
+
   """
-  @spec info(StateChart.t(), String.t(), map()) :: StateChart.t()
-  def info(state_chart, message, metadata \\ %{}) do
-    log(state_chart, :info, message, metadata)
+  defmacro info(state_chart, message, metadata \\ quote(do: %{})) do
+    build_logging_macro(:info, state_chart, message, metadata)
   end
 
   @doc """
   Logs a warning message with automatic metadata extraction.
 
   Warning level is for potentially problematic situations.
+  This is a macro that only evaluates the message and metadata arguments
+  if warn logging is enabled, providing optimal performance.
+
+  ## Examples
+
+      # Arguments are only evaluated if warn logging is enabled
+      state_chart = LogManager.warn(state_chart, "Unexpected condition", %{
+        diagnostic_info: gather_diagnostics()  # Only called if warn enabled
+      })
+
   """
-  @spec warn(StateChart.t(), String.t(), map()) :: StateChart.t()
-  def warn(state_chart, message, metadata \\ %{}) do
-    log(state_chart, :warn, message, metadata)
+  defmacro warn(state_chart, message, metadata \\ quote(do: %{})) do
+    build_logging_macro(:warn, state_chart, message, metadata)
   end
 
   @doc """
   Logs an error message with automatic metadata extraction.
 
   Error level is for error conditions that don't halt execution.
+  This is a macro that only evaluates the message and metadata arguments
+  if error logging is enabled, providing optimal performance.
+
+  ## Examples
+
+      # Arguments are only evaluated if error logging is enabled
+      state_chart = LogManager.error(state_chart, "Processing failed", %{
+        error_context: build_error_context()  # Only called if error enabled
+      })
+
   """
-  @spec error(StateChart.t(), String.t(), map()) :: StateChart.t()
-  def error(state_chart, message, metadata \\ %{}) do
-    log(state_chart, :error, message, metadata)
+  defmacro error(state_chart, message, metadata \\ quote(do: %{})) do
+    build_logging_macro(:error, state_chart, message, metadata)
+  end
+
+  # Builds the logging macro implementation that checks if level is enabled before evaluating arguments
+  defp build_logging_macro(level, state_chart, message, metadata) do
+    quote bind_quoted: [
+            level: level,
+            state_chart: state_chart,
+            message: message,
+            metadata: metadata
+          ] do
+      # Check if logging is enabled before evaluating expensive arguments
+      if LogManager.enabled?(state_chart, level) do
+        # Only evaluate message and metadata if logging is enabled
+        LogManager.log(state_chart, level, message, metadata)
+      else
+        # Return unchanged state chart if logging is disabled
+        state_chart
+      end
+    end
   end
 
   # Extracts core metadata from the StateChart
@@ -203,6 +266,7 @@ defmodule Statifier.Logging.LogManager do
   ## Options
 
   * `:log_adapter` - Logging adapter configuration. Can be:
+    * Atom shorthand: `:elixir`, `:internal`, `:test`, or `:silent`
     * An adapter struct (e.g., `%TestAdapter{max_entries: 100}`)
     * A tuple `{AdapterModule, opts}` (e.g., `{TestAdapter, [max_entries: 50]}`)
     * If not provided, uses environment-specific defaults
@@ -210,9 +274,22 @@ defmodule Statifier.Logging.LogManager do
   * `:log_level` - Minimum log level (`:trace`, `:debug`, `:info`, `:warn`, `:error`)
     * Defaults to `:debug` in test environment, `:info` otherwise
 
+  ## Adapter Shortcuts
+
+  * `:elixir` - Uses ElixirLoggerAdapter (integrates with Elixir's Logger)
+  * `:internal` - Uses TestAdapter for internal debugging
+  * `:test` - Uses TestAdapter (alias for test environments)
+  * `:silent` - Uses TestAdapter with no log storage (disables logging)
+
   ## Examples
 
-      # Use with runtime options
+      # Simple atom configuration for debugging
+      state_chart = LogManager.configure_from_options(state_chart, [
+        log_adapter: :elixir,
+        log_level: :trace
+      ])
+
+      # Traditional module+options configuration
       state_chart = LogManager.configure_from_options(state_chart, [
         log_adapter: {TestAdapter, [max_entries: 100]},
         log_level: :debug
@@ -247,11 +324,11 @@ defmodule Statifier.Logging.LogManager do
         # Check application configuration
         case Application.get_env(:statifier, :default_log_adapter) do
           nil -> get_default_adapter_config()
-          config -> config
+          config -> resolve_adapter_shorthand(config)
         end
 
       config ->
-        config
+        resolve_adapter_shorthand(config)
     end
   end
 
@@ -270,7 +347,14 @@ defmodule Statifier.Logging.LogManager do
     end
   end
 
-  # Build adapter from configuration (struct or {module, opts} tuple)
+  # Resolve adapter shorthand atoms to full configuration
+  defp resolve_adapter_shorthand(:elixir), do: {ElixirLoggerAdapter, []}
+  defp resolve_adapter_shorthand(:internal), do: {Statifier.Logging.TestAdapter, []}
+  defp resolve_adapter_shorthand(:test), do: {Statifier.Logging.TestAdapter, []}
+  defp resolve_adapter_shorthand(:silent), do: {Statifier.Logging.TestAdapter, [max_entries: 0]}
+  defp resolve_adapter_shorthand(config), do: config
+
+  # Build adapter from configuration (struct, {module, opts} tuple, or atom shorthand)
   defp build_adapter(adapter_struct) when is_struct(adapter_struct) do
     {:ok, adapter_struct}
   end
@@ -288,7 +372,8 @@ defmodule Statifier.Logging.LogManager do
 
   # Default configuration - ElixirLoggerAdapter is always the default
   defp get_default_adapter_config do
-    {ElixirLoggerAdapter, []}
+    # Check application config first, then sensible defaults
+    Application.get_env(:statifier, :default_log_adapter, {ElixirLoggerAdapter, []})
   end
 
   defp get_default_adapter do
@@ -296,6 +381,17 @@ defmodule Statifier.Logging.LogManager do
   end
 
   defp get_default_log_level do
-    :info
+    # Use application environment with environment-aware defaults
+    Application.get_env(:statifier, :default_log_level, get_environment_default_log_level())
+  end
+
+  # Environment-aware defaults without using Mix.env()
+  defp get_environment_default_log_level do
+    # Check for common development/test indicators
+    cond do
+      System.get_env("MIX_ENV") == "dev" -> :trace
+      System.get_env("MIX_ENV") == "test" -> :debug
+      true -> :info
+    end
   end
 end

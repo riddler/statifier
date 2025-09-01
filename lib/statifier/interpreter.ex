@@ -21,6 +21,8 @@ defmodule Statifier.Interpreter do
     Validator
   }
 
+  require LogManager
+
   @doc """
   Initialize a state chart from a parsed document.
 
@@ -131,7 +133,8 @@ defmodule Statifier.Interpreter do
   @spec send_event(StateChart.t(), Event.t()) :: {:ok, StateChart.t()}
   def send_event(%StateChart{} = state_chart, %Event{} = event) do
     # Find optimal transition set enabled by this event
-    enabled_transitions = TransitionResolver.find_enabled_transitions(state_chart, event)
+    {state_chart, enabled_transitions} =
+      TransitionResolver.find_enabled_transitions(state_chart, event)
 
     case enabled_transitions do
       [] ->
@@ -170,13 +173,31 @@ defmodule Statifier.Interpreter do
   # Recursive helper with cycle detection (max 1000 iterations)
   defp execute_microsteps(%StateChart{} = state_chart, iterations)
        when iterations >= 1000 do
+    # Log performance warning for high iteration count
+    state_chart =
+      LogManager.warn(state_chart, "High microstep iteration count", %{
+        action_type: "performance_warning",
+        iteration: iterations,
+        threshold: 1000,
+        suggestion: "Check for infinite eventless transition loops"
+      })
+
     # Prevent infinite loops - return current state
     state_chart
   end
 
   defp execute_microsteps(%StateChart{} = state_chart, iterations) do
+    # Log microstep processing
+    state_chart =
+      LogManager.trace(state_chart, "Processing microstep", %{
+        action_type: "microstep",
+        iteration: iterations,
+        current_states: state_chart.configuration.active_states |> MapSet.to_list()
+      })
+
     # Per SCXML specification: eventless transitions have higher priority than internal events
-    eventless_transitions = TransitionResolver.find_eventless_transitions(state_chart)
+    {state_chart, eventless_transitions} =
+      TransitionResolver.find_eventless_transitions(state_chart)
 
     case eventless_transitions do
       [] ->
@@ -463,6 +484,17 @@ defmodule Statifier.Interpreter do
       |> MapSet.difference(states_to_exit)
       |> MapSet.union(new_target_set)
 
+    # Log configuration change
+    state_chart =
+      LogManager.debug(state_chart, "Configuration change (internal transition)", %{
+        action_type: "state_change",
+        transition_type: "internal",
+        from_states: MapSet.to_list(current_active),
+        to_states: MapSet.to_list(final_active_states),
+        exited_states: MapSet.to_list(states_to_exit),
+        entered_states: MapSet.to_list(states_to_enter)
+      })
+
     new_config = Configuration.new(MapSet.to_list(final_active_states))
     StateChart.update_configuration(state_chart, new_config)
   end
@@ -502,6 +534,19 @@ defmodule Statifier.Interpreter do
 
     # Combine preserved states with new target states
     final_active_states = MapSet.union(preserved_states, new_target_set)
+
+    # Log configuration change
+    state_chart =
+      LogManager.debug(state_chart, "Configuration change (external transition)", %{
+        action_type: "state_change",
+        transition_type: "external",
+        from_states: MapSet.to_list(current_active),
+        to_states: MapSet.to_list(final_active_states),
+        exited_states: MapSet.to_list(exit_set),
+        entered_states: MapSet.to_list(entering_states),
+        preserved_states: MapSet.to_list(preserved_states)
+      })
+
     new_config = Configuration.new(MapSet.to_list(final_active_states))
 
     # Update the state chart with the new configuration

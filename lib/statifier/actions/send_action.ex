@@ -12,6 +12,7 @@ defmodule Statifier.Actions.SendAction do
 
   alias Statifier.{Evaluator, Event, StateChart}
   alias Statifier.Logging.LogManager
+  require LogManager
 
   @type t :: %__MODULE__{
           event: String.t() | nil,

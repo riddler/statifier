@@ -9,6 +9,7 @@ defmodule Statifier.Actions.RaiseAction do
 
   alias Statifier.{Event, StateChart}
   alias Statifier.Logging.LogManager
+  require LogManager
 
   @type t :: %__MODULE__{
           event: String.t() | nil,

@@ -22,7 +22,9 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       {:ok, state_chart} = Interpreter.initialize(document)
 
       event = %Event{name: "start"}
-      transitions = TransitionResolver.find_enabled_transitions(state_chart, event)
+
+      {_state_chart, transitions} =
+        TransitionResolver.find_enabled_transitions(state_chart, event)
 
       assert length(transitions) == 1
       assert hd(transitions).event == "start"
@@ -44,7 +46,9 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       {:ok, state_chart} = Interpreter.initialize(document)
 
       event = %Event{name: "unknown"}
-      transitions = TransitionResolver.find_enabled_transitions(state_chart, event)
+
+      {_state_chart, transitions} =
+        TransitionResolver.find_enabled_transitions(state_chart, event)
 
       assert transitions == []
     end
@@ -69,7 +73,9 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
 
       # Should find reset transition from app state even when in idle
       event = %Event{name: "reset"}
-      transitions = TransitionResolver.find_enabled_transitions(state_chart, event)
+
+      {_state_chart, transitions} =
+        TransitionResolver.find_enabled_transitions(state_chart, event)
 
       assert length(transitions) == 1
       assert hd(transitions).event == "reset"
@@ -100,7 +106,7 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
         external_queue: []
       }
 
-      transitions = TransitionResolver.find_eventless_transitions(state_chart)
+      {_state_chart, transitions} = TransitionResolver.find_eventless_transitions(state_chart)
 
       assert length(transitions) == 1
       assert hd(transitions).event == nil
@@ -121,7 +127,7 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       {:ok, document, _warnings} = Statifier.parse(xml)
       {:ok, state_chart} = Interpreter.initialize(document)
 
-      transitions = TransitionResolver.find_eventless_transitions(state_chart)
+      {_state_chart, transitions} = TransitionResolver.find_eventless_transitions(state_chart)
 
       assert transitions == []
     end
@@ -268,7 +274,9 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
       {:ok, state_chart} = Interpreter.initialize(document)
 
       event = %Event{name: "test"}
-      transitions = TransitionResolver.find_enabled_transitions(state_chart, event)
+
+      {_state_chart, transitions} =
+        TransitionResolver.find_enabled_transitions(state_chart, event)
 
       # Should be sorted by document order
       document_orders = Enum.map(transitions, & &1.document_order)
@@ -298,14 +306,18 @@ defmodule Statifier.Interpreter.TransitionResolverTest do
 
       # Local event should only trigger the deepest transition due to conflict resolution
       local_event = %Event{name: "local"}
-      transitions = TransitionResolver.find_enabled_transitions(state_chart, local_event)
+
+      {_state_chart, transitions} =
+        TransitionResolver.find_enabled_transitions(state_chart, local_event)
 
       assert length(transitions) == 1
       assert hd(transitions).source == "level3"
 
       # Global event should be available from any active state
       global_event = %Event{name: "global"}
-      transitions = TransitionResolver.find_enabled_transitions(state_chart, global_event)
+
+      {_state_chart, transitions} =
+        TransitionResolver.find_enabled_transitions(state_chart, global_event)
 
       assert length(transitions) == 1
       assert hd(transitions).source == "level1"

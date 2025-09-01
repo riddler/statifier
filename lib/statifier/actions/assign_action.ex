@@ -29,6 +29,7 @@ defmodule Statifier.Actions.AssignAction do
 
   alias Statifier.{Evaluator, StateChart}
   alias Statifier.Logging.LogManager
+  require LogManager
 
   @enforce_keys [:location, :expr]
   defstruct [:location, :expr, :compiled_expr, :source_location]
