@@ -94,8 +94,8 @@ defmodule Statifier.Interpreter do
       |> StateChart.update_datamodel(datamodel)
       # Configure logging based on options or defaults
       |> LogManager.configure_from_options(opts)
-      # Execute onentry actions for all initially entered states (ancestors first, then descendants)
-      |> execute_initial_onentry_actions(initial_config, optimized_document)
+      # Execute onentry actions for initial leaf states and queue any raised events
+      |> ActionExecutor.execute_onentry_actions(MapSet.to_list(Configuration.active_leaf_states(initial_config)))
       # Execute microsteps (eventless transitions and internal events) after initialization
       |> execute_microsteps()
 
@@ -113,24 +113,6 @@ defmodule Statifier.Interpreter do
     {:ok, state_chart}
   end
 
-  # Helper function to execute onentry actions for all initially entered states
-  # in the correct order per W3C SCXML specification (ancestors first, then descendants)
-  defp execute_initial_onentry_actions(state_chart, initial_config, document) do
-    all_entered_states = Configuration.all_active_states(initial_config, document)
-
-    # Sort states by depth (ancestors first) to ensure proper execution order
-    ordered_states =
-      all_entered_states
-      |> MapSet.to_list()
-      |> Enum.sort_by(fn state_id ->
-        case Document.find_state(document, state_id) do
-          %{depth: depth} -> depth
-          _state -> 999
-        end
-      end)
-
-    ActionExecutor.execute_onentry_actions(state_chart, ordered_states)
-  end
 
   @doc """
   Send an event to the state chart and return the new state (macrostep execution).
