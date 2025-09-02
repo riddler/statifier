@@ -247,44 +247,119 @@ defmodule Statifier.Actions.SendAction do
   defp build_content_data(content, state_chart) do
     cond do
       content.expr != nil ->
+        # Enhanced expression evaluation with better error handling
         case evaluate_expression_value(content.expr, state_chart) do
-          {:ok, value} -> value
-          {:error, _reason} -> ""
+          {:ok, value} ->
+            serialize_content_value(value)
+
+          {:error, reason} ->
+            LogManager.warn(
+              state_chart,
+              "Content expression evaluation failed: #{inspect(reason)}",
+              %{
+                action_type: "send_action",
+                content_expr: content.expr,
+                phase: "content_evaluation"
+              }
+            )
+
+            ""
         end
 
       content.content != nil ->
-        content.content
+        # Direct content text - ensure proper encoding
+        String.trim(content.content)
 
       true ->
         ""
     end
   end
 
+  defp serialize_content_value(value) when is_binary(value), do: value
+  defp serialize_content_value(value) when is_map(value), do: Jason.encode!(value)
+  defp serialize_content_value(:undefined), do: :undefined
+  defp serialize_content_value(value), do: inspect(value)
+
   defp build_param_data(params, state_chart) do
     Enum.reduce(params, %{}, fn param, acc ->
-      case get_param_value(param, state_chart) do
-        {:ok, value} ->
-          Map.put(acc, param.name, value)
+      # Enhanced parameter name validation
+      case validate_param_name(param) do
+        :ok ->
+          case get_param_value(param, state_chart) do
+            {:ok, value} ->
+              Map.put(acc, param.name, value)
 
-        {:error, _reason} ->
+            {:error, reason} ->
+              LogManager.warn(state_chart, "Parameter evaluation failed", %{
+                action_type: "send_action",
+                param_name: param.name,
+                param_expr: param.expr,
+                param_location: param.location,
+                error_reason: inspect(reason),
+                phase: "parameter_evaluation"
+              })
+
+              acc
+          end
+
+        {:error, reason} ->
+          LogManager.warn(state_chart, "Invalid parameter name: #{inspect(reason)}", %{
+            action_type: "send_action",
+            param_name: param.name,
+            phase: "parameter_validation"
+          })
+
           acc
       end
     end)
   end
 
+  # Enhanced parameter name validation
+  defp validate_param_name(param) do
+    cond do
+      is_nil(param.name) or param.name == "" ->
+        {:error, "Parameter name is required"}
+
+      not is_binary(param.name) ->
+        {:error, "Parameter name must be a string"}
+
+      not String.match?(param.name, ~r/^[a-zA-Z_][a-zA-Z0-9_]*$/) ->
+        {:error, "Parameter name must be a valid identifier"}
+
+      true ->
+        :ok
+    end
+  end
+
   defp get_param_value(param, state_chart) do
     cond do
       param.expr != nil ->
-        evaluate_expression_value(param.expr, state_chart)
+        # Better handling of complex parameter values
+        case evaluate_expression_value(param.expr, state_chart) do
+          {:ok, value} -> {:ok, normalize_param_value(value)}
+          {:error, reason} -> {:error, reason}
+        end
 
       param.location != nil ->
-        # Get value from datamodel location
-        evaluate_expression_value(param.location, state_chart)
+        # Get value from datamodel location with enhanced error handling
+        case evaluate_expression_value(param.location, state_chart) do
+          {:ok, value} -> {:ok, normalize_param_value(value)}
+          {:error, reason} -> {:error, reason}
+        end
 
       true ->
         {:error, :no_value_source}
     end
   end
+
+  # Normalize parameter values for consistent handling
+  defp normalize_param_value(value) when is_binary(value), do: value
+  defp normalize_param_value(value) when is_number(value), do: value
+  defp normalize_param_value(value) when is_boolean(value), do: value
+  defp normalize_param_value(value) when is_map(value), do: value
+  defp normalize_param_value(value) when is_list(value), do: value
+  defp normalize_param_value(:undefined), do: :undefined
+  defp normalize_param_value(value), do: inspect(value)
 
   defp build_namelist_data(nil, _state_chart), do: %{}
 
