@@ -44,7 +44,7 @@ defmodule Statifier.Actions.AssignAction do
   @doc """
   Create a new AssignAction from parsed attributes.
 
-  The expr is compiled for performance during creation.
+  The expr will be compiled during document validation for performance.
 
   ## Examples
 
@@ -53,30 +53,20 @@ defmodule Statifier.Actions.AssignAction do
       "user.name"
       iex> action.expr
       "'John'"
-      iex> is_list(action.compiled_expr)
-      true
+      iex> action.compiled_expr
+      nil
 
   """
   @spec new(String.t(), String.t(), map() | nil) :: t()
   def new(location, expr, source_location \\ nil)
       when is_binary(location) and is_binary(expr) do
-    # Pre-compile expression for performance
-    compiled_expr = compile_safe(expr, :expression)
-
     %__MODULE__{
       location: location,
       expr: expr,
-      compiled_expr: compiled_expr,
+      # Will be compiled during validation
+      compiled_expr: nil,
       source_location: source_location
     }
-  end
-
-  # Safely compile expressions, returning nil on error
-  defp compile_safe(expr, _type) do
-    case Evaluator.compile_expression(expr) do
-      {:ok, compiled} -> compiled
-      {:error, _reason} -> nil
-    end
   end
 
   @doc """

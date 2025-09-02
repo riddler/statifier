@@ -176,25 +176,26 @@ defmodule Statifier.Actions.AssignActionTest do
       assert %StateChart{datamodel: %{"counter" => 0, "stateCount" => 1}} = result
     end
 
-    test "pre-compiles expressions during creation for performance" do
+    test "expressions are compiled during validation, not creation" do
       action = AssignAction.new("user.profile.name", "'John Doe'")
 
-      # Verify that expression is pre-compiled
-      assert not is_nil(action.compiled_expr)
-      assert is_list(action.compiled_expr)
+      # Verify that expression is not compiled during creation
+      assert is_nil(action.compiled_expr)
 
       # Verify original strings are preserved
       assert action.location == "user.profile.name"
       assert action.expr == "'John Doe'"
     end
 
-    test "uses pre-compiled expressions for better performance", %{state_chart: state_chart} do
+    test "expressions work correctly with validation-time compilation", %{
+      state_chart: state_chart
+    } do
       action = AssignAction.new("user.settings.theme", "'dark'")
 
-      # Verify pre-compilation occurred for expression
-      assert not is_nil(action.compiled_expr)
+      # Verify expression is not compiled during creation
+      assert is_nil(action.compiled_expr)
 
-      # Execute should use pre-compiled expressions internally
+      # Execute should work with runtime compilation as fallback
       result = AssignAction.execute(action, state_chart)
 
       # Verify result is correct

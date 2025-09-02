@@ -11,6 +11,7 @@ defmodule Statifier.Validator do
   alias Statifier.{Document, HierarchyCache}
 
   alias Statifier.Validator.{
+    ExpressionCompiler,
     HistoryStateValidator,
     InitialStateValidator,
     ReachabilityAnalyzer,
@@ -67,24 +68,36 @@ defmodule Statifier.Validator do
       |> InitialStateValidator.validate_hierarchical_consistency(document)
       |> InitialStateValidator.validate_initial_state_hierarchy(document)
 
-    final_document =
+    {final_result, final_document} =
       case validated_result.errors do
         [] ->
           # Only optimize valid documents
           # Build lookup maps first (required for StateHierarchy functions)
-          # Then build hierarchy cache (uses StateHierarchy functions)
-          document
-          |> Document.build_lookup_maps()
-          |> build_hierarchy_cache()
-          |> mark_as_validated()
+          # Then compile expressions and build hierarchy cache
+          {compilation_warnings, compiled_document} =
+            ExpressionCompiler.compile_document(document)
+
+          optimized_document =
+            compiled_document
+            |> Document.build_lookup_maps()
+            |> build_hierarchy_cache()
+            |> mark_as_validated()
+
+          # Add compilation warnings to validation result
+          final_result = %{
+            validated_result
+            | warnings: validated_result.warnings ++ compilation_warnings
+          }
+
+          {final_result, optimized_document}
 
         _errors ->
           # Don't waste time optimizing invalid documents
           # But still mark as processed through validation
-          mark_as_validated(document)
+          {validated_result, mark_as_validated(document)}
       end
 
-    {validated_result, final_document}
+    {final_result, final_document}
   end
 
   # Build hierarchy cache for performance optimization

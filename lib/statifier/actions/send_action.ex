@@ -17,14 +17,18 @@ defmodule Statifier.Actions.SendAction do
   @type t :: %__MODULE__{
           event: String.t() | nil,
           event_expr: String.t() | nil,
+          compiled_event_expr: term() | nil,
           target: String.t() | nil,
           target_expr: String.t() | nil,
+          compiled_target_expr: term() | nil,
           type: String.t() | nil,
           type_expr: String.t() | nil,
+          compiled_type_expr: term() | nil,
           id: String.t() | nil,
           id_location: String.t() | nil,
           delay: String.t() | nil,
           delay_expr: String.t() | nil,
+          compiled_delay_expr: term() | nil,
           namelist: String.t() | nil,
           params: [Statifier.Actions.SendParam.t()],
           content: Statifier.Actions.SendContent.t() | nil,
@@ -36,14 +40,20 @@ defmodule Statifier.Actions.SendAction do
     :event,
     # Expression for event name
     :event_expr,
+    # Compiled event expression
+    :compiled_event_expr,
     # Static target URI
     :target,
     # Expression for target
     :target_expr,
+    # Compiled target expression
+    :compiled_target_expr,
     # Static processor type
     :type,
     # Expression for processor type
     :type_expr,
+    # Compiled type expression
+    :compiled_type_expr,
     # Static send ID
     :id,
     # Location to store generated ID
@@ -52,6 +62,8 @@ defmodule Statifier.Actions.SendAction do
     :delay,
     # Expression for delay
     :delay_expr,
+    # Compiled delay expression
+    :compiled_delay_expr,
     # Space-separated variable names
     :namelist,
     # List of SendParam structs
@@ -103,7 +115,15 @@ defmodule Statifier.Actions.SendAction do
       send_action.event != nil ->
         send_action.event
 
+      send_action.compiled_event_expr != nil ->
+        case Evaluator.evaluate_value(send_action.compiled_event_expr, state_chart) do
+          {:ok, value} when is_binary(value) -> value
+          {:ok, value} -> to_string(value)
+          {:error, _reason} -> "anonymous_event"
+        end
+
       send_action.event_expr != nil ->
+        # Fallback to runtime compilation for edge cases
         case evaluate_expression_value(send_action.event_expr, state_chart) do
           {:ok, value} when is_binary(value) -> value
           {:ok, value} -> to_string(value)
@@ -120,7 +140,15 @@ defmodule Statifier.Actions.SendAction do
       send_action.target != nil ->
         send_action.target
 
+      send_action.compiled_target_expr != nil ->
+        case Evaluator.evaluate_value(send_action.compiled_target_expr, state_chart) do
+          {:ok, value} when is_binary(value) -> value
+          {:ok, value} -> to_string(value)
+          {:error, _reason} -> "#_internal"
+        end
+
       send_action.target_expr != nil ->
+        # Fallback to runtime compilation for edge cases
         case evaluate_expression_value(send_action.target_expr, state_chart) do
           {:ok, value} when is_binary(value) -> value
           {:ok, value} -> to_string(value)
@@ -137,7 +165,15 @@ defmodule Statifier.Actions.SendAction do
       send_action.delay != nil ->
         send_action.delay
 
+      send_action.compiled_delay_expr != nil ->
+        case Evaluator.evaluate_value(send_action.compiled_delay_expr, state_chart) do
+          {:ok, value} when is_binary(value) -> value
+          {:ok, value} -> to_string(value)
+          {:error, _reason} -> "0s"
+        end
+
       send_action.delay_expr != nil ->
+        # Fallback to runtime compilation for edge cases
         case evaluate_expression_value(send_action.delay_expr, state_chart) do
           {:ok, value} when is_binary(value) -> value
           {:ok, value} -> to_string(value)
