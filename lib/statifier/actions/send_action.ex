@@ -141,44 +141,20 @@ defmodule Statifier.Actions.SendAction do
   end
 
   # Common helper for evaluating attributes that can be static or expressions
-  defp evaluate_attribute_with_expr(
-         _state_chart,
-         static_value,
-         _compiled_expr,
-         _expr_string,
-         _default_value
-       )
+  defp evaluate_attribute_with_expr(_sc, static_value, _compiled, _expr, _default)
        when not is_nil(static_value),
        do: static_value
 
-  defp evaluate_attribute_with_expr(
-         state_chart,
-         _static_value,
-         compiled_expr,
-         _expr_string,
-         default_value
-       )
-       when not is_nil(compiled_expr),
-       do: evaluate_compiled_expression(state_chart, compiled_expr, default_value)
+  defp evaluate_attribute_with_expr(state_chart, _static, compiled, _expr, default)
+       when not is_nil(compiled),
+       do: evaluate_compiled_expression(state_chart, compiled, default)
 
-  defp evaluate_attribute_with_expr(
-         state_chart,
-         _static_value,
-         _compiled_expr,
-         expr_string,
-         default_value
-       )
-       when not is_nil(expr_string),
-       do: evaluate_runtime_expression(state_chart, expr_string, default_value)
+  defp evaluate_attribute_with_expr(state_chart, _static, _compiled, expr, default)
+       when not is_nil(expr),
+       do: evaluate_runtime_expression(state_chart, expr, default)
 
-  defp evaluate_attribute_with_expr(
-         _state_chart,
-         _static_value,
-         _compiled_expr,
-         _expr_string,
-         default_value
-       ),
-       do: default_value
+  defp evaluate_attribute_with_expr(_sc, _static, _compiled, _expr, default),
+    do: default
 
   defp evaluate_compiled_expression(state_chart, compiled_expr, default_value) do
     case Evaluator.evaluate_value(compiled_expr, state_chart) do
@@ -219,61 +195,63 @@ defmodule Statifier.Actions.SendAction do
     })
   end
 
-  defp build_event_data(send_action, state_chart) do
-    # Build event data based on SCXML specification precedence:
-    # 1. If content is present, use content as the event data
-    # 2. If params are present, use params to build a map
-    # 3. If namelist is present, include datamodel variables
-    # 4. Cannot mix content with params/namelist
-
-    cond do
-      send_action.content != nil ->
-        build_content_data(send_action.content, state_chart)
-
-      length(send_action.params) > 0 ->
-        # Params can be combined with namelist
-        param_data = build_param_data(send_action.params, state_chart)
-        namelist_data = build_namelist_data(send_action.namelist, state_chart)
-        Map.merge(namelist_data, param_data)
-
-      send_action.namelist != nil ->
-        build_namelist_data(send_action.namelist, state_chart)
-
-      true ->
-        %{}
-    end
+  # Build event data based on SCXML specification precedence:
+  # 1. If content is present, use content as the event data
+  # 2. If params are present, use params to build a map
+  # 3. If namelist is present, include datamodel variables
+  # 4. Cannot mix content with params/namelist
+  defp build_event_data(
+         %{content: content, params: _params, namelist: _namelist} = _send_action,
+         state_chart
+       )
+       when not is_nil(content) do
+    build_content_data(content, state_chart)
   end
 
-  defp build_content_data(content, state_chart) do
-    cond do
-      content.expr != nil ->
-        # Enhanced expression evaluation with better error handling
-        case evaluate_expression_value(content.expr, state_chart) do
-          {:ok, value} ->
-            serialize_content_value(value)
+  defp build_event_data(%{params: params, namelist: namelist} = _send_action, state_chart)
+       when length(params) > 0 do
+    # Params can be combined with namelist
+    param_data = build_param_data(params, state_chart)
+    namelist_data = build_namelist_data(namelist, state_chart)
+    Map.merge(namelist_data, param_data)
+  end
 
-          {:error, reason} ->
-            LogManager.warn(
-              state_chart,
-              "Content expression evaluation failed: #{inspect(reason)}",
-              %{
-                action_type: "send_action",
-                content_expr: content.expr,
-                phase: "content_evaluation"
-              }
-            )
+  defp build_event_data(%{namelist: namelist} = _send_action, state_chart)
+       when not is_nil(namelist) do
+    build_namelist_data(namelist, state_chart)
+  end
 
-            ""
-        end
+  defp build_event_data(_send_action, _state_chart), do: %{}
 
-      content.content != nil ->
-        # Direct content text - ensure proper encoding
-        String.trim(content.content)
+  defp build_content_data(%{expr: expr} = _content, state_chart)
+       when not is_nil(expr) do
+    # Enhanced expression evaluation with better error handling
+    case evaluate_expression_value(expr, state_chart) do
+      {:ok, value} ->
+        serialize_content_value(value)
 
-      true ->
+      {:error, reason} ->
+        LogManager.warn(
+          state_chart,
+          "Content expression evaluation failed: #{inspect(reason)}",
+          %{
+            action_type: "send_action",
+            content_expr: expr,
+            phase: "content_evaluation"
+          }
+        )
+
         ""
     end
   end
+
+  defp build_content_data(%{content: content}, _state_chart)
+       when not is_nil(content) do
+    # Direct content text - ensure proper encoding
+    String.trim(content)
+  end
+
+  defp build_content_data(_content, _state_chart), do: ""
 
   defp serialize_content_value(value) when is_binary(value), do: value
   defp serialize_content_value(value) when is_map(value), do: Jason.encode!(value)
@@ -282,74 +260,80 @@ defmodule Statifier.Actions.SendAction do
 
   defp build_param_data(params, state_chart) do
     Enum.reduce(params, %{}, fn param, acc ->
-      # Enhanced parameter name validation
-      case validate_param_name(param) do
-        :ok ->
-          case get_param_value(param, state_chart) do
-            {:ok, value} ->
-              Map.put(acc, param.name, value)
-
-            {:error, reason} ->
-              LogManager.warn(state_chart, "Parameter evaluation failed", %{
-                action_type: "send_action",
-                param_name: param.name,
-                param_expr: param.expr,
-                param_location: param.location,
-                error_reason: inspect(reason),
-                phase: "parameter_evaluation"
-              })
-
-              acc
-          end
-
-        {:error, reason} ->
-          LogManager.warn(state_chart, "Invalid parameter name: #{inspect(reason)}", %{
-            action_type: "send_action",
-            param_name: param.name,
-            phase: "parameter_validation"
-          })
-
-          acc
-      end
+      process_single_param(param, state_chart, acc)
     end)
   end
 
-  # Enhanced parameter name validation
-  defp validate_param_name(param) do
-    cond do
-      is_nil(param.name) or param.name == "" ->
-        {:error, "Parameter name is required"}
+  defp process_single_param(param, state_chart, acc) do
+    case validate_param_name(param) do
+      :ok ->
+        case get_param_value(param, state_chart) do
+          {:ok, value} ->
+            Map.put(acc, param.name, value)
 
-      not is_binary(param.name) ->
-        {:error, "Parameter name must be a string"}
+          {:error, reason} ->
+            LogManager.warn(state_chart, "Parameter evaluation failed", %{
+              action_type: "send_action",
+              param_name: param.name,
+              param_expr: param.expr,
+              param_location: param.location,
+              error_reason: inspect(reason),
+              phase: "parameter_evaluation"
+            })
 
-      not String.match?(param.name, ~r/^[a-zA-Z_][a-zA-Z0-9_]*$/) ->
-        {:error, "Parameter name must be a valid identifier"}
+            acc
+        end
 
-      true ->
-        :ok
+      {:error, reason} ->
+        LogManager.warn(state_chart, "Invalid parameter name: #{inspect(reason)}", %{
+          action_type: "send_action",
+          param_name: param.name,
+          phase: "parameter_validation"
+        })
+
+        acc
     end
   end
 
-  defp get_param_value(param, state_chart) do
-    cond do
-      param.expr != nil ->
-        # Better handling of complex parameter values
-        case evaluate_expression_value(param.expr, state_chart) do
-          {:ok, value} -> {:ok, normalize_param_value(value)}
-          {:error, reason} -> {:error, reason}
-        end
+  # Enhanced parameter name validation
+  defp validate_param_name(%{name: name})
+       when is_nil(name) or name == "" do
+    {:error, "Parameter name is required"}
+  end
 
-      param.location != nil ->
-        # Get value from datamodel location with enhanced error handling
-        case evaluate_expression_value(param.location, state_chart) do
-          {:ok, value} -> {:ok, normalize_param_value(value)}
-          {:error, reason} -> {:error, reason}
-        end
+  defp validate_param_name(%{name: name})
+       when not is_binary(name) do
+    {:error, "Parameter name must be a string"}
+  end
 
-      true ->
-        {:error, :no_value_source}
+  defp validate_param_name(%{name: name}) do
+    if String.match?(name, ~r/^[a-zA-Z_][a-zA-Z0-9_]*$/) do
+      :ok
+    else
+      {:error, "Parameter name must be a valid identifier"}
     end
+  end
+
+  defp get_param_value(%{expr: expr} = _param, state_chart)
+       when not is_nil(expr) do
+    # Better handling of complex parameter values
+    case evaluate_expression_value(expr, state_chart) do
+      {:ok, value} -> {:ok, normalize_param_value(value)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp get_param_value(%{location: location} = _param, state_chart)
+       when not is_nil(location) do
+    # Get value from datamodel location with enhanced error handling
+    case evaluate_expression_value(location, state_chart) do
+      {:ok, value} -> {:ok, normalize_param_value(value)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp get_param_value(_param, _state_chart) do
+    {:error, :no_value_source}
   end
 
   # Normalize parameter values for consistent handling
