@@ -37,8 +37,8 @@ defmodule Statifier.Actions.LogAction do
   @doc """
   Executes the log action by evaluating the expression and logging the result.
   """
-  @spec execute(t(), Statifier.StateChart.t()) :: Statifier.StateChart.t()
-  def execute(%__MODULE__{} = log_action, state_chart) do
+  @spec execute(Statifier.StateChart.t(), t()) :: Statifier.StateChart.t()
+  def execute(state_chart, %__MODULE__{} = log_action) do
     # Use Evaluator to handle quoted strings and expressions properly
     message = evaluate_log_expression(log_action.expr, state_chart)
     label = log_action.label || "Log"

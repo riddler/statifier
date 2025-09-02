@@ -24,8 +24,8 @@ defmodule Statifier.Actions.RaiseAction do
   @doc """
   Executes the raise action by creating an internal event and adding it to the state chart's event queue.
   """
-  @spec execute(t(), Statifier.StateChart.t()) :: Statifier.StateChart.t()
-  def execute(%__MODULE__{} = raise_action, state_chart) do
+  @spec execute(Statifier.StateChart.t(), t()) :: Statifier.StateChart.t()
+  def execute(state_chart, %__MODULE__{} = raise_action) do
     event_name = raise_action.event || "anonymous_event"
     # Create internal event and enqueue it
     internal_event = %Event{

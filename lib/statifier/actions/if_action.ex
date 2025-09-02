@@ -72,15 +72,14 @@ defmodule Statifier.Actions.IfAction do
   """
   @spec new([conditional_block()], map() | nil) :: t()
   def new(conditional_blocks, source_location \\ nil) when is_list(conditional_blocks) do
-    # Pre-compile conditions for performance
-    compiled_blocks =
+    # Add nil compiled_cond to blocks - will be compiled during validation
+    blocks_with_nil_compiled =
       Enum.map(conditional_blocks, fn block ->
-        compiled_cond = compile_safe(block[:cond])
-        Map.put(block, :compiled_cond, compiled_cond)
+        Map.put(block, :compiled_cond, nil)
       end)
 
     %__MODULE__{
-      conditional_blocks: compiled_blocks,
+      conditional_blocks: blocks_with_nil_compiled,
       source_location: source_location
     }
   end
@@ -95,22 +94,12 @@ defmodule Statifier.Actions.IfAction do
   4. Return the updated StateChart
 
   """
-  @spec execute(t(), StateChart.t()) :: StateChart.t()
-  def execute(%__MODULE__{} = if_action, %StateChart{} = state_chart) do
+  @spec execute(StateChart.t(), t()) :: StateChart.t()
+  def execute(%StateChart{} = state_chart, %__MODULE__{} = if_action) do
     execute_conditional_blocks(if_action.conditional_blocks, state_chart)
   end
 
   # Private functions
-
-  # Safely compile expressions, returning nil on error
-  defp compile_safe(nil), do: nil
-
-  defp compile_safe(expr) when is_binary(expr) do
-    case Evaluator.compile_expression(expr) do
-      {:ok, compiled} -> compiled
-      {:error, _reason} -> nil
-    end
-  end
 
   # Process conditional blocks in order until one condition is true
   defp execute_conditional_blocks([], state_chart), do: state_chart
@@ -130,9 +119,24 @@ defmodule Statifier.Actions.IfAction do
   # Determine if a conditional block should be executed
   defp should_execute_block?(%{type: :else}, _state_chart), do: true
 
-  defp should_execute_block?(%{type: type, compiled_cond: compiled_cond}, state_chart)
+  defp should_execute_block?(%{type: type, compiled_cond: compiled_cond, cond: cond}, state_chart)
        when type in [:if, :elseif] do
-    Evaluator.evaluate_condition(compiled_cond, state_chart)
+    case compiled_cond do
+      nil when is_binary(cond) ->
+        # Fallback to runtime compilation for expressions not compiled during validation
+        case Evaluator.compile_expression(cond) do
+          {:ok, compiled} -> Evaluator.evaluate_condition(compiled, state_chart)
+          {:error, _reason} -> false
+        end
+
+      nil ->
+        # No condition provided
+        false
+
+      compiled ->
+        # Use pre-compiled condition
+        Evaluator.evaluate_condition(compiled, state_chart)
+    end
   end
 
   # Execute all actions within a conditional block

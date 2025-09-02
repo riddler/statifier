@@ -111,7 +111,7 @@ defmodule Statifier.Actions.ActionExecutor do
       })
 
     # Delegate to LogAction's own execute method
-    LogAction.execute(log_action, state_chart)
+    LogAction.execute(state_chart, log_action)
   end
 
   defp execute_single_action(%RaiseAction{} = raise_action, state_id, phase, state_chart) do
@@ -125,7 +125,7 @@ defmodule Statifier.Actions.ActionExecutor do
       })
 
     # Delegate to RaiseAction's own execute method
-    RaiseAction.execute(raise_action, state_chart)
+    RaiseAction.execute(state_chart, raise_action)
   end
 
   defp execute_single_action(%AssignAction{} = assign_action, state_id, phase, state_chart) do
@@ -140,7 +140,7 @@ defmodule Statifier.Actions.ActionExecutor do
       })
 
     # Use the AssignAction's execute method which handles all the logic
-    AssignAction.execute(assign_action, state_chart)
+    AssignAction.execute(state_chart, assign_action)
   end
 
   defp execute_single_action(%IfAction{} = if_action, state_id, phase, state_chart) do
@@ -154,7 +154,7 @@ defmodule Statifier.Actions.ActionExecutor do
       })
 
     # Use the IfAction's execute method which handles all the conditional logic
-    IfAction.execute(if_action, state_chart)
+    IfAction.execute(state_chart, if_action)
   end
 
   defp execute_single_action(%ForeachAction{} = foreach_action, state_id, phase, state_chart) do
@@ -171,7 +171,7 @@ defmodule Statifier.Actions.ActionExecutor do
       })
 
     # Use the ForeachAction's execute method which handles all the iteration logic
-    ForeachAction.execute(foreach_action, state_chart)
+    ForeachAction.execute(state_chart, foreach_action)
   end
 
   defp execute_single_action(%SendAction{} = send_action, state_id, phase, state_chart) do
@@ -186,7 +186,7 @@ defmodule Statifier.Actions.ActionExecutor do
       })
 
     # Use the SendAction's execute method which handles all the send logic
-    SendAction.execute(send_action, state_chart)
+    SendAction.execute(state_chart, send_action)
   end
 
   defp execute_single_action(unknown_action, state_id, phase, state_chart) do
@@ -204,18 +204,14 @@ defmodule Statifier.Actions.ActionExecutor do
   end
 
   # Execute actions for a single transition
-  defp execute_single_transition_actions(state_chart, transition) do
-    case transition.actions do
-      [] ->
-        state_chart
+  defp execute_single_transition_actions(state_chart, %{actions: []}),
+    do: state_chart
 
-      actions ->
-        # Execute each action in the transition
-        actions
-        |> Enum.reduce(state_chart, fn action, acc_state_chart ->
-          execute_single_action(acc_state_chart, action)
-        end)
-    end
+  defp execute_single_transition_actions(state_chart, %{actions: actions}) do
+    # Execute each action in the transition
+    Enum.reduce(actions, state_chart, fn action, acc_state_chart ->
+      execute_single_action(acc_state_chart, action)
+    end)
   end
 
   # Create a summary of actions for logging

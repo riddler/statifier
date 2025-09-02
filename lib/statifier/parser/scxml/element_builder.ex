@@ -13,8 +13,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
     Actions.RaiseAction,
     Actions.SendAction,
     Actions.SendContent,
-    Actions.SendParam,
-    Evaluator
+    Actions.SendParam
   }
 
   alias Statifier.Parser.SCXML.LocationTracker
@@ -225,17 +224,6 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
 
     cond_attr = get_attr_value(attrs_map, "cond")
 
-    # Compile condition if present
-    compiled_cond =
-      case Evaluator.compile_expression(cond_attr) do
-        {:ok, compiled} ->
-          compiled
-
-        {:error, _reason} ->
-          # Log compilation error for debugging
-          nil
-      end
-
     # Parse target - handle space-separated multiple targets
     # Always return a list, empty list means no targets
     targets =
@@ -252,7 +240,8 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
       event: get_attr_value(attrs_map, "event"),
       targets: targets,
       cond: cond_attr,
-      compiled_cond: compiled_cond,
+      # Will be compiled during validation
+      compiled_cond: nil,
       type: get_attr_value(attrs_map, "type"),
       document_order: document_order,
       # Location information

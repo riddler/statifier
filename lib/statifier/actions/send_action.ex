@@ -17,14 +17,18 @@ defmodule Statifier.Actions.SendAction do
   @type t :: %__MODULE__{
           event: String.t() | nil,
           event_expr: String.t() | nil,
+          compiled_event_expr: term() | nil,
           target: String.t() | nil,
           target_expr: String.t() | nil,
+          compiled_target_expr: term() | nil,
           type: String.t() | nil,
           type_expr: String.t() | nil,
+          compiled_type_expr: term() | nil,
           id: String.t() | nil,
           id_location: String.t() | nil,
           delay: String.t() | nil,
           delay_expr: String.t() | nil,
+          compiled_delay_expr: term() | nil,
           namelist: String.t() | nil,
           params: [Statifier.Actions.SendParam.t()],
           content: Statifier.Actions.SendContent.t() | nil,
@@ -36,14 +40,20 @@ defmodule Statifier.Actions.SendAction do
     :event,
     # Expression for event name
     :event_expr,
+    # Compiled event expression
+    :compiled_event_expr,
     # Static target URI
     :target,
     # Expression for target
     :target_expr,
+    # Compiled target expression
+    :compiled_target_expr,
     # Static processor type
     :type,
     # Expression for processor type
     :type_expr,
+    # Compiled type expression
+    :compiled_type_expr,
     # Static send ID
     :id,
     # Location to store generated ID
@@ -52,6 +62,8 @@ defmodule Statifier.Actions.SendAction do
     :delay,
     # Expression for delay
     :delay_expr,
+    # Compiled delay expression
+    :compiled_delay_expr,
     # Space-separated variable names
     :namelist,
     # List of SendParam structs
@@ -66,8 +78,8 @@ defmodule Statifier.Actions.SendAction do
   Executes the send action by creating an event and routing it to the appropriate destination.
   For Phase 1, only supports immediate internal sends.
   """
-  @spec execute(t(), Statifier.StateChart.t()) :: Statifier.StateChart.t()
-  def execute(%__MODULE__{} = send_action, state_chart) do
+  @spec execute(Statifier.StateChart.t(), t()) :: Statifier.StateChart.t()
+  def execute(state_chart, %__MODULE__{} = send_action) do
     # Phase 1: Only support immediate internal sends
     {:ok, event_name, target_uri, _delay} = evaluate_send_parameters(send_action, state_chart)
 
@@ -99,53 +111,89 @@ defmodule Statifier.Actions.SendAction do
   end
 
   defp evaluate_event_name(send_action, state_chart) do
-    cond do
-      send_action.event != nil ->
-        send_action.event
-
-      send_action.event_expr != nil ->
-        case evaluate_expression_value(send_action.event_expr, state_chart) do
-          {:ok, value} when is_binary(value) -> value
-          {:ok, value} -> to_string(value)
-          {:error, _reason} -> "anonymous_event"
-        end
-
-      true ->
-        "anonymous_event"
-    end
+    state_chart
+    |> evaluate_attribute_with_expr(
+      send_action.event,
+      send_action.compiled_event_expr,
+      send_action.event_expr,
+      "anonymous_event"
+    )
   end
 
   defp evaluate_target(send_action, state_chart) do
-    cond do
-      send_action.target != nil ->
-        send_action.target
-
-      send_action.target_expr != nil ->
-        case evaluate_expression_value(send_action.target_expr, state_chart) do
-          {:ok, value} when is_binary(value) -> value
-          {:ok, value} -> to_string(value)
-          {:error, _reason} -> "#_internal"
-        end
-
-      true ->
-        "#_internal"
-    end
+    state_chart
+    |> evaluate_attribute_with_expr(
+      send_action.target,
+      send_action.compiled_target_expr,
+      send_action.target_expr,
+      "#_internal"
+    )
   end
 
   defp evaluate_delay(send_action, state_chart) do
-    cond do
-      send_action.delay != nil ->
-        send_action.delay
+    state_chart
+    |> evaluate_attribute_with_expr(
+      send_action.delay,
+      send_action.compiled_delay_expr,
+      send_action.delay_expr,
+      "0s"
+    )
+  end
 
-      send_action.delay_expr != nil ->
-        case evaluate_expression_value(send_action.delay_expr, state_chart) do
-          {:ok, value} when is_binary(value) -> value
-          {:ok, value} -> to_string(value)
-          {:error, _reason} -> "0s"
-        end
+  # Common helper for evaluating attributes that can be static or expressions
+  defp evaluate_attribute_with_expr(
+         _state_chart,
+         static_value,
+         _compiled_expr,
+         _expr_string,
+         _default_value
+       )
+       when not is_nil(static_value),
+       do: static_value
 
-      true ->
-        "0s"
+  defp evaluate_attribute_with_expr(
+         state_chart,
+         _static_value,
+         compiled_expr,
+         _expr_string,
+         default_value
+       )
+       when not is_nil(compiled_expr),
+       do: evaluate_compiled_expression(state_chart, compiled_expr, default_value)
+
+  defp evaluate_attribute_with_expr(
+         state_chart,
+         _static_value,
+         _compiled_expr,
+         expr_string,
+         default_value
+       )
+       when not is_nil(expr_string),
+       do: evaluate_runtime_expression(state_chart, expr_string, default_value)
+
+  defp evaluate_attribute_with_expr(
+         _state_chart,
+         _static_value,
+         _compiled_expr,
+         _expr_string,
+         default_value
+       ),
+       do: default_value
+
+  defp evaluate_compiled_expression(state_chart, compiled_expr, default_value) do
+    case Evaluator.evaluate_value(compiled_expr, state_chart) do
+      {:ok, value} when is_binary(value) -> value
+      {:ok, value} -> to_string(value)
+      {:error, _reason} -> default_value
+    end
+  end
+
+  defp evaluate_runtime_expression(state_chart, expr_string, default_value) do
+    # Fallback to runtime compilation for edge cases
+    case evaluate_expression_value(expr_string, state_chart) do
+      {:ok, value} when is_binary(value) -> value
+      {:ok, value} -> to_string(value)
+      {:error, _reason} -> default_value
     end
   end
 

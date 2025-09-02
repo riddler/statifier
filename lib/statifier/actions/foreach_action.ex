@@ -74,15 +74,13 @@ defmodule Statifier.Actions.ForeachAction do
   @spec new(String.t(), String.t(), String.t() | nil, [term()], map() | nil) :: t()
   def new(array, item, index \\ nil, actions, source_location \\ nil)
       when is_binary(array) and is_binary(item) and is_list(actions) do
-    # Pre-compile array expression for performance
-    compiled_array = compile_safe(array)
-
     %__MODULE__{
       array: array,
       item: item,
       index: index,
       actions: actions,
-      compiled_array: compiled_array,
+      # Will be compiled during validation
+      compiled_array: nil,
       source_location: source_location
     }
   end
@@ -101,8 +99,8 @@ defmodule Statifier.Actions.ForeachAction do
 
   Returns the updated StateChart.
   """
-  @spec execute(t(), StateChart.t()) :: StateChart.t()
-  def execute(%__MODULE__{} = foreach_action, %StateChart{} = state_chart) do
+  @spec execute(StateChart.t(), t()) :: StateChart.t()
+  def execute(%StateChart{} = state_chart, %__MODULE__{} = foreach_action) do
     # Step 1: Evaluate array expression
     case evaluate_array(foreach_action, state_chart) do
       {:ok, collection} when is_list(collection) ->
@@ -123,14 +121,6 @@ defmodule Statifier.Actions.ForeachAction do
   end
 
   # Private functions
-
-  # Safely compile expressions, returning nil on error
-  defp compile_safe(expr) when is_binary(expr) do
-    case Evaluator.compile_expression(expr) do
-      {:ok, compiled} -> compiled
-      {:error, _reason} -> nil
-    end
-  end
 
   # Evaluate the array expression to get the collection
   defp evaluate_array(%{compiled_array: compiled_array, array: array_expr}, state_chart) do

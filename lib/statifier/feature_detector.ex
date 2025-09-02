@@ -83,8 +83,8 @@ defmodule Statifier.FeatureDetector do
 
       # Advanced attributes (unsupported)
       send_idlocation: :unsupported,
-      event_expressions: :unsupported,
-      target_expressions: :unsupported,
+      event_expressions: :supported,
+      target_expressions: :supported,
 
       # Wildcard and pattern events (supported)
       wildcard_events: :supported,

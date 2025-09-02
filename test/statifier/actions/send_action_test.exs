@@ -35,7 +35,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should enqueue internal event
       assert length(result.internal_queue) == 1
@@ -53,7 +53,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should evaluate expression and enqueue event
       assert length(result.internal_queue) == 1
@@ -70,7 +70,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Phase 1: External targets are not yet supported, should be logged
       assert Enum.empty?(result.external_queue)
@@ -92,7 +92,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should default to internal queue
       assert length(result.internal_queue) == 1
@@ -111,7 +111,7 @@ defmodule Statifier.Actions.SendActionTest do
 
       datamodel = %{"var1" => "value1", "var2" => 42}
       state_chart = create_test_state_chart(datamodel)
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should include namelist data
       assert length(result.internal_queue) == 1
@@ -134,7 +134,7 @@ defmodule Statifier.Actions.SendActionTest do
 
       datamodel = %{"myVar" => "locationValue"}
       state_chart = create_test_state_chart(datamodel)
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should include param data
       assert length(result.internal_queue) == 1
@@ -154,7 +154,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should use content as event data
       assert length(result.internal_queue) == 1
@@ -175,7 +175,7 @@ defmodule Statifier.Actions.SendActionTest do
 
       datamodel = %{"var1" => "namelist_value"}
       state_chart = create_test_state_chart(datamodel)
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should combine both data sources
       assert length(result.internal_queue) == 1
@@ -193,7 +193,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       [event] = result.internal_queue
       assert event.name == "anonymous_event"
@@ -209,7 +209,7 @@ defmodule Statifier.Actions.SendActionTest do
 
       datamodel = %{"existingVar" => "present"}
       state_chart = create_test_state_chart(datamodel)
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should only include existing variables
       assert length(result.internal_queue) == 1
@@ -225,7 +225,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should contain log entries
       assert length(result.logs) > 0
@@ -243,7 +243,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should evaluate target expression and send internally
       assert length(result.internal_queue) == 1
@@ -260,7 +260,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should handle invalid expression (evaluates to :undefined which becomes "undefined")
       # Since "undefined" is not "#_internal", it's treated as external target
@@ -281,7 +281,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should handle invalid expression (evaluates to :undefined which becomes "undefined")
       assert length(result.internal_queue) == 1
@@ -298,7 +298,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should convert non-string to string
       assert length(result.internal_queue) == 1
@@ -315,7 +315,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should convert non-string target to string and treat as external
       assert Enum.empty?(result.internal_queue)
@@ -337,7 +337,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result1 = SendAction.execute(send_action1, state_chart)
+      result1 = SendAction.execute(state_chart, send_action1)
 
       # Should still send immediately in Phase 1 (delay not yet implemented)
       assert length(result1.internal_queue) == 1
@@ -350,7 +350,7 @@ defmodule Statifier.Actions.SendActionTest do
         params: []
       }
 
-      result2 = SendAction.execute(send_action2, result1)
+      result2 = SendAction.execute(result1, send_action2)
       assert length(result2.internal_queue) == 2
 
       # Test delay_expr evaluation error
@@ -361,7 +361,7 @@ defmodule Statifier.Actions.SendActionTest do
         params: []
       }
 
-      result3 = SendAction.execute(send_action3, result2)
+      result3 = SendAction.execute(result2, send_action3)
       assert length(result3.internal_queue) == 3
     end
   end
@@ -378,7 +378,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       assert length(result.internal_queue) == 1
       [event] = result.internal_queue
@@ -396,7 +396,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       assert length(result.internal_queue) == 1
       [event] = result.internal_queue
@@ -415,7 +415,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       assert length(result.internal_queue) == 1
       [event] = result.internal_queue
@@ -437,7 +437,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Invalid expressions evaluate to :undefined, so it's included
       assert length(result.internal_queue) == 1
@@ -459,7 +459,7 @@ defmodule Statifier.Actions.SendActionTest do
 
       datamodel = %{"existingVar" => "exists"}
       state_chart = create_test_state_chart(datamodel)
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should skip bad location and include good location
       assert length(result.internal_queue) == 1
@@ -477,7 +477,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should skip param with no value source
       assert length(result.internal_queue) == 1
@@ -496,7 +496,7 @@ defmodule Statifier.Actions.SendActionTest do
       }
 
       state_chart = create_test_state_chart()
-      result = SendAction.execute(send_action, state_chart)
+      result = SendAction.execute(state_chart, send_action)
 
       # Should handle compilation errors gracefully
       assert length(result.internal_queue) == 1

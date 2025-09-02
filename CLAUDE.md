@@ -637,3 +637,4 @@ event = %Event{name: "go"}
   - no need to mention code quality improvements as they are expected (unless the functional change is about code quality improvements)
   - commit titles should be less than 50 characters and be in the simple present tense (active voice) - examples: 'Adds ..., Fixes ...'
   - commit descriptions should wrap at about 72 characters and also be in the simple present tense (active voice)
+- When writing functions that take a state_chart, put the state_chart as the first argument to help with threading the state_chart through code execution using Elixir pipelines
