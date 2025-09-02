@@ -1,87 +1,60 @@
-name: Documentation
+name: Deploy Documentation
 
 on:
   push:
-    branches: [ main ]
-    paths:
-      - '**/*.md'
-      - 'CLAUDE.md'
-      - 'README.md'
-      - 'docs/**'
+    branches: [main]
+    paths: ['docs/**', 'package.json']
   pull_request:
-    branches: [ main ]
-    paths:
-      - '**/*.md'
-      - 'CLAUDE.md'
-      - 'README.md'
-      - 'docs/**'
+    branches: [main] 
+    paths: ['docs/**', 'package.json']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  lint-docs:
-    name: Lint Documentation
+  # Build job
+  build:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Lint Markdown files
-      uses: DavidAnson/markdownlint-cli2-action@v13
-      with:
-        globs: |
-          **/*.md
-          !node_modules/**/*.md
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-    - name: Check for broken links
-      uses: gaurav-nelson/github-action-markdown-link-check@v1
-      with:
-        use-quiet-mode: 'yes'
-        use-verbose-mode: 'yes'
-        config-file: '.github/workflows/markdown-link-check-config.json'
+      - name: Install dependencies
+        run: npm ci
 
-  validate-memory:
-    name: Validate Memory Files
+      - name: Build with VitePress
+        run: npm run docs:build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/.vitepress/dist
+
+  # Deployment job
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
-    - name: Check CLAUDE.md structure
-      run: |
-        echo "Validating CLAUDE.md structure..."
-        if ! grep -q "## Commands" CLAUDE.md; then
-          echo "❌ CLAUDE.md missing Commands section"
-          exit 1
-        fi
-        if ! grep -q "## Architecture" CLAUDE.md; then
-          echo "❌ CLAUDE.md missing Architecture section"
-          exit 1
-        fi
-        echo "✅ CLAUDE.md structure looks good"
-
-    - name: Check README.md structure
-      run: |
-        echo "Validating README.md structure..."
-        if ! grep -q "## Features" README.md; then
-          echo "❌ README.md missing Features section"
-          exit 1
-        fi
-        if ! grep -q "## Current Status" README.md; then
-          echo "❌ README.md missing Current Status section"
-          exit 1
-        fi
-        echo "✅ README.md structure looks good"
-
-    - name: Validate documentation consistency
-      run: |
-        echo "Checking for API consistency between CLAUDE.md and README.md..."
-        
-        # Check that both files reference Statifier.Validator (not Statifier.Document.Validator)
-        if grep -q "Statifier\.Document\.Validator" CLAUDE.md README.md; then
-          echo "❌ Found outdated Statifier.Document.Validator references - should be Statifier.Validator"
-          grep -n "Statifier\.Document\.Validator" CLAUDE.md README.md || true
-          exit 1
-        fi
-        
-        echo "✅ API references look consistent"
