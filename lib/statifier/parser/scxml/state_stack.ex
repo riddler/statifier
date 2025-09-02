@@ -6,6 +6,8 @@ defmodule Statifier.Parser.SCXML.StateStack do
   and updating parent elements when child elements are completed.
   """
 
+  alias Statifier.Actions.IfAction
+
   @doc """
   Handle the end of a state element by adding it to its parent.
   """
@@ -853,7 +855,6 @@ defmodule Statifier.Parser.SCXML.StateStack do
       end)
 
     # Create IfAction with collected blocks
-    alias Statifier.Actions.IfAction
     IfAction.new(conditional_blocks, if_container[:location])
   end
 
