@@ -85,23 +85,138 @@ defmodule Statifier.Interpreter.TransitionResolver do
     transitions_by_source = Enum.group_by(transitions, & &1.source)
     source_states = Map.keys(transitions_by_source)
 
-    # Filter out ancestor state transitions if descendant has enabled transitions
-    source_states
-    |> Enum.filter(fn source_state ->
-      # Check if any descendant of this source state also has enabled transitions
-      descendants_with_transitions =
-        source_states
-        |> Enum.filter(fn other_source ->
-          other_source != source_state and
-            StateHierarchy.descendant_of?(document, other_source, source_state)
+    # Step 1: Filter out ancestor state transitions if descendant has enabled transitions
+    descendant_filtered_states =
+      source_states
+      |> Enum.filter(fn source_state ->
+        # Check if any descendant of this source state also has enabled transitions
+        descendants_with_transitions =
+          source_states
+          |> Enum.filter(fn other_source ->
+            other_source != source_state and
+              StateHierarchy.descendant_of?(document, other_source, source_state)
+          end)
+
+        # Keep this source state's transitions only if no descendants have transitions
+        descendants_with_transitions == []
+      end)
+
+    # Get transitions after descendant filtering
+    descendant_filtered_transitions =
+      descendant_filtered_states
+      |> Enum.flat_map(fn source_state ->
+        Map.get(transitions_by_source, source_state, [])
+      end)
+
+    # Step 2: Apply parallel region conflict resolution
+    resolve_parallel_conflicts(descendant_filtered_transitions, document)
+  end
+
+  # Resolve conflicts between transitions from parallel regions
+  # Per SCXML spec: when transitions from parallel regions have conflicting exit behavior,
+  # document order determines the winner
+  @spec resolve_parallel_conflicts([Statifier.Transition.t()], Document.t()) :: [
+          Statifier.Transition.t()
+        ]
+  defp resolve_parallel_conflicts(transitions, document) do
+    # If only one transition, no conflict to resolve
+    case transitions do
+      [] -> []
+      [single] -> [single]
+      multiple_transitions -> apply_parallel_conflict_resolution(multiple_transitions, document)
+    end
+  end
+
+  # Apply parallel region conflict resolution based on SCXML semantics
+  defp apply_parallel_conflict_resolution(transitions, document) do
+    # Group transitions by their exit behavior - which states they cause to exit
+    transitions_with_exit_sets =
+      Enum.map(transitions, fn transition ->
+        # Calculate which states would be exited if this transition fires
+        exit_set = calculate_transition_exit_set(transition, document)
+        {transition, exit_set}
+      end)
+
+    # Check for conflicts: transitions that exit different sets of states
+    # If any transition exits a parallel state that others don't exit, we have a conflict
+    conflict_groups = group_by_exit_conflicts(transitions_with_exit_sets)
+
+    # If there are conflicts, apply document order resolution
+    case conflict_groups do
+      [single_group] ->
+        # No conflicts, all transitions have compatible exit behavior
+        Enum.map(single_group, fn {transition, _exit_set} -> transition end)
+
+      _multiple_groups ->
+        # Conflicts exist - select the transition with earliest document order
+        transitions
+        |> Enum.sort_by(& &1.document_order)
+        |> List.first()
+        |> List.wrap()
+    end
+  end
+
+  # Calculate which states would be exited if this transition fires
+  defp calculate_transition_exit_set(transition, document) do
+    # For simplicity, check if any target is outside the current parallel region
+    source_state = Document.find_state(document, transition.source)
+
+    # Find the nearest parallel ancestor of the source state
+    parallel_ancestor = find_parallel_ancestor(source_state, document)
+
+    if parallel_ancestor do
+      # Check if any transition target is outside this parallel region
+      targets_outside_parallel =
+        Enum.any?(transition.targets, fn target ->
+          not StateHierarchy.descendant_of?(document, target, parallel_ancestor.id)
         end)
 
-      # Keep this source state's transitions only if no descendants have transitions
-      descendants_with_transitions == []
-    end)
-    |> Enum.flat_map(fn source_state ->
-      Map.get(transitions_by_source, source_state, [])
-    end)
+      if targets_outside_parallel do
+        # Transition exits the parallel state
+        MapSet.new([parallel_ancestor.id])
+      else
+        # Transition stays within the parallel state
+        MapSet.new()
+      end
+    else
+      # No parallel ancestor, no exit set
+      MapSet.new()
+    end
+  end
+
+  # Find the nearest parallel ancestor of a state
+  defp find_parallel_ancestor(state, document) do
+    case state.parent do
+      nil ->
+        nil
+
+      parent_id ->
+        parent_state = Document.find_state(document, parent_id)
+
+        if parent_state.type == :parallel do
+          parent_state
+        else
+          find_parallel_ancestor(parent_state, document)
+        end
+    end
+  end
+
+  # Group transitions by whether they have conflicting exit behavior
+  defp group_by_exit_conflicts(transitions_with_exit_sets) do
+    # For simplicity, separate into exits_parallel vs stays_in_parallel
+    {exits_parallel, stays_in_parallel} =
+      Enum.split_with(transitions_with_exit_sets, fn {_transition, exit_set} ->
+        not Enum.empty?(exit_set)
+      end)
+
+    case {exits_parallel, stays_in_parallel} do
+      # All stay in parallel
+      {[], staying} -> [staying]
+      # All exit parallel
+      {exiting, []} -> [exiting]
+      # Conflict: some exit, some stay
+      {exiting, staying} -> [exiting, staying]
+    end
   end
 
   @doc """
