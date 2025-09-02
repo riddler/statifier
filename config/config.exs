@@ -7,17 +7,7 @@ if config_env() == :dev do
 
   config :logger, :console,
     format: "[$level] $message $metadata\n",
-    metadata: [
-      :current_state,
-      :event,
-      :action_type,
-      :state_id,
-      :phase,
-      :transition_type,
-      :source_state,
-      :condition,
-      :targets
-    ]
+    metadata: :all
 
   # Default Statifier logging configuration for dev
   config :statifier,

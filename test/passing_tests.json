@@ -5,7 +5,7 @@
     "test/statifier/**/*_test.exs",
     "test/mix/**/*_test.exs"
   ],
-  "last_updated": "2025-08-31",
+  "last_updated": "2025-09-02",
   "scion_tests": [
     "test/scion_tests/actionSend/send1_test.exs",
     "test/scion_tests/actionSend/send2_test.exs",
@@ -46,6 +46,7 @@
     "test/scion_tests/history/history4b_test.exs",
     "test/scion_tests/history/history5_test.exs",
     "test/scion_tests/history/history6_test.exs",
+    "test/scion_tests/if_else/test0_test.exs",
     "test/scion_tests/misc/deep_initial_test.exs",
     "test/scion_tests/more_parallel/test0_test.exs",
     "test/scion_tests/more_parallel/test10_test.exs",

@@ -289,5 +289,93 @@ defmodule Statifier.Parser.SCXML.StateStackIfTest do
       assert length(current_block.actions) == 1
       assert hd(current_block.actions) == assign_action
     end
+
+    test "nested if within parent if container" do
+      # Test nested if action added to current conditional block within parent if container
+      nested_if_container = %{
+        conditional_blocks: [
+          %{
+            type: :if,
+            cond: "x === 40",
+            actions: [
+              %AssignAction{location: "x", expr: "x + 10"},
+              %LogAction{label: "nested", expr: "x"}
+            ]
+          }
+        ],
+        current_block_index: 0,
+        location: %{line: 2, column: 5}
+      }
+
+      parent_if_container = %{
+        conditional_blocks: [
+          %{
+            type: :if,
+            cond: "x === 28",
+            actions: [
+              %AssignAction{location: "x", expr: "x + 12"},
+              %LogAction{label: "after_assign", expr: "x"}
+            ]
+          }
+        ],
+        current_block_index: 0,
+        location: %{line: 1, column: 1}
+      }
+
+      state = %{
+        stack: [
+          {"if", nested_if_container},
+          {"if", parent_if_container},
+          {"onentry", :onentry_block},
+          {"state", %Statifier.State{id: "test_state"}}
+        ]
+      }
+
+      {:ok, result} = StateStack.handle_if_end(state)
+
+      # Should have parent if container with nested if added as an action
+      [{"if", updated_parent_container} | _rest] = result.stack
+      current_block = Enum.at(updated_parent_container.conditional_blocks, 0)
+
+      # Should have 3 actions: assign, log, nested_if_action
+      assert length(current_block.actions) == 3
+
+      # The last action should be the nested IfAction
+      nested_if_action = List.last(current_block.actions)
+      assert match?(%Statifier.Actions.IfAction{}, nested_if_action)
+
+      # Verify the nested IfAction has correct structure
+      assert length(nested_if_action.conditional_blocks) == 1
+      nested_block = hd(nested_if_action.conditional_blocks)
+      assert nested_block[:type] == :if
+      assert nested_block[:cond] == "x === 40"
+      assert length(nested_block[:actions]) == 2
+    end
+
+    test "nested if not in parent if context" do
+      # Test nested if element not within parent if container (fallback case)
+      nested_if_container = %{
+        conditional_blocks: [
+          %{type: :if, cond: "true", actions: [%LogAction{label: "test", expr: "value"}]}
+        ],
+        current_block_index: 0,
+        location: %{line: 1, column: 1}
+      }
+
+      state = %{
+        stack: [
+          {"if", nested_if_container},
+          {"onentry", :onentry_block},
+          {"state", %Statifier.State{id: "test_state"}}
+        ]
+      }
+
+      {:ok, result} = StateStack.handle_if_end(state)
+
+      # Should create IfAction and add to onentry (normal if handling)
+      [{"onentry", actions} | _rest] = result.stack
+      assert length(actions) == 1
+      assert match?(%Statifier.Actions.IfAction{}, hd(actions))
+    end
   end
 end

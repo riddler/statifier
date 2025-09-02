@@ -6,6 +6,8 @@ defmodule Statifier.Parser.SCXML.StateStack do
   and updating parent elements when child elements are completed.
   """
 
+  alias Statifier.Actions.IfAction
+
   @doc """
   Handle the end of a state element by adding it to its parent.
   """
@@ -584,6 +586,17 @@ defmodule Statifier.Parser.SCXML.StateStack do
     {:ok, %{state | stack: [{"transition", updated_transition} | rest]}}
   end
 
+  # Handle nested if action within parent if container
+  def handle_if_end(
+        %{stack: [{_element_name, nested_if_container} | [{"if", parent_if_container} | rest]]} =
+          state
+      ) do
+    # Create IfAction from nested if container and add to parent if container
+    nested_if_action = create_if_action_from_container(nested_if_container)
+    updated_parent_container = add_action_to_current_block(parent_if_container, nested_if_action)
+    {:ok, %{state | stack: [{"if", updated_parent_container} | rest]}}
+  end
+
   def handle_if_end(state) do
     # If element not in an onentry/onexit context, just pop it
     {:ok, pop_element(state)}
@@ -842,7 +855,6 @@ defmodule Statifier.Parser.SCXML.StateStack do
       end)
 
     # Create IfAction with collected blocks
-    alias Statifier.Actions.IfAction
     IfAction.new(conditional_blocks, if_container[:location])
   end
 
