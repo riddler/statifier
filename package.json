@@ -1,6 +1,7 @@
 {
   "name": "statifier-docs",
   "version": "1.0.0",
+  "type": "module",
   "description": "Documentation for Statifier SCXML library",
   "scripts": {
     "docs:dev": "vitepress dev docs",
