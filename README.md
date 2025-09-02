@@ -1,7 +1,12 @@
 # Statifier - SCXML State Machines for Elixir
 
-[![CI](https://github.com/riddler/statifier/workflows/CI/badge.svg?branch=main)](https://github.com/riddler/statifier/actions)
-[![Coverage](https://codecov.io/gh/riddler/statifier/branch/main/graph/badge.svg)](https://codecov.io/gh/riddler/statifier)
+[![CI](https://github.com/riddler/statifier/actions/workflows/ci.yml/badge.svg)](https://github.com/riddler/statifier/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/riddler/statifier/branch/main/graph/badge.svg)](https://codecov.io/gh/riddler/statifier)
+[![Hex.pm Version](https://img.shields.io/hexpm/v/statifier.svg)](https://hex.pm/packages/statifier)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/statifier/)
+
+> ⚠️ **Active Development Notice**  
+> This project is still under active development and things may change even though it is passed version 1. APIs, features, and behaviors may evolve as we continue improving SCXML compliance and functionality.
 
 An Elixir implementation of SCXML (State Chart XML) state charts with a focus on W3C compliance.
 
