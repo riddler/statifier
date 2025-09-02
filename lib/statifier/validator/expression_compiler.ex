@@ -226,7 +226,7 @@ defmodule Statifier.Validator.ExpressionCompiler do
       %{line: line} ->
         "#{base_message} at line #{line}"
 
-      _ ->
+      _no_location ->
         base_message
     end
   end
