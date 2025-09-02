@@ -210,7 +210,7 @@ defmodule Statifier.Actions.LogActionTest do
       state_chart = LogManager.configure_from_options(state_chart, [])
 
       # Directly execute the log action with the invalid binary
-      result = LogAction.execute(log_action, state_chart)
+      result = LogAction.execute(state_chart, log_action)
 
       # Should handle invalid UTF-8 gracefully by using inspect()
       assert_log_entry(result, message_contains: "Test: ")
@@ -258,12 +258,12 @@ defmodule Statifier.Actions.LogActionTest do
 
       # Test with atom expression type (not binary)
       log_action_with_atom = %LogAction{expr: :atom_expr, label: "Atom"}
-      result = LogAction.execute(log_action_with_atom, state_chart)
+      result = LogAction.execute(state_chart, log_action_with_atom)
       assert_log_entry(result, message_contains: "Atom: :atom_expr")
 
       # Test with number expression type
       log_action_with_number = %LogAction{expr: 42, label: "Number"}
-      result2 = LogAction.execute(log_action_with_number, result)
+      result2 = LogAction.execute(result, log_action_with_number)
       assert_log_entry(result2, message_contains: "Number: 42")
     end
   end

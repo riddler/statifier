@@ -99,8 +99,8 @@ defmodule Statifier.Actions.ForeachAction do
 
   Returns the updated StateChart.
   """
-  @spec execute(t(), StateChart.t()) :: StateChart.t()
-  def execute(%__MODULE__{} = foreach_action, %StateChart{} = state_chart) do
+  @spec execute(StateChart.t(), t()) :: StateChart.t()
+  def execute(%StateChart{} = state_chart, %__MODULE__{} = foreach_action) do
     # Step 1: Evaluate array expression
     case evaluate_array(foreach_action, state_chart) do
       {:ok, collection} when is_list(collection) ->

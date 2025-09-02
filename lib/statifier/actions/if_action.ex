@@ -94,8 +94,8 @@ defmodule Statifier.Actions.IfAction do
   4. Return the updated StateChart
 
   """
-  @spec execute(t(), StateChart.t()) :: StateChart.t()
-  def execute(%__MODULE__{} = if_action, %StateChart{} = state_chart) do
+  @spec execute(StateChart.t(), t()) :: StateChart.t()
+  def execute(%StateChart{} = state_chart, %__MODULE__{} = if_action) do
     execute_conditional_blocks(if_action.conditional_blocks, state_chart)
   end
 

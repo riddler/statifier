@@ -37,7 +37,7 @@ defmodule Statifier.Actions.AssignActionTest do
     test "executes simple assignment", %{state_chart: state_chart} do
       action = AssignAction.new("userName", "'John Doe'")
 
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       assert %StateChart{datamodel: %{"userName" => "John Doe"}} = result
     end
@@ -45,7 +45,7 @@ defmodule Statifier.Actions.AssignActionTest do
     test "executes nested assignment", %{state_chart: state_chart} do
       action = AssignAction.new("user.profile.name", "'Jane Smith'")
 
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       expected_data = %{"user" => %{"profile" => %{"name" => "Jane Smith"}}}
       assert %StateChart{datamodel: ^expected_data} = result
@@ -55,7 +55,7 @@ defmodule Statifier.Actions.AssignActionTest do
       state_chart = %{state_chart | datamodel: %{"counter" => 5}}
       action = AssignAction.new("counter", "counter + 3")
 
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       assert %StateChart{datamodel: %{"counter" => 8}} = result
     end
@@ -64,7 +64,7 @@ defmodule Statifier.Actions.AssignActionTest do
       state_chart = %{state_chart | datamodel: %{"users" => %{}}}
       action = AssignAction.new("users['john'].active", "true")
 
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       expected_data = %{"users" => %{"john" => %{"active" => true}}}
       assert %StateChart{datamodel: ^expected_data} = result
@@ -75,7 +75,7 @@ defmodule Statifier.Actions.AssignActionTest do
       state_chart = %{state_chart | current_event: event}
       action = AssignAction.new("lastUpdate", "_event.data.newValue")
 
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       assert %StateChart{datamodel: %{"lastUpdate" => "updated"}} = result
     end
@@ -84,7 +84,7 @@ defmodule Statifier.Actions.AssignActionTest do
       state_chart = %{state_chart | datamodel: %{"existing" => "value", "counter" => 10}}
       action = AssignAction.new("newField", "'new value'")
 
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       expected_data = %{
         "existing" => "value",
@@ -107,7 +107,7 @@ defmodule Statifier.Actions.AssignActionTest do
       state_chart = %{state_chart | datamodel: initial_data}
       action = AssignAction.new("user.settings.theme", "'dark'")
 
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       expected_data = %{
         "user" => %{
@@ -124,7 +124,7 @@ defmodule Statifier.Actions.AssignActionTest do
       action = AssignAction.new("invalid [[ syntax", "'value'")
 
       # Should not crash, should log error and return state chart with log entry
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       # Datamodel should be unchanged, but logs should contain error entry
       assert result.datamodel == state_chart.datamodel
@@ -140,7 +140,7 @@ defmodule Statifier.Actions.AssignActionTest do
       action = AssignAction.new("result", "undefined_variable + 1")
 
       # Should not crash, should log error and return state chart with log entry
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       # Datamodel should be unchanged, but logs should contain error entry
       assert result.datamodel == state_chart.datamodel
@@ -157,7 +157,7 @@ defmodule Statifier.Actions.AssignActionTest do
       # For now, we test with a simple string that predictor can handle
       action = AssignAction.new("config.settings", "'complex_value'")
 
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       expected_data = %{"config" => %{"settings" => "complex_value"}}
       assert %StateChart{datamodel: ^expected_data} = result
@@ -171,7 +171,7 @@ defmodule Statifier.Actions.AssignActionTest do
       # This tests that we have access to state machine context during evaluation
       action = AssignAction.new("stateCount", "counter + 1")
 
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       assert %StateChart{datamodel: %{"counter" => 0, "stateCount" => 1}} = result
     end
@@ -196,7 +196,7 @@ defmodule Statifier.Actions.AssignActionTest do
       assert is_nil(action.compiled_expr)
 
       # Execute should work with runtime compilation as fallback
-      result = AssignAction.execute(action, state_chart)
+      result = AssignAction.execute(state_chart, action)
 
       # Verify result is correct
       expected_data = %{"user" => %{"settings" => %{"theme" => "dark"}}}

@@ -52,7 +52,7 @@ defmodule Statifier.Actions.IfActionTest do
         datamodel: %{}
       }
 
-      result = IfAction.execute(if_action, state_chart)
+      result = IfAction.execute(state_chart, if_action)
 
       # Should execute the first block and assign "first" to result
       assert result.datamodel["result"] == "first"
@@ -74,7 +74,7 @@ defmodule Statifier.Actions.IfActionTest do
         datamodel: %{}
       }
 
-      result = IfAction.execute(if_action, state_chart)
+      result = IfAction.execute(state_chart, if_action)
 
       # Should execute the else block and assign "second" to result
       assert result.datamodel["result"] == "second"
@@ -98,7 +98,7 @@ defmodule Statifier.Actions.IfActionTest do
         datamodel: %{}
       }
 
-      result = IfAction.execute(if_action, state_chart)
+      result = IfAction.execute(state_chart, if_action)
 
       # Should execute the elseif block and assign "second" to result
       assert result.datamodel["result"] == "second"

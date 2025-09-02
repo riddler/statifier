@@ -79,8 +79,8 @@ defmodule Statifier.Actions.AssignAction do
 
   Returns the updated StateChart with modified data model.
   """
-  @spec execute(t(), StateChart.t()) :: StateChart.t()
-  def execute(%__MODULE__{} = assign_action, %StateChart{} = state_chart) do
+  @spec execute(StateChart.t(), t()) :: StateChart.t()
+  def execute(%StateChart{} = state_chart, %__MODULE__{} = assign_action) do
     # Use Evaluator.evaluate_and_assign with pre-compiled expression if available
     case Evaluator.evaluate_and_assign(
            assign_action.location,

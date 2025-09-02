@@ -34,7 +34,7 @@ defmodule Statifier.Actions.ForeachActionTest do
     test "executes simple foreach without actions", %{state_chart: state_chart} do
       action = ForeachAction.new("myArray", "item", "index", [])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # The foreach should complete without errors
       # New variables should be declared permanently (SCXML spec)
@@ -54,7 +54,7 @@ defmodule Statifier.Actions.ForeachActionTest do
 
       action = ForeachAction.new("myArray", "item", "index", [log_action])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # The foreach should complete without errors
       # New variables should be declared permanently (SCXML spec)
@@ -73,7 +73,7 @@ defmodule Statifier.Actions.ForeachActionTest do
 
       action = ForeachAction.new("nonExistentArray", "item", "index", [])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Should add error.execution event to internal queue
       assert length(result.internal_queue) > 0
@@ -88,7 +88,7 @@ defmodule Statifier.Actions.ForeachActionTest do
 
       action = ForeachAction.new("notArray", "item", "index", [])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Should add error.execution event to internal queue
       assert length(result.internal_queue) > 0
@@ -104,7 +104,7 @@ defmodule Statifier.Actions.ForeachActionTest do
       assert !Map.has_key?(state_chart.datamodel, "newItem")
       assert !Map.has_key?(state_chart.datamodel, "newIndex")
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Variables should now be declared permanently with final iteration values
       assert Map.has_key?(result.datamodel, "newItem")
@@ -124,7 +124,7 @@ defmodule Statifier.Actions.ForeachActionTest do
 
       action = ForeachAction.new("myArray", "existingVar", "existingIndex", [])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Existing variables should be restored to original values
       assert result.datamodel["existingVar"] == "original"
@@ -134,7 +134,7 @@ defmodule Statifier.Actions.ForeachActionTest do
     test "handles foreach without index parameter", %{state_chart: state_chart} do
       action = ForeachAction.new("myArray", "item", nil, [])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Only item should be declared, not index
       assert Map.has_key?(result.datamodel, "item")
@@ -149,7 +149,7 @@ defmodule Statifier.Actions.ForeachActionTest do
       action = ForeachAction.new("invalidExpression(", "item", nil, [])
 
       # Should still execute (compilation errors are handled gracefully)
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Should generate error.execution event
       assert length(result.internal_queue) > 0
@@ -162,7 +162,7 @@ defmodule Statifier.Actions.ForeachActionTest do
 
       action = ForeachAction.new("myArray", "item", nil, [bad_assign])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Should handle the exception and continue
       # The action should execute and handle any errors gracefully
@@ -178,7 +178,7 @@ defmodule Statifier.Actions.ForeachActionTest do
       # The Evaluator.evaluate_and_assign should fail for this
       action = ForeachAction.new("badArray", "", nil, [])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Should handle the assignment failure gracefully
       assert is_map(result)
@@ -195,7 +195,7 @@ defmodule Statifier.Actions.ForeachActionTest do
       # This will trigger error paths in the set_foreach_variable function
       action = ForeachAction.new("problematicArray", "item..with..dots", nil, [])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Should handle problematic variable names gracefully
       assert is_map(result)
@@ -211,7 +211,7 @@ defmodule Statifier.Actions.ForeachActionTest do
       # This should trigger the {:error, reason} path in set_foreach_variable
       action = ForeachAction.new("testArray", "123invalid", nil, [])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Should complete without crashing even with assignment failures
       assert is_map(result)
@@ -239,7 +239,7 @@ defmodule Statifier.Actions.ForeachActionTest do
       # This tries to trigger the error path in set_foreach_variable
       action = ForeachAction.new("testArray", "0invalid_var_name", nil, [])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Should complete execution despite assignment errors
       assert is_map(result)
@@ -258,7 +258,7 @@ defmodule Statifier.Actions.ForeachActionTest do
       # Use invalid Elixir variable syntax to trigger evaluator error
       action = ForeachAction.new("errorArray", "@invalid", nil, [])
 
-      result = ForeachAction.execute(action, state_chart)
+      result = ForeachAction.execute(state_chart, action)
 
       # Should handle the error and return state_chart from error path
       assert is_map(result)

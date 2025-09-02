@@ -78,8 +78,8 @@ defmodule Statifier.Actions.SendAction do
   Executes the send action by creating an event and routing it to the appropriate destination.
   For Phase 1, only supports immediate internal sends.
   """
-  @spec execute(t(), Statifier.StateChart.t()) :: Statifier.StateChart.t()
-  def execute(%__MODULE__{} = send_action, state_chart) do
+  @spec execute(Statifier.StateChart.t(), t()) :: Statifier.StateChart.t()
+  def execute(state_chart, %__MODULE__{} = send_action) do
     # Phase 1: Only support immediate internal sends
     {:ok, event_name, target_uri, _delay} = evaluate_send_parameters(send_action, state_chart)
 
