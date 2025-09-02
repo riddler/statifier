@@ -16,6 +16,7 @@ defmodule Statifier.MixProject do
     {:excoveralls, "~> 0.18", only: :test},
 
     # Runtime
+    {:jason, "~> 1.4"},
     {:predicator, "~> 3.3"},
     {:saxy, "~> 1.6"}
   ]

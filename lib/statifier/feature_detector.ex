@@ -95,8 +95,8 @@ defmodule Statifier.FeatureDetector do
       cancel_elements: :unsupported,
 
       # Advanced send features (unsupported)
-      send_content_elements: :partial,
-      send_param_elements: :partial,
+      send_content_elements: :supported,
+      send_param_elements: :supported,
       send_delay_expressions: :partial,
 
       # State machine lifecycle (unsupported)
