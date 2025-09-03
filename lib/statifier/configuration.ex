@@ -3,7 +3,7 @@ defmodule Statifier.Configuration do
   Represents the current active states in an SCXML state chart.
 
   Only stores leaf (atomic) states - parent states are considered active
-  when any of their children are active. Use active_ancestors/2 to compute
+  when any of their children are active. Use all_active_states/2 to compute
   the full set of active states including ancestors.
   """
 
@@ -90,6 +90,4 @@ defmodule Statifier.Configuration do
       parent_state -> collect_ancestors(parent_state, document, [parent_id | ancestors])
     end
   end
-
-  # Linear search functions removed - now using O(1) Document.find_state/2 lookup
 end
