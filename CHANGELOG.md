@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] 2025-09-02
+
+### Added
+
+#### Documentation Site and Infrastructure
+
+- **VitePress Documentation Site**: Complete documentation site setup with Diataxis structure following the four documentation types (Tutorials, How-to Guides, Reference, Explanation)
+- **GitHub Actions Integration**: Automatic deployment to GitHub Pages with separate workflows for documentation building and linting
+- **Specialized Documentation Agent**: Added Diataxis-aware documentation agent for structured content creation and management
+
+#### SCXML Feature Enhancements  
+
+- **Internal Transitions**: Complete implementation of `type="internal"` transitions that execute actions without exiting/re-entering source state per W3C SCXML specification
+- **Enhanced Send Elements**: Improved `<send>` element support with better content data processing, parameter validation, and JSON serialization for complex values
+- **Nested If Parsing**: Fixed SAX parser to properly handle nested `<if>` blocks, enabling complex conditional logic structures
+
+#### Performance and Developer Experience
+
+- **Macro-Based Logging**: Converted all LogManager logging functions to performance-optimized macros with lazy evaluation and zero overhead when logging is disabled
+- **Environment-Aware Logging**: Added automatic logging configuration based on environment (trace in dev, debug in test, info in prod)
+- **Enhanced Debugging**: Comprehensive trace logging throughout transition resolution and action execution with structured metadata
+
+### Fixed
+
+- **Parallel Transition Conflicts**: Enhanced TransitionResolver to handle conflicts between transitions from parallel regions using document order per SCXML specification
+- **Expression Compilation**: Moved expression compilation from creation-time to validation-time with fallback runtime compilation for backward compatibility
+- **Pipeline-Friendly APIs**: Updated all action execute functions to take state_chart as first argument for better Elixir pipeline composition
+
+### Changed
+
+- **Feature Detection Updates**: Moved send_content_elements and send_param_elements from partial to supported status
+- **Code Quality**: Resolved Credo static analysis issues by extracting helper functions and reducing cyclomatic complexity
+- **Error Handling**: Improved error context logging for failed conditions and expression evaluations
+
+### Infrastructure
+
+- **Separated Workflows**: Split documentation workflows into focused build/deployment and linting processes
+- **ESM Module Support**: Added proper ES module configuration for VitePress compatibility
+- **Test Coverage**: Improved test coverage across parser components, action executors, and logging infrastructure
+
 ## [1.7.0] 2025-09-01
 
 ### Added
