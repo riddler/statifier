@@ -183,7 +183,20 @@ defmodule Mix.Tasks.Quality do
   defp find_markdown_files do
     case System.cmd(
            "find",
-           [".", "-name", "*.md", "-not", "-path", "./deps/*", "-not", "-path", "./_build/*"],
+           [
+             ".",
+             "-name",
+             "*.md",
+             "-not",
+             "-path",
+             "./deps/*",
+             "-not",
+             "-path",
+             "./_build/*",
+             "-not",
+             "-path",
+             "./node_modules/*"
+           ],
            stderr_to_stdout: true
          ) do
       {output, 0} when output != "" ->
@@ -198,7 +211,9 @@ defmodule Mix.Tasks.Quality do
   end
 
   defp run_markdown_linting(md_files) do
-    case System.cmd("markdownlint-cli2", ["--config", ".markdownlint.json"] ++ md_files,
+    case System.cmd(
+           "markdownlint-cli2",
+           ["--config", ".markdownlint.json", "#node_modules"] ++ md_files,
            stderr_to_stdout: true
          ) do
       {_output, 0} ->

@@ -16,6 +16,12 @@ erl_crash.dump
 # Also ignore archive artifacts (built via "mix archive.build").
 *.ez
 
+# Node dependencies for building docs
+/node_modules
+
+# Generated docs site
+/docs/.vitepress/dist
+
 # Ignore package tarball (built via "mix hex.build").
 statifier-*.tar
 
@@ -29,4 +35,4 @@ statifier-*.tar
 /priv/plts/
 
 # Keep granted permissions local to the person
-.claude
+.claude/*.local.json
