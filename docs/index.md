@@ -44,6 +44,7 @@ Statifier is an Elixir implementation of **SCXML (State Chart XML)** state machi
 ## Key Features
 
 ### ✅ Complete SCXML Implementation
+
 - **Hierarchical States**: Nested states with automatic initial child entry
 - **Parallel States**: Concurrent state regions with proper exit semantics  
 - **History States**: Shallow and deep history state support per W3C specification
@@ -51,12 +52,14 @@ Statifier is an Elixir implementation of **SCXML (State Chart XML)** state machi
 - **Executable Content**: Complete `<assign>`, `<if>`, `<log>`, and `<raise>` element support
 
 ### ✅ High Performance Design
+
 - **O(1 Lookups**: Optimized state and transition maps for fast execution
 - **Efficient Memory Usage**: Stores only leaf states with dynamic ancestor computation
 - **Cycle Detection**: Prevents infinite loops in eventless transitions
 - **Optimized Parsing**: SAX-based XML parsing with precise location tracking
 
 ### ✅ Production Ready
+
 - **Comprehensive Testing**: 707 internal tests with 92.3% code coverage
 - **Regression Protection**: 118 critical functionality tests prevent regressions
 - **Git Hooks**: Pre-push validation workflow catches issues early

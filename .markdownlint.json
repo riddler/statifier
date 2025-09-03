@@ -1,5 +1,9 @@
 {
   "default": true,
+  "gitignore": true,
+  "ignores": [
+    "node_modules/"
+  ],
   "line-length": false,
   "no-duplicate-heading": false,
   "no-inline-html": {
