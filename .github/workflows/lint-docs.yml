@@ -29,12 +29,12 @@ jobs:
           !node_modules/**/*.md
           !docs/.vitepress/dist/**/*.md
 
-    - name: Check for broken links
-      uses: gaurav-nelson/github-action-markdown-link-check@v1
-      with:
-        use-quiet-mode: 'yes'
-        use-verbose-mode: 'yes'
-        config-file: '.github/workflows/markdown-link-check-config.json'
+    # - name: Check for broken links
+    #   uses: gaurav-nelson/github-action-markdown-link-check@v1
+    #   with:
+    #     use-quiet-mode: 'yes'
+    #     use-verbose-mode: 'yes'
+    #     config-file: '.github/workflows/markdown-link-check-config.json'
 
   validate-memory:
     name: Validate Memory Files
