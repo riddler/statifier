@@ -38,24 +38,6 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
   use Statifier.StateMachine, 
     scxml: Path.join([__DIR__, "..", "scxml", "purchase_order.xml"])
 
-  @doc """
-  Start the PurchaseOrderMachine with enhanced logging.
-  
-  ## Options
-  
-  - `:log_level` - Set to `:debug` or `:trace` for detailed state machine logging
-  - Standard GenServer options (`:name`, etc.)
-  """  
-  def start_link(opts \\ []) do
-    # Enable debug logging by default for examples
-    enhanced_opts = Keyword.put_new(opts, :log_level, :debug)
-    # Call the parent StateMachine module's generated start_link
-    Statifier.StateMachine.start_link(
-      Path.join([__DIR__, "..", "scxml", "purchase_order.xml"]),
-      [{:callback_module, __MODULE__} | enhanced_opts]
-    )
-  end
-
   require Logger
 
   ## Public API
@@ -122,6 +104,19 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
   end
 
   ## StateMachine Callbacks
+
+  @doc false
+  def handle_init(state_chart, context) do
+    # Enable debug logging by default for examples if not already set
+    opts = Map.get(context, :opts, [])
+    
+    if Keyword.get(opts, :log_level) == nil do
+      # Set debug level by default for examples
+      Logger.configure(level: :debug)
+    end
+    
+    {:ok, state_chart}
+  end
 
   @doc false
   def handle_state_enter(state_id, state_chart, _context) do

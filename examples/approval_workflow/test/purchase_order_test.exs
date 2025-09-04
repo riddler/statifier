@@ -3,7 +3,8 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderTest do
   
   alias Examples.ApprovalWorkflow.PurchaseOrderMachine
 
-  @describetag :example
+  @tag :example
+
   describe "basic workflow" do
     test "starts in draft state" do
       {:ok, pid} = PurchaseOrderMachine.start_link()
@@ -117,7 +118,6 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderTest do
     end
   end
 
-  @describetag :example  
   describe "manager rejection" do
     test "manager can reject with reason" do
       {:ok, pid} = PurchaseOrderMachine.start_link()
@@ -145,7 +145,6 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderTest do
     end
   end
 
-  @describetag :example
   describe "executive rejection" do  
     test "executive can reject with reason" do
       {:ok, pid} = PurchaseOrderMachine.start_link()
