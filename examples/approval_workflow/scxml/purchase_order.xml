@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" 
+       initial="draft" datamodel="ecmascript">
+  
+  <datamodel>
+    <data id="amount" expr="0"/>
+    <data id="requester" expr="''"/>
+    <data id="approver" expr="''"/>
+    <data id="rejection_reason" expr="''"/>
+    <data id="po_id" expr="''"/>
+  </datamodel>
+
+  <!-- Initial state: draft -->
+  <state id="draft">
+    <onentry>
+      <log expr="'Purchase order created in draft state'"/>
+    </onentry>
+    
+    <transition event="submit" target="pending_approval">
+      <assign location="po_id" expr="_event.data.po_id"/>
+      <assign location="amount" expr="_event.data.amount"/>
+      <assign location="requester" expr="_event.data.requester"/>
+    </transition>
+  </state>
+
+  <!-- Awaiting initial approval decision -->
+  <state id="pending_approval">
+    <onentry>
+      <log expr="'PO ' + po_id + ' submitted for approval by ' + requester"/>
+    </onentry>
+    
+    <transition event="approve" target="checking_amount"/>
+    
+    <transition event="reject" target="rejected">
+      <assign location="rejection_reason" expr="_event.data.reason"/>
+    </transition>
+    
+    <transition event="request_changes" target="draft"/>
+  </state>
+
+  <!-- Route based on amount -->
+  <state id="checking_amount">
+    <onentry>
+      <log expr="'Checking approval requirements for amount: ' + amount"/>
+    </onentry>
+    
+    <!-- Small amounts go to manager approval -->
+    <transition target="manager_approval" cond="amount &lt;= 5000"/>
+    
+    <!-- Large amounts need executive approval -->
+    <transition target="executive_approval" cond="amount &gt; 5000"/>
+  </state>
+
+  <!-- Manager approval for smaller amounts -->
+  <state id="manager_approval">
+    <onentry>
+      <log expr="'Routing to manager approval'"/>
+    </onentry>
+    
+    <transition event="manager_approved" target="approved"/>
+    <transition event="manager_rejected" target="rejected">
+      <assign location="rejection_reason" expr="_event.data.reason"/>
+    </transition>
+  </state>
+
+  <!-- Executive approval for larger amounts -->
+  <state id="executive_approval">
+    <onentry>
+      <log expr="'Routing to executive approval'"/>
+    </onentry>
+    
+    <transition event="exec_approved" target="approved"/>
+    <transition event="exec_rejected" target="rejected">
+      <assign location="rejection_reason" expr="_event.data.reason"/>
+    </transition>
+  </state>
+
+  <!-- Final approved state -->
+  <final id="approved">
+    <onentry>
+      <log expr="'Purchase order ' + po_id + ' approved!'"/>
+    </onentry>
+  </final>
+
+  <!-- Final rejected state -->
+  <final id="rejected">
+    <onentry>
+      <log expr="'Purchase order ' + po_id + ' rejected: ' + rejection_reason"/>
+    </onentry>
+  </final>
+
+</scxml>
