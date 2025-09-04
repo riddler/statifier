@@ -41,7 +41,7 @@ defmodule Examples.MixProject do
       "examples.list": ["run", "-e", "Examples.CLI.list()"]
     ]
   end
-  
+
   defp run_examples(args) do
     Mix.Task.run("run", ["-e", "Examples.CLI.run(#{inspect(args)})"])
   end

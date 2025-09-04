@@ -248,7 +248,7 @@ defmodule Statifier.StateMachine do
     # Extract callback options
     callback_module = Keyword.get(opts, :callback_module)
     snapshot_interval = Keyword.get(opts, :snapshot_interval)
-    
+
     # Extract interpreter options (log_level, log_adapter, etc.)
     interpreter_opts = Keyword.take(opts, [:log_level, :log_adapter])
 

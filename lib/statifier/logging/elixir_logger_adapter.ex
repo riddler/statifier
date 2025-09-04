@@ -52,7 +52,8 @@ defmodule Statifier.Logging.ElixirLoggerAdapter do
         :trace -> Logger.debug(message, metadata)
         :debug -> Logger.debug(message, metadata)
         :info -> Logger.info(message, metadata)
-        :warn -> Logger.warning(message, metadata)  # Map :warn to :warning
+        # Map :warn to :warning
+        :warn -> Logger.warning(message, metadata)
         :error -> Logger.error(message, metadata)
       end
 
@@ -95,7 +96,8 @@ defmodule Statifier.Logging.ElixirLoggerAdapter do
 
     # Map Statifier log levels to Elixir Logger levels
     defp map_to_elixir_level(:trace), do: :debug
-    defp map_to_elixir_level(:warn), do: :warning  # Map :warn to :warning for Elixir 1.15+
+    # Map :warn to :warning for Elixir 1.15+
+    defp map_to_elixir_level(:warn), do: :warning
     defp map_to_elixir_level(level), do: level
   end
 end

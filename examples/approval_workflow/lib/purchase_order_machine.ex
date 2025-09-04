@@ -1,12 +1,12 @@
 defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
   @moduledoc """
   A StateMachine implementation for purchase order approval workflows.
-  
+
   This module demonstrates how to create a workflow engine using Statifier's
   GenServer-based StateMachine with callbacks for business logic.
-  
+
   ## Workflow States
-  
+
   - `draft` - Initial state, PO is being prepared
   - `pending_approval` - Submitted and awaiting approval decision  
   - `checking_amount` - Routing based on amount thresholds
@@ -14,9 +14,9 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
   - `executive_approval` - Requires executive approval (> $5,000)
   - `approved` - Final approved state
   - `rejected` - Final rejected state
-  
+
   ## Usage
-  
+
       # Start the workflow
       {:ok, pid} = PurchaseOrderMachine.start_link()
       
@@ -32,10 +32,10 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
       
       # Check current state
       states = PurchaseOrderMachine.current_states(pid)
-  
+
   """
-  
-  use Statifier.StateMachine, 
+
+  use Statifier.StateMachine,
     scxml: Path.join([__DIR__, "..", "scxml", "purchase_order.xml"])
 
   require Logger
@@ -49,7 +49,7 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
   end
 
   @doc "Approve the current purchase order"
-  @spec approve(GenServer.server()) :: :ok  
+  @spec approve(GenServer.server()) :: :ok
   def approve(server) do
     Statifier.StateMachine.send_event(server, "approve")
   end
@@ -109,30 +109,30 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
   def handle_state_enter(state_id, state_chart, _context) do
     po_id = state_chart.datamodel["po_id"] || "unknown"
     Logger.info("PO #{po_id}: Entered state '#{state_id}'")
-    
+
     # Simulate business logic based on state
     case state_id do
       "pending_approval" ->
         notify_approver(state_chart)
-      
+
       "manager_approval" ->
         notify_manager(state_chart)
-        
+
       "executive_approval" ->
         notify_executive(state_chart)
-        
+
       "approved" ->
         handle_approval(state_chart)
-        
+
       "rejected" ->
         handle_rejection(state_chart)
-        
+
       _ ->
         :ok
     end
   end
 
-  @doc false  
+  @doc false
   def handle_state_exit(state_id, state_chart, _context) do
     po_id = state_chart.datamodel["po_id"] || "unknown"
     Logger.debug("PO #{po_id}: Exited state '#{state_id}'")
@@ -142,8 +142,10 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
   def handle_transition(from_states, to_states, event, state_chart) do
     po_id = state_chart.datamodel["po_id"] || "unknown"
     event_name = if event, do: event.name, else: "automatic"
-    
-    Logger.info("PO #{po_id}: Transition #{inspect(from_states)} → #{inspect(to_states)} via '#{event_name}'")
+
+    Logger.info(
+      "PO #{po_id}: Transition #{inspect(from_states)} → #{inspect(to_states)} via '#{event_name}'"
+    )
   end
 
   ## Private Helper Functions
@@ -151,19 +153,28 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
   # Simulate notifying the initial approver
   defp notify_approver(state_chart) do
     po_data = state_chart.datamodel
-    Logger.info("📧 Notifying approver: PO #{po_data["po_id"]} for $#{po_data["amount"]} requires approval")
+
+    Logger.info(
+      "📧 Notifying approver: PO #{po_data["po_id"]} for $#{po_data["amount"]} requires approval"
+    )
   end
 
   # Simulate notifying manager for approval  
   defp notify_manager(state_chart) do
     po_data = state_chart.datamodel
-    Logger.info("📧 Notifying manager: PO #{po_data["po_id"]} for $#{po_data["amount"]} needs manager approval")
+
+    Logger.info(
+      "📧 Notifying manager: PO #{po_data["po_id"]} for $#{po_data["amount"]} needs manager approval"
+    )
   end
 
   # Simulate notifying executive for approval
   defp notify_executive(state_chart) do
     po_data = state_chart.datamodel
-    Logger.info("📧 Notifying executive: PO #{po_data["po_id"]} for $#{po_data["amount"]} needs executive approval")
+
+    Logger.info(
+      "📧 Notifying executive: PO #{po_data["po_id"]} for $#{po_data["amount"]} needs executive approval"
+    )
   end
 
   # Handle final approval

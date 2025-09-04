@@ -2,7 +2,8 @@ import Config
 
 # Logger configuration for examples
 config :logger,
-  level: :debug  # Allow debug/trace logs for detailed state machine debugging
+  # Allow debug/trace logs for detailed state machine debugging
+  level: :debug
 
 # Example-specific configuration
 config :statifier_examples,
