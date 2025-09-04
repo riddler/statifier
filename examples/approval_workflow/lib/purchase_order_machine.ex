@@ -106,19 +106,6 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
   ## StateMachine Callbacks
 
   @doc false
-  def handle_init(state_chart, context) do
-    # Enable debug logging by default for examples if not already set
-    opts = Map.get(context, :opts, [])
-    
-    if Keyword.get(opts, :log_level) == nil do
-      # Set debug level by default for examples
-      Logger.configure(level: :debug)
-    end
-    
-    {:ok, state_chart}
-  end
-
-  @doc false
   def handle_state_enter(state_id, state_chart, _context) do
     po_id = state_chart.datamodel["po_id"] || "unknown"
     Logger.info("PO #{po_id}: Entered state '#{state_id}'")

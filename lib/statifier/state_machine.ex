@@ -177,6 +177,8 @@ defmodule Statifier.StateMachine do
 
   - `:callback_module` - Module implementing StateMachineBehaviour callbacks
   - `:snapshot_interval` - Interval for snapshot callbacks (milliseconds)
+  - `:log_level` - Log level for state machine execution (`:trace`, `:debug`, `:info`, `:warning`, `:error`)
+  - `:log_adapter` - Log adapter to use (defaults to environment-specific adapter)
   - Standard GenServer options (`:name`, `:timeout`, etc.)
 
   ## Examples
@@ -246,8 +248,11 @@ defmodule Statifier.StateMachine do
     # Extract callback options
     callback_module = Keyword.get(opts, :callback_module)
     snapshot_interval = Keyword.get(opts, :snapshot_interval)
+    
+    # Extract interpreter options (log_level, log_adapter, etc.)
+    interpreter_opts = Keyword.take(opts, [:log_level, :log_adapter])
 
-    case initialize_state_chart(actual_init_arg) do
+    case initialize_state_chart(actual_init_arg, interpreter_opts) do
       {:ok, state_chart} ->
         # Initialize state
         state = %__MODULE__{
@@ -322,24 +327,24 @@ defmodule Statifier.StateMachine do
   ## Private Implementation
 
   # Initialize StateChart from various input types
-  @spec initialize_state_chart(init_arg()) :: {:ok, StateChart.t()} | {:error, term()}
-  defp initialize_state_chart(%StateChart{} = state_chart), do: {:ok, state_chart}
+  @spec initialize_state_chart(init_arg(), keyword()) :: {:ok, StateChart.t()} | {:error, term()}
+  defp initialize_state_chart(%StateChart{} = state_chart, _opts), do: {:ok, state_chart}
 
-  defp initialize_state_chart(source) when is_binary(source) do
+  defp initialize_state_chart(source, opts) when is_binary(source) do
     cond do
       String.ends_with?(source, ".xml") ->
         # SCXML file path
         if File.exists?(source) do
           source
           |> File.read!()
-          |> parse_and_initialize()
+          |> parse_and_initialize(opts)
         else
           {:error, {:file_not_found, source}}
         end
 
       String.contains?(source, "<scxml") ->
         # SCXML string content
-        parse_and_initialize(source)
+        parse_and_initialize(source, opts)
 
       true ->
         {:error, {:invalid_source, "Source must be .xml file path or SCXML string content"}}
@@ -347,11 +352,11 @@ defmodule Statifier.StateMachine do
   end
 
   # Parse SCXML and initialize StateChart
-  @spec parse_and_initialize(String.t()) :: {:ok, StateChart.t()} | {:error, term()}
-  defp parse_and_initialize(xml_content) do
+  @spec parse_and_initialize(String.t(), keyword()) :: {:ok, StateChart.t()} | {:error, term()}
+  defp parse_and_initialize(xml_content, opts) do
     case Statifier.parse(xml_content) do
       {:ok, document, _warnings} ->
-        Interpreter.initialize(document)
+        Interpreter.initialize(document, opts)
 
       {:error, reason} ->
         {:error, reason}

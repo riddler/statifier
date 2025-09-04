@@ -43,7 +43,7 @@ defmodule Demo do
     IO.puts "📋 Scenario 1: Small Purchase Order ($2,500)"
     IO.puts "================================================"
     
-    {:ok, pid} = PurchaseOrderMachine.start_link()
+    {:ok, pid} = PurchaseOrderMachine.start_link(log_level: :trace)
     
     IO.puts "Initial state: #{format_states(PurchaseOrderMachine.current_states(pid))}"
     
@@ -74,7 +74,7 @@ defmodule Demo do
     IO.puts "📋 Scenario 2: Large Purchase Order ($15,000)"
     IO.puts "==============================================="
     
-    {:ok, pid} = PurchaseOrderMachine.start_link()
+    {:ok, pid} = PurchaseOrderMachine.start_link(log_level: :trace)
     
     # Submit large PO
     IO.puts "1. Submitting large purchase order..."
@@ -103,7 +103,7 @@ defmodule Demo do
     IO.puts "📋 Scenario 3: Purchase Order Rejection"
     IO.puts "======================================="
     
-    {:ok, pid} = PurchaseOrderMachine.start_link()
+    {:ok, pid} = PurchaseOrderMachine.start_link(log_level: :trace)
     
     # Submit PO
     IO.puts "1. Submitting purchase order..."
