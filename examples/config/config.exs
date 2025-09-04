@@ -2,10 +2,7 @@ import Config
 
 # Logger configuration for examples
 config :logger,
-  level: :info,
-  compile_time_purge_matching: [
-    [level_lower_than: :info]
-  ]
+  level: :debug  # Allow debug/trace logs for detailed state machine debugging
 
 # Example-specific configuration
 config :statifier_examples,
