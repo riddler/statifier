@@ -21,7 +21,7 @@ defmodule Statifier.Logging.LogManager do
   - `:trace` - Very detailed information
   - `:debug` - Debugging information
   - `:info` - General information
-  - `:warn` - Warning messages
+  - `:warning` - Warning messages
   - `:error` - Error messages
 
   ## Examples
@@ -45,7 +45,7 @@ defmodule Statifier.Logging.LogManager do
   alias Statifier.{Configuration, StateChart}
   alias Statifier.Logging.{Adapter, ElixirLoggerAdapter, LogManager}
 
-  @levels [:trace, :debug, :info, :warn, :error]
+  @levels [:trace, :debug, :info, :warning, :error]
 
   @doc """
   Logs a message at the specified level with automatic metadata extraction.
@@ -271,7 +271,7 @@ defmodule Statifier.Logging.LogManager do
     * A tuple `{AdapterModule, opts}` (e.g., `{TestAdapter, [max_entries: 50]}`)
     * If not provided, uses environment-specific defaults
 
-  * `:log_level` - Minimum log level (`:trace`, `:debug`, `:info`, `:warn`, `:error`)
+  * `:log_level` - Minimum log level (`:trace`, `:debug`, `:info`, `:warning`, `:error`)
     * Defaults to `:debug` in test environment, `:info` otherwise
 
   ## Adapter Shortcuts

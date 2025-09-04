@@ -40,7 +40,7 @@ defprotocol Statifier.Logging.Adapter do
 
   - `adapter` - The adapter instance
   - `state_chart` - The current StateChart
-  - `level` - Log level (`:trace`, `:debug`, `:info`, `:warn`, `:error`)
+  - `level` - Log level (`:trace`, `:debug`, `:info`, `:warning`, `:error`)
   - `message` - The log message string
   - `metadata` - Map of additional metadata
 
