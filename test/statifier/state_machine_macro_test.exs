@@ -1,6 +1,8 @@
 defmodule Statifier.StateMachineMacroTest do
   use ExUnit.Case, async: true
 
+  alias Statifier.StateMachine
+
   # Test module using the macro
   defmodule TestMachine do
     use Statifier.StateMachine,
@@ -15,30 +17,40 @@ defmodule Statifier.StateMachineMacroTest do
       </scxml>
       """
 
+    @spec handle_state_enter(String.t(), Statifier.StateChart.t(), any()) :: :ok
     def handle_state_enter(state_id, _state_chart, _context) do
       if pid = Process.whereis(:test_process) do
         send(pid, {:entered, state_id})
       end
     end
 
+    @spec handle_state_exit(String.t(), Statifier.StateChart.t(), any()) :: :ok
     def handle_state_exit(state_id, _state_chart, _context) do
       if pid = Process.whereis(:test_process) do
         send(pid, {:exited, state_id})
       end
     end
 
+    @spec handle_transition(
+            list(String.t()),
+            list(String.t()),
+            Statifier.Event.t(),
+            Statifier.StateChart.t()
+          ) :: :ok
     def handle_transition(from_states, to_states, event, _state_chart) do
       if pid = Process.whereis(:test_process) do
         send(pid, {:transition, from_states, to_states, event.name})
       end
     end
 
+    @spec handle_send_action(String.t(), String.t(), any(), Statifier.StateChart.t()) :: :ok
     def handle_send_action(target, event_name, event_data, _state_chart) do
       if pid = Process.whereis(:test_process) do
         send(pid, {:send_action, target, event_name, event_data})
       end
     end
 
+    @spec handle_init(Statifier.StateChart.t(), any()) :: {:ok, Statifier.StateChart.t()}
     def handle_init(state_chart, context) do
       # Send to the test process, not self()
       if pid = Process.whereis(:test_process) do
@@ -48,6 +60,7 @@ defmodule Statifier.StateMachineMacroTest do
       {:ok, state_chart}
     end
 
+    @spec handle_snapshot(Statifier.StateChart.t(), any()) :: :ok
     def handle_snapshot(state_chart, _context) do
       send(self(), {:snapshot, map_size(state_chart.datamodel)})
     end
@@ -63,6 +76,7 @@ defmodule Statifier.StateMachineMacroTest do
       """,
       name: :named_test_machine
 
+    @spec handle_state_enter(String.t(), Statifier.StateChart.t(), any()) :: :ok
     def handle_state_enter(state_id, _state_chart, _context) do
       if pid = Process.whereis(:callback_test_process) do
         send(pid, {:named_entered, state_id})
@@ -80,6 +94,7 @@ defmodule Statifier.StateMachineMacroTest do
       """,
       snapshot_interval: 50
 
+    @spec handle_snapshot(Statifier.StateChart.t(), any()) :: :ok
     def handle_snapshot(_state_chart, _context) do
       if pid = Process.whereis(:snapshot_test_process) do
         send(pid, :snapshot_triggered)
@@ -152,7 +167,7 @@ defmodule Statifier.StateMachineMacroTest do
       {:ok, pid} = TestMachine.start_link()
 
       # Get initial state for reference
-      active_states = Statifier.StateMachine.active_states(pid)
+      active_states = StateMachine.active_states(pid)
       assert MapSet.member?(active_states, "idle")
 
       # Clear init messages
@@ -163,7 +178,7 @@ defmodule Statifier.StateMachineMacroTest do
 
       # Verify new state
       :timer.sleep(10)
-      new_active_states = Statifier.StateMachine.active_states(pid)
+      new_active_states = StateMachine.active_states(pid)
       assert MapSet.member?(new_active_states, "running")
 
       # Verify we got the callback messages
@@ -199,7 +214,7 @@ defmodule Statifier.StateMachineMacroTest do
       assert Process.whereis(:named_test_machine) == pid
 
       # Verify it's in the correct initial state (callbacks only fire on transitions, not initialization)
-      active_states = Statifier.StateMachine.active_states(pid)
+      active_states = StateMachine.active_states(pid)
       assert MapSet.member?(active_states, "start")
     end
   end
@@ -264,7 +279,7 @@ defmodule Statifier.StateMachineMacroTest do
       assert Process.alive?(pid)
 
       # Verify it works
-      active_states = Statifier.StateMachine.active_states(pid)
+      active_states = StateMachine.active_states(pid)
       assert MapSet.member?(active_states, "idle")
     end
   end

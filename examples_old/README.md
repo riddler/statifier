@@ -32,6 +32,7 @@ A complete purchase order approval workflow demonstrating:
 - **Comprehensive testing** with realistic scenarios
 
 **Key Features:**
+
 - Small orders (≤ $5,000) → Manager approval
 - Large orders (> $5,000) → Executive approval
 - Rejection handling with reasons
@@ -89,6 +90,7 @@ All tests are tagged with `:example` for easy filtering.
 ### Testing Philosophy
 
 Examples serve as:
+
 - **Integration tests** for Statifier features
 - **Documentation** through working code
 - **Templates** for users building similar applications

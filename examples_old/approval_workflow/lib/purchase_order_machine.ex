@@ -8,7 +8,7 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
   ## Workflow States
 
   - `draft` - Initial state, PO is being prepared
-  - `pending_approval` - Submitted and awaiting approval decision  
+  - `pending_approval` - Submitted and awaiting approval decision
   - `checking_amount` - Routing based on amount thresholds
   - `manager_approval` - Requires manager approval (≤ $5,000)
   - `executive_approval` - Requires executive approval (> $5,000)
@@ -19,17 +19,17 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
 
       # Start the workflow
       {:ok, pid} = PurchaseOrderMachine.start_link()
-      
+
       # Submit purchase order
       :ok = PurchaseOrderMachine.submit_po(pid, %{
         po_id: "PO-123",
         amount: 2500,
         requester: "john.doe@company.com"
       })
-      
+
       # Approve the PO
       :ok = PurchaseOrderMachine.approve(pid)
-      
+
       # Check current state
       states = PurchaseOrderMachine.current_states(pid)
 
@@ -159,7 +159,7 @@ defmodule Examples.ApprovalWorkflow.PurchaseOrderMachine do
     )
   end
 
-  # Simulate notifying manager for approval  
+  # Simulate notifying manager for approval
   defp notify_manager(state_chart) do
     po_data = state_chart.datamodel
 

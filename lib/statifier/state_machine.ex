@@ -117,7 +117,7 @@ defmodule Statifier.StateMachine do
           merged_opts = Keyword.merge(base_opts, additional_opts)
           final_opts = Keyword.put(merged_opts, :name, unquote(gen_server_name))
 
-          Statifier.StateMachine.start_link(unquote(scxml_source), final_opts)
+          __MODULE__.start_link(unquote(scxml_source), final_opts)
         end
       else
         def start_link(additional_opts \\ []) do
@@ -131,7 +131,7 @@ defmodule Statifier.StateMachine do
 
           merged_opts = Keyword.merge(base_opts, additional_opts)
 
-          Statifier.StateMachine.start_link(unquote(scxml_source), merged_opts)
+          __MODULE__.start_link(unquote(scxml_source), merged_opts)
         end
       end
 

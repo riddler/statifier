@@ -5,6 +5,7 @@ defmodule ApprovalWorkflow.MixProject do
     {:statifier, path: "../../../"}
   ]
 
+  @spec project() :: keyword()
   def project do
     [
       app: :approval_workflow,
@@ -20,6 +21,7 @@ defmodule ApprovalWorkflow.MixProject do
   end
 
   # Run "mix help compile.app" to learn about applications.
+  @spec application() :: keyword()
   def application do
     [
       extra_applications: [:logger]

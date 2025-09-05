@@ -125,6 +125,7 @@ mix examples.run approval_workflow
 ```
 
 The demo shows:
+
 1. **Small PO** ($2,500) → Manager approval → Approved
 2. **Large PO** ($15,000) → Executive approval → Approved  
 3. **Rejection** scenario with reason
@@ -155,6 +156,7 @@ mix test --trace
 ```
 
 **Test Coverage:**
+
 - Basic workflow transitions
 - Amount-based routing logic
 - Manager and executive approval paths

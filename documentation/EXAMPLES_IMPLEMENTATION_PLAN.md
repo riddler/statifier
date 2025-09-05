@@ -86,6 +86,7 @@ This document outlines the phased implementation plan for Statifier's examples d
 ### New Examples
 
 #### 1. Customer Onboarding Workflow
+
 - Multi-step registration process
 - Email verification states
 - Document upload requirements
@@ -93,12 +94,14 @@ This document outlines the phased implementation plan for Statifier's examples d
 - **Demonstrates**: Sequential processes, timeouts
 
 #### 2. Order Fulfillment Process
+
 - Order placement → Payment → Inventory check
 - Parallel shipping and invoicing
 - Exception handling (out of stock, payment failed)
 - **Demonstrates**: Parallel states, error recovery
 
 #### 3. Support Ticket Routing
+
 - Priority-based routing
 - Escalation after timeout
 - Assignment to agents
@@ -123,24 +126,28 @@ This document outlines the phased implementation plan for Statifier's examples d
 ### Features
 
 #### 1. Persistence Layer
+
 - Save/restore workflow state
 - Database integration example (Ecto)
 - Workflow history tracking
 - Audit trails
 
 #### 2. External Integrations
+
 - Webhook notifications
 - Email sending (with Bamboo/Swoosh)
 - API callbacks
 - Message queue integration
 
 #### 3. Supervisor Trees
+
 - DynamicSupervisor for workflow instances
 - Fault tolerance examples
 - Restart strategies
 - Registry for named workflows
 
 #### 4. Performance & Monitoring
+
 - Telemetry integration
 - Metrics collection
 - Performance benchmarks
@@ -164,21 +171,25 @@ This document outlines the phased implementation plan for Statifier's examples d
 ### Advanced Examples
 
 #### 1. Saga Pattern Implementation
+
 - Distributed transactions
 - Compensation logic
 - Failure recovery
 
 #### 2. BPMN-style Workflows
+
 - Gateways (XOR, AND, OR)
 - Subprocess calls
 - Message events
 
 #### 3. Human Task Management
+
 - Task assignment
 - Delegation patterns
 - Deadline management
 
 #### 4. Workflow Versioning
+
 - Migration strategies
 - Running multiple versions
 - Backward compatibility

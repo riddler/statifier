@@ -1,5 +1,5 @@
 # Purchase Order Approval Workflow Demo
-# 
+#
 # This script demonstrates the purchase order approval workflow
 # using Statifier's GenServer-based state machine.
 
@@ -28,7 +28,7 @@ defmodule Demo do
 
     Process.sleep(1000)
 
-    # Scenario 2: Large purchase order (executive approval)  
+    # Scenario 2: Large purchase order (executive approval)
     large_po_demo()
 
     Process.sleep(1000)

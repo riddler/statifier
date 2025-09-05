@@ -1,6 +1,7 @@
 defmodule StatifierExamples.MixProject do
   use Mix.Project
 
+  @spec project() :: keyword()
   def project do
     [
       apps_path: "apps",
