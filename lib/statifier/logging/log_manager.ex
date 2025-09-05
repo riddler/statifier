@@ -21,7 +21,7 @@ defmodule Statifier.Logging.LogManager do
   - `:trace` - Very detailed information
   - `:debug` - Debugging information
   - `:info` - General information
-  - `:warning` - Warning messages
+  - `:warn` - Warning messages
   - `:error` - Error messages
 
   ## Examples
@@ -45,7 +45,7 @@ defmodule Statifier.Logging.LogManager do
   alias Statifier.{Configuration, StateChart}
   alias Statifier.Logging.{Adapter, ElixirLoggerAdapter, LogManager}
 
-  @levels [:trace, :debug, :info, :warning, :error]
+  @levels [:trace, :debug, :info, :warn, :error]
 
   @doc """
   Logs a message at the specified level with automatic metadata extraction.

@@ -224,7 +224,7 @@ This document outlines the phased implementation plan for Statifier's examples d
 
 ### Current Architecture
 
-```
+```text
 examples/
 ├── mix.exs                     # Root project config
 ├── lib/examples/cli.ex         # CLI interface
