@@ -25,11 +25,11 @@ defmodule Statifier.StateChart do
     logs: []
   ]
 
-  @type invoke_handler :: (String.t(), map(), t() -> 
-    {:ok, t()} | 
-    {:ok, term(), t()} | 
-    {:error, :communication, term()} | 
-    {:error, :execution, term()})
+  @type invoke_handler :: (String.t(), map(), t() ->
+                             {:ok, t()}
+                             | {:ok, term(), t()}
+                             | {:error, :communication, term()}
+                             | {:error, :execution, term()})
 
   @type t :: %__MODULE__{
           document: Document.t(),

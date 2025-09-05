@@ -21,8 +21,7 @@ defmodule Statifier.Actions.InvokeAction do
   - `"genserver"` - Communicates with GenServer processes (future)
   """
 
-  alias Statifier.{StateChart, Evaluator, Event}
-  alias Statifier.Actions.Param
+  alias Statifier.{Actions.Param, Evaluator, Event, StateChart}
   alias Statifier.Logging.LogManager
   require LogManager
 
@@ -93,16 +92,25 @@ defmodule Statifier.Actions.InvokeAction do
 
   @doc """
   Dispatches the service invocation using registered handlers.
-  
+
   This is the secure approach where only registered handlers can be invoked,
   preventing arbitrary function execution while maintaining SCXML compliance.
   """
   @spec dispatch_invoke(t(), map(), StateChart.t()) :: {:ok, StateChart.t()}
-  def dispatch_invoke(%__MODULE__{type: type, src: src, id: invoke_id} = invoke, params, state_chart) do
+  def dispatch_invoke(
+        %__MODULE__{type: type, src: src, id: invoke_id} = invoke,
+        params,
+        state_chart
+      ) do
     case Map.get(state_chart.invoke_handlers, type) do
       nil ->
         # No handler registered for this type
-        generate_error_event(:execution, "No handler registered for invoke type '#{type}'", invoke_id, state_chart)
+        generate_error_event(
+          :execution,
+          "No handler registered for invoke type '#{type}'",
+          invoke_id,
+          state_chart
+        )
 
       handler when is_function(handler, 3) ->
         # Call the registered handler
@@ -142,19 +150,29 @@ defmodule Statifier.Actions.InvokeAction do
 
         other ->
           # Unexpected return value
-          generate_error_event(:execution, "Handler returned unexpected value: #{inspect(other)}", invoke.id, state_chart)
+          generate_error_event(
+            :execution,
+            "Handler returned unexpected value: #{inspect(other)}",
+            invoke.id,
+            state_chart
+          )
       end
     rescue
       error ->
         # Handler threw an exception
-        generate_error_event(:execution, "Handler raised exception: #{inspect(error)}", invoke.id, state_chart)
+        generate_error_event(
+          :execution,
+          "Handler raised exception: #{inspect(error)}",
+          invoke.id,
+          state_chart
+        )
     end
   end
 
   # Generate a done.invoke.{id} event according to SCXML spec
   defp generate_done_event(data, invoke_id, state_chart) do
     event_name = if invoke_id, do: "done.invoke.#{invoke_id}", else: "done.invoke"
-    
+
     event = %Event{
       name: event_name,
       data: data,
@@ -174,10 +192,11 @@ defmodule Statifier.Actions.InvokeAction do
 
   # Generate error.communication or error.execution event according to SCXML spec
   defp generate_error_event(error_type, reason, invoke_id, state_chart) do
-    event_name = case error_type do
-      :communication -> "error.communication"
-      :execution -> "error.execution"
-    end
+    event_name =
+      case error_type do
+        :communication -> "error.communication"
+        :execution -> "error.execution"
+      end
 
     event_data = %{
       "reason" => to_string(reason),

@@ -11,6 +11,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
     Actions.ForeachAction,
     Actions.InvokeAction,
     Actions.LogAction,
+    Actions.Param,
     Actions.RaiseAction,
     Actions.SendAction,
     Actions.SendContent
@@ -399,7 +400,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
   @doc """
   Build an Statifier.Actions.Param from XML attributes and location info.
   """
-  @spec build_param(list(), map(), String.t(), map()) :: Actions.Param.t()
+  @spec build_param(list(), map(), String.t(), map()) :: Param.t()
   def build_param(attributes, location, xml_string, _element_counts) do
     attrs_map = attributes_to_map(attributes)
 

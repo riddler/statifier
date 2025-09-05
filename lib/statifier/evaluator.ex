@@ -208,21 +208,23 @@ defmodule Statifier.Evaluator do
 
   @doc """
   Evaluates a list of SCXML parameters and returns a map of name-value pairs.
-  
+
   Supports both strict mode (fail on first error) and lenient mode (skip failed params).
   This is the central parameter evaluation logic used by both SendAction and InvokeAction.
-  
+
   ## Options
-  
+
   - `:error_handling` - `:strict` (InvokeAction style - fail on first error) or `:lenient` (SendAction style - skip failed params)
   """
-  @spec evaluate_params([Statifier.Actions.Param.t()], Statifier.StateChart.t(), keyword()) :: {:ok, map()} | {:error, String.t()}
+  @spec evaluate_params([Statifier.Actions.Param.t()], Statifier.StateChart.t(), keyword()) ::
+          {:ok, map()} | {:error, String.t()}
   def evaluate_params(params, state_chart, opts \\ []) do
     error_handling = Keyword.get(opts, :error_handling, :lenient)
-    
+
     case error_handling do
       :strict ->
         evaluate_params_strict(params, state_chart)
+
       :lenient ->
         evaluate_params_lenient(params, state_chart)
     end
@@ -231,16 +233,20 @@ defmodule Statifier.Evaluator do
   @doc """
   Evaluates a single SCXML parameter and returns its name-value pair.
   """
-  @spec evaluate_param(Statifier.Actions.Param.t(), Statifier.StateChart.t()) :: {:ok, {String.t(), term()}} | {:error, String.t()}
-  def evaluate_param(%Statifier.Actions.Param{name: name} = param, state_chart) when not is_nil(name) do
+  @spec evaluate_param(Statifier.Actions.Param.t(), Statifier.StateChart.t()) ::
+          {:ok, {String.t(), term()}} | {:error, String.t()}
+  def evaluate_param(%Statifier.Actions.Param{name: name} = param, state_chart)
+      when not is_nil(name) do
     case validate_param_name(param) do
       :ok ->
         case get_param_value(param, state_chart) do
           {:ok, value} ->
             {:ok, {name, normalize_param_value(value)}}
+
           {:error, reason} ->
             {:error, "Failed to evaluate param '#{name}': #{inspect(reason)}"}
         end
+
       {:error, reason} ->
         {:error, "Invalid param name '#{name}': #{reason}"}
     end
@@ -259,6 +265,7 @@ defmodule Statifier.Evaluator do
         {:ok, {param_name, param_value}} ->
           updated_params = Map.put(acc_params, param_name, param_value)
           {:cont, {:ok, updated_params}}
+
         {:error, reason} ->
           {:halt, {:error, reason}}
       end
@@ -267,15 +274,18 @@ defmodule Statifier.Evaluator do
 
   # Lenient evaluation - skip errors and continue (SendAction style)
   defp evaluate_params_lenient(params, state_chart) do
-    param_map = Enum.reduce(params, %{}, fn param, acc ->
-      case evaluate_param(param, state_chart) do
-        {:ok, {param_name, param_value}} ->
-          Map.put(acc, param_name, param_value)
-        {:error, _reason} ->
-          # Skip failed params in lenient mode
-          acc
-      end
-    end)
+    param_map =
+      Enum.reduce(params, %{}, fn param, acc ->
+        case evaluate_param(param, state_chart) do
+          {:ok, {param_name, param_value}} ->
+            Map.put(acc, param_name, param_value)
+
+          {:error, _reason} ->
+            # Skip failed params in lenient mode
+            acc
+        end
+      end)
+
     {:ok, param_map}
   end
 

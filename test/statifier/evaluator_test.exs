@@ -499,21 +499,27 @@ defmodule Statifier.EvaluatorTest do
       params = [
         %Param{name: "valid_expr", expr: "'hello'"},
         %Param{name: "valid_location", location: "user_name"},
-        %Param{name: "invalid_expr", expr: "invalid.expression"},  # property access on undefined returns {:ok, :undefined}
-        %Param{name: "missing_var", expr: "missing"},  # undefined variable returns {:error, ...}
-        %Param{name: "missing_location", location: "nonexistent.path"},  # property access on undefined returns {:ok, :undefined}
-        %Param{name: "no_value_source"}  # neither expr nor location
+        # property access on undefined returns {:ok, :undefined}
+        %Param{name: "invalid_expr", expr: "invalid.expression"},
+        # undefined variable returns {:error, ...}
+        %Param{name: "missing_var", expr: "missing"},
+        # property access on undefined returns {:ok, :undefined}
+        %Param{name: "missing_location", location: "nonexistent.path"},
+        # neither expr nor location
+        %Param{name: "no_value_source"}
       ]
 
       state_chart = create_test_state_chart(%{"user_name" => "alice"})
 
       assert {:ok, result} = Evaluator.evaluate_params(params, state_chart)
-      
+
       # Lenient mode includes successful evaluations (including :undefined values) and skips errors
       assert result["valid_expr"] == "hello"
       assert result["valid_location"] == "alice"
-      assert result["invalid_expr"] == :undefined  # Property access on undefined -> {:ok, :undefined}
-      assert result["missing_location"] == :undefined  # Property access on undefined -> {:ok, :undefined}
+      # Property access on undefined -> {:ok, :undefined}
+      assert result["invalid_expr"] == :undefined
+      # Property access on undefined -> {:ok, :undefined}
+      assert result["missing_location"] == :undefined
       # "missing_var" should be skipped (evaluation error)
       refute Map.has_key?(result, "missing_var")
       # "no_value_source" should be skipped (validation error)
@@ -523,12 +529,15 @@ defmodule Statifier.EvaluatorTest do
     test "evaluate_params/3 with strict error handling" do
       params = [
         %Param{name: "valid", expr: "'test'"},
-        %Param{name: "invalid"}  # No expr or location - validation error
+        # No expr or location - validation error
+        %Param{name: "invalid"}
       ]
 
       state_chart = create_test_state_chart()
 
-      assert {:error, reason} = Evaluator.evaluate_params(params, state_chart, error_handling: :strict)
+      assert {:error, reason} =
+               Evaluator.evaluate_params(params, state_chart, error_handling: :strict)
+
       assert reason =~ "must specify either expr or location"
     end
 
@@ -540,7 +549,9 @@ defmodule Statifier.EvaluatorTest do
 
       state_chart = create_test_state_chart(%{"my_var" => "value2"})
 
-      assert {:ok, result} = Evaluator.evaluate_params(params, state_chart, error_handling: :strict)
+      assert {:ok, result} =
+               Evaluator.evaluate_params(params, state_chart, error_handling: :strict)
+
       assert result == %{"expr_param" => "value1", "location_param" => "value2"}
     end
 
@@ -548,7 +559,8 @@ defmodule Statifier.EvaluatorTest do
       param = %Param{name: "test_param", expr: "'computed_value'"}
       state_chart = create_test_state_chart()
 
-      assert {:ok, {"test_param", "computed_value"}} = Evaluator.evaluate_param(param, state_chart)
+      assert {:ok, {"test_param", "computed_value"}} =
+               Evaluator.evaluate_param(param, state_chart)
     end
 
     test "evaluate_param/2 with location parameter" do
@@ -560,9 +572,11 @@ defmodule Statifier.EvaluatorTest do
 
     test "evaluate_param/2 with complex nested location" do
       param = %Param{name: "nested_param", location: "user.profile.name"}
-      state_chart = create_test_state_chart(%{
-        "user" => %{"profile" => %{"name" => "John Doe"}}
-      })
+
+      state_chart =
+        create_test_state_chart(%{
+          "user" => %{"profile" => %{"name" => "John Doe"}}
+        })
 
       assert {:ok, {"nested_param", "John Doe"}} = Evaluator.evaluate_param(param, state_chart)
     end
@@ -574,16 +588,19 @@ defmodule Statifier.EvaluatorTest do
         %Param{name: "boolean_val", expr: "true"},
         %Param{name: "map_val", location: "user_data"},
         %Param{name: "list_val", location: "tags"},
-        %Param{name: "undefined_val", location: "missing.path"}  # property access on undefined -> :undefined
+        # property access on undefined -> :undefined
+        %Param{name: "undefined_val", location: "missing.path"}
       ]
 
-      state_chart = create_test_state_chart(%{
-        "user_data" => %{"id" => 123},
-        "tags" => ["urgent", "review"]
-      })
+      state_chart =
+        create_test_state_chart(%{
+          "user_data" => %{"id" => 123},
+          "tags" => ["urgent", "review"]
+        })
 
-      assert {:ok, result} = Evaluator.evaluate_params(params, state_chart, error_handling: :lenient)
-      
+      assert {:ok, result} =
+               Evaluator.evaluate_params(params, state_chart, error_handling: :lenient)
+
       assert result["string_val"] == "text"
       assert result["number_val"] == 42
       assert result["boolean_val"] == true
@@ -599,7 +616,8 @@ defmodule Statifier.EvaluatorTest do
         %Param{name: "", expr: "'value'"},
         %Param{name: "123invalid", expr: "'value'"},
         %Param{name: "invalid-name", expr: "'value'"},
-        %Param{name: 123, expr: "'value'"}  # non-string name
+        # non-string name
+        %Param{name: 123, expr: "'value'"}
       ]
 
       state_chart = create_test_state_chart()
@@ -640,8 +658,9 @@ defmodule Statifier.EvaluatorTest do
 
     test "parameter evaluation with event data context" do
       param = %Param{name: "event_param", expr: "_event.data.message"}
-      
+
       event = %Event{name: "test", data: %{"message" => "hello world"}}
+
       state_chart = %StateChart{
         configuration: Configuration.new([]),
         current_event: event,
@@ -667,7 +686,8 @@ defmodule Statifier.EvaluatorTest do
       refute Map.has_key?(result, "bad")
 
       # Strict mode fails fast
-      assert {:error, _reason} = Evaluator.evaluate_params(params_with_errors, state_chart, error_handling: :strict)
+      assert {:error, _reason} =
+               Evaluator.evaluate_params(params_with_errors, state_chart, error_handling: :strict)
     end
 
     test "parameter name validation follows identifier rules" do

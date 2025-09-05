@@ -203,11 +203,9 @@ defmodule Statifier.Actions.ActionExecutor do
       })
 
     # Use the InvokeAction's execute method which handles all the invoke logic
-    case InvokeAction.execute(invoke_action, state_chart) do
-      {:ok, updated_state_chart} -> updated_state_chart
-      # Continue execution on invoke failures
-      {:error, _reason} -> state_chart
-    end
+    # InvokeAction.execute always returns {:ok, state_chart} - errors become events
+    {:ok, updated_state_chart} = InvokeAction.execute(invoke_action, state_chart)
+    updated_state_chart
   end
 
   defp execute_single_action(unknown_action, state_id, phase, state_chart) do

@@ -2,7 +2,7 @@ defmodule Statifier.Actions.InvokeActionTest do
   use ExUnit.Case, async: true
 
   alias Statifier.Actions.{InvokeAction, Param}
-  alias Statifier.{StateChart, Configuration}
+  alias Statifier.{Configuration, StateChart}
 
   # Helper to create a test state chart
   defp create_test_state_chart(datamodel \\ %{}, invoke_handlers \\ %{}) do
@@ -61,7 +61,7 @@ defmodule Statifier.Actions.InvokeActionTest do
     test "successfully executes invoke with registered handler and returns data" do
       invoke_handlers = %{"user_service" => &test_handler/3}
       params = [%Param{name: "name", expr: "'Alice'"}]
-      
+
       invoke_action = %InvokeAction{
         type: "user_service",
         src: "create_user",
@@ -71,15 +71,15 @@ defmodule Statifier.Actions.InvokeActionTest do
 
       state_chart = create_test_state_chart(%{}, invoke_handlers)
       assert {:ok, result_state_chart} = InvokeAction.execute(invoke_action, state_chart)
-      
+
       # Should generate a done.invoke.user_creation event with return data
       assert length(result_state_chart.internal_queue) == 1
       [event] = result_state_chart.internal_queue
-      
+
       assert event.name == "done.invoke.user_creation"
       assert event.data == %{"user_id" => 123, "name" => "Alice"}
       assert event.origin == :internal
-      
+
       # Should log successful execution
       log_messages = Enum.map(result_state_chart.logs, & &1.message)
       assert Enum.any?(log_messages, &String.contains?(&1, "Generated done.invoke event"))
@@ -87,7 +87,7 @@ defmodule Statifier.Actions.InvokeActionTest do
 
     test "successfully executes invoke with no return data" do
       invoke_handlers = %{"test_service" => &test_handler/3}
-      
+
       invoke_action = %InvokeAction{
         type: "test_service",
         src: "simple_success",
@@ -97,11 +97,11 @@ defmodule Statifier.Actions.InvokeActionTest do
 
       state_chart = create_test_state_chart(%{}, invoke_handlers)
       assert {:ok, result_state_chart} = InvokeAction.execute(invoke_action, state_chart)
-      
+
       # Should generate a done.invoke.simple_test event with no data
       assert length(result_state_chart.internal_queue) == 1
       [event] = result_state_chart.internal_queue
-      
+
       assert event.name == "done.invoke.simple_test"
       assert event.data == nil
       assert event.origin == :internal
@@ -109,7 +109,7 @@ defmodule Statifier.Actions.InvokeActionTest do
 
     test "generates error.execution event for handler execution errors" do
       invoke_handlers = %{"test_service" => &test_handler/3}
-      
+
       invoke_action = %InvokeAction{
         type: "test_service",
         src: "fail_operation",
@@ -119,15 +119,20 @@ defmodule Statifier.Actions.InvokeActionTest do
 
       state_chart = create_test_state_chart(%{}, invoke_handlers)
       assert {:ok, result_state_chart} = InvokeAction.execute(invoke_action, state_chart)
-      
+
       # Should generate an error.execution event
       assert length(result_state_chart.internal_queue) == 1
       [event] = result_state_chart.internal_queue
-      
+
       assert event.name == "error.execution"
-      assert event.data == %{"reason" => "Operation failed as expected", "invoke_id" => "failing_test"}
+
+      assert event.data == %{
+               "reason" => "Operation failed as expected",
+               "invoke_id" => "failing_test"
+             }
+
       assert event.origin == :internal
-      
+
       # Should log the error
       log_messages = Enum.map(result_state_chart.logs, & &1.message)
       assert Enum.any?(log_messages, &String.contains?(&1, "Generated invoke error event"))
@@ -135,7 +140,7 @@ defmodule Statifier.Actions.InvokeActionTest do
 
     test "generates error.communication event for communication errors" do
       invoke_handlers = %{"network_service" => &test_handler/3}
-      
+
       invoke_action = %InvokeAction{
         type: "network_service",
         src: "communication_error",
@@ -145,11 +150,11 @@ defmodule Statifier.Actions.InvokeActionTest do
 
       state_chart = create_test_state_chart(%{}, invoke_handlers)
       assert {:ok, result_state_chart} = InvokeAction.execute(invoke_action, state_chart)
-      
+
       # Should generate an error.communication event
       assert length(result_state_chart.internal_queue) == 1
       [event] = result_state_chart.internal_queue
-      
+
       assert event.name == "error.communication"
       assert event.data == %{"reason" => "Network timeout", "invoke_id" => "network_test"}
       assert event.origin == :internal
@@ -163,13 +168,14 @@ defmodule Statifier.Actions.InvokeActionTest do
         params: []
       }
 
-      state_chart = create_test_state_chart(%{}, %{})  # No handlers registered
+      # No handlers registered
+      state_chart = create_test_state_chart(%{}, %{})
       assert {:ok, result_state_chart} = InvokeAction.execute(invoke_action, state_chart)
-      
+
       # Should generate an error.execution event
       assert length(result_state_chart.internal_queue) == 1
       [event] = result_state_chart.internal_queue
-      
+
       assert event.name == "error.execution"
       assert event.data["reason"] =~ "No handler registered for invoke type 'unknown_service'"
       assert event.data["invoke_id"] == "unknown_test"
@@ -178,7 +184,7 @@ defmodule Statifier.Actions.InvokeActionTest do
 
     test "generates error.execution event for unexpected handler return value" do
       invoke_handlers = %{"bad_service" => &test_handler/3}
-      
+
       invoke_action = %InvokeAction{
         type: "bad_service",
         src: "bad_return",
@@ -188,11 +194,11 @@ defmodule Statifier.Actions.InvokeActionTest do
 
       state_chart = create_test_state_chart(%{}, invoke_handlers)
       assert {:ok, result_state_chart} = InvokeAction.execute(invoke_action, state_chart)
-      
+
       # Should generate an error.execution event
       assert length(result_state_chart.internal_queue) == 1
       [event] = result_state_chart.internal_queue
-      
+
       assert event.name == "error.execution"
       assert event.data["reason"] =~ "Handler returned unexpected value"
       assert event.data["invoke_id"] == "bad_test"
@@ -201,7 +207,7 @@ defmodule Statifier.Actions.InvokeActionTest do
 
     test "generates error.execution event for handler exceptions" do
       invoke_handlers = %{"throwing_service" => &test_handler/3}
-      
+
       invoke_action = %InvokeAction{
         type: "throwing_service",
         src: "throw_error",
@@ -211,11 +217,11 @@ defmodule Statifier.Actions.InvokeActionTest do
 
       state_chart = create_test_state_chart(%{}, invoke_handlers)
       assert {:ok, result_state_chart} = InvokeAction.execute(invoke_action, state_chart)
-      
+
       # Should generate an error.execution event
       assert length(result_state_chart.internal_queue) == 1
       [event] = result_state_chart.internal_queue
-      
+
       assert event.name == "error.execution"
       assert event.data["reason"] =~ "Handler raised exception"
       assert event.data["invoke_id"] == "exception_test"
@@ -224,11 +230,12 @@ defmodule Statifier.Actions.InvokeActionTest do
 
     test "evaluates parameters before passing to handler" do
       invoke_handlers = %{"user_service" => &test_handler/3}
+
       params = [
         %Param{name: "name", expr: "user_name"},
         %Param{name: "age", location: "user.age"}
       ]
-      
+
       invoke_action = %InvokeAction{
         type: "user_service",
         src: "create_user",
@@ -240,21 +247,24 @@ defmodule Statifier.Actions.InvokeActionTest do
         "user_name" => "Bob",
         "user" => %{"age" => 25}
       }
+
       state_chart = create_test_state_chart(datamodel, invoke_handlers)
       assert {:ok, result_state_chart} = InvokeAction.execute(invoke_action, state_chart)
-      
+
       # Handler should receive the evaluated parameters
       [event] = result_state_chart.internal_queue
-      assert event.data == %{"user_id" => 123, "name" => "Bob"}  # name was evaluated from datamodel
+      # name was evaluated from datamodel
+      assert event.data == %{"user_id" => 123, "name" => "Bob"}
     end
 
     test "handles parameter evaluation errors in strict mode (InvokeAction default)" do
       invoke_handlers = %{"user_service" => &test_handler/3}
+
       params = [
         %Param{name: "valid_param", expr: "'valid'"},
         %Param{name: "invalid_param", expr: "undefined_variable"}
       ]
-      
+
       invoke_action = %InvokeAction{
         type: "user_service",
         src: "create_user",
@@ -263,7 +273,7 @@ defmodule Statifier.Actions.InvokeActionTest do
 
       state_chart = create_test_state_chart(%{}, invoke_handlers)
       assert {:ok, result_state_chart} = InvokeAction.execute(invoke_action, state_chart)
-      
+
       # Should fail parameter evaluation and generate error event
       [event] = result_state_chart.internal_queue
       assert event.name == "error.execution"
@@ -272,17 +282,18 @@ defmodule Statifier.Actions.InvokeActionTest do
 
     test "works without invoke_id (generates done.invoke without id)" do
       invoke_handlers = %{"test_service" => &test_handler/3}
-      
+
       invoke_action = %InvokeAction{
         type: "test_service",
         src: "simple_success",
-        id: nil,  # No ID
+        # No ID
+        id: nil,
         params: []
       }
 
       state_chart = create_test_state_chart(%{}, invoke_handlers)
       assert {:ok, result_state_chart} = InvokeAction.execute(invoke_action, state_chart)
-      
+
       # Should generate done.invoke event (without ID suffix)
       [event] = result_state_chart.internal_queue
       assert event.name == "done.invoke"
@@ -313,19 +324,19 @@ defmodule Statifier.Actions.InvokeActionTest do
       state_chart = create_test_state_chart(%{"stored_value" => "from_datamodel"})
 
       assert {:ok, param_map, _state_chart} = InvokeAction.evaluate_params(params, state_chart)
-      
+
       assert param_map == %{
-        "string_param" => "hello",
-        "number_param" => 42,
-        "location_param" => "from_datamodel"
-      }
+               "string_param" => "hello",
+               "number_param" => 42,
+               "location_param" => "from_datamodel"
+             }
     end
   end
 
   describe "InvokeAction.new/1" do
     test "creates invoke action with default values" do
       invoke_action = InvokeAction.new()
-      
+
       assert invoke_action.type == nil
       assert invoke_action.src == nil
       assert invoke_action.id == nil
@@ -342,7 +353,7 @@ defmodule Statifier.Actions.InvokeActionTest do
       ]
 
       invoke_action = InvokeAction.new(attrs)
-      
+
       assert invoke_action.type == "user_service"
       assert invoke_action.src == "create_user"
       assert invoke_action.id == "service1"

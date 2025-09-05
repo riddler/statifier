@@ -12,9 +12,9 @@ defmodule Statifier.Actions.Param do
   Parameters are passed to the external service being invoked.
 
   Must specify either `expr` or `location`, but not both.
-  
+
   ## Evaluation
-  
+
   Parameter evaluation logic is handled by `Statifier.Evaluator.evaluate_params/3`.
   """
 

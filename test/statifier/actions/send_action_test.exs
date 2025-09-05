@@ -1,7 +1,7 @@
 defmodule Statifier.Actions.SendActionTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.Actions.{SendAction, SendContent, Param}
+  alias Statifier.Actions.{Param, SendAction, SendContent}
   alias Statifier.StateChart
 
   # Helper to create a test state chart with datamodel

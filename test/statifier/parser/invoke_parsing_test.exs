@@ -1,7 +1,7 @@
 defmodule Statifier.Parser.InvokeParsingTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.{Document}
+  alias Statifier.Document
   alias Statifier.Actions.{InvokeAction, Param}
   alias Statifier.Parser.SCXML
 

@@ -319,8 +319,11 @@ defmodule Statifier.Parser.SCXML.Handler do
       )
 
     # Tag the param based on parent context for proper handling by StateStack
+    # Cast to ensure dialyzer understands the type
+    stack_container = %{stack: state.stack}
+
     param_type =
-      case StateStack.peek_element_type(state) do
+      case StateStack.peek_element_type(stack_container) do
         "invoke" -> "invoke_param"
         "send" -> "send_param"
         _other -> "param"

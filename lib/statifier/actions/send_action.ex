@@ -264,7 +264,6 @@ defmodule Statifier.Actions.SendAction do
     end
   end
 
-
   defp build_namelist_data(nil, _state_chart), do: %{}
 
   defp build_namelist_data(namelist, state_chart) do
