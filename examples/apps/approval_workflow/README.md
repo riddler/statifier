@@ -195,7 +195,7 @@ test "validates _event.data assignment across all transitions"
 
 ### Project Structure
 
-```
+```text
 examples/apps/approval_workflow/
 ├── lib/
 │   └── approval_workflow/
@@ -295,35 +295,46 @@ end
 ## Key Features Demonstrated
 
 ### 1. **GenServer-based Workflows**
+
 Long-running, supervised processes that maintain state across multiple operations, perfect for business processes that span extended time periods.
 
 ### 2. **Business Logic Integration**  
+
 Callback functions that execute real-world business logic during state transitions:
+
 - Email notifications to approvers
 - Audit logging for compliance
 - External system integration points
 
 ### 3. **Data Model Management**
+
 SCXML assignments seamlessly integrate with Elixir data structures:
+
 - Purchase order data storage with `_event.data` support
 - Dynamic data updates during transitions
 - Nested property access for complex data structures
 
 ### 4. **Conditional Routing**
+
 Amount-based approval paths using SCXML conditional expressions:
+
 - `_event.data.amount <= 5000` routes to manager approval
 - `_event.data.amount > 5000` routes to executive approval
 - Boundary value testing ensures exact routing logic
 
 ### 5. **Comprehensive Logging**
+
 Detailed state machine execution tracking:
+
 - State entry/exit logging with metadata
 - Transition logging with source/target/event information  
 - Business logic execution logs
 - Configurable log levels for development vs production
 
 ### 6. **Production Patterns**
+
 Error handling, testing, and documentation suitable for production use:
+
 - Comprehensive test coverage (>95%)
 - Clean API design with proper error handling
 - Supervision and fault tolerance via OTP GenServer
@@ -334,12 +345,14 @@ Error handling, testing, and documentation suitable for production use:
 This new umbrella app implementation provides several improvements over the `examples_old` version:
 
 ### Enhanced Features
+
 - **Umbrella app architecture** for better project organization
 - **Comprehensive test suite** with boundary value testing
 - **Enhanced documentation** with API references and examples
 - **Production-ready patterns** with proper project structure
 
 ### Technical Improvements
+
 - **_event.data assignment support** - Full SCXML data model integration
 - **Conditional routing validation** - Boundary value testing at exact $5,000 threshold
 - **Enhanced logging** - Structured logging with metadata
@@ -347,6 +360,7 @@ This new umbrella app implementation provides several improvements over the `exa
 - **Type specifications** - Complete @spec coverage for all public functions
 
 ### Development Experience
+
 - **Better tooling** - Mix project with proper dependencies
 - **Interactive exploration** - IEx sessions for manual testing and experimentation  
 - **Comprehensive testing** - Full test coverage with realistic scenarios
