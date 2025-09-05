@@ -89,8 +89,8 @@ defmodule Statifier.FeatureDetector do
       # Wildcard and pattern events (supported)
       wildcard_events: :supported,
 
-      # Invocation and external processes (unsupported)
-      invoke_elements: :unsupported,
+      # Invocation and external processes (supported - parsing and elixir execution implemented)
+      invoke_elements: :supported,
       finalize_elements: :unsupported,
       cancel_elements: :unsupported,
 

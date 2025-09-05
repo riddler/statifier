@@ -9,11 +9,11 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
   alias Statifier.{
     Actions.AssignAction,
     Actions.ForeachAction,
+    Actions.InvokeAction,
     Actions.LogAction,
     Actions.RaiseAction,
     Actions.SendAction,
-    Actions.SendContent,
-    Actions.SendParam
+    Actions.SendContent
   }
 
   alias Statifier.Parser.SCXML.LocationTracker
@@ -397,10 +397,10 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
   end
 
   @doc """
-  Build an Statifier.SendParam from XML attributes and location info.
+  Build an Statifier.Actions.Param from XML attributes and location info.
   """
-  @spec build_send_param(list(), map(), String.t(), map()) :: SendParam.t()
-  def build_send_param(attributes, location, xml_string, _element_counts) do
+  @spec build_param(list(), map(), String.t(), map()) :: Actions.Param.t()
+  def build_param(attributes, location, xml_string, _element_counts) do
     attrs_map = attributes_to_map(attributes)
 
     # Calculate attribute-specific locations
@@ -408,7 +408,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
     expr_location = LocationTracker.attribute_location(xml_string, "expr", location)
     location_attr_location = LocationTracker.attribute_location(xml_string, "location", location)
 
-    %SendParam{
+    %Statifier.Actions.Param{
       name: get_attr_value(attrs_map, "name"),
       expr: get_attr_value(attrs_map, "expr"),
       location: get_attr_value(attrs_map, "location"),
@@ -470,6 +470,32 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
       [],
       detailed_location
     )
+  end
+
+  @doc """
+  Build a Statifier.Actions.InvokeAction from XML attributes and location info.
+  """
+  @spec build_invoke(list(), map(), String.t(), map()) :: InvokeAction.t()
+  def build_invoke(attributes, location, xml_string, _element_counts) do
+    attrs_map = attributes_to_map(attributes)
+
+    # Calculate attribute-specific locations
+    type_location = LocationTracker.attribute_location(xml_string, "type", location)
+    src_location = LocationTracker.attribute_location(xml_string, "src", location)
+    id_location = LocationTracker.attribute_location(xml_string, "id", location)
+
+    %InvokeAction{
+      type: get_attr_value(attrs_map, "type"),
+      src: get_attr_value(attrs_map, "src"),
+      id: get_attr_value(attrs_map, "id"),
+      params: [],
+      source_location: %{
+        source: location,
+        type: type_location,
+        src: src_location,
+        id: id_location
+      }
+    }
   end
 
   # Private utility functions

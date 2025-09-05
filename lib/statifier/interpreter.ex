@@ -94,9 +94,14 @@ defmodule Statifier.Interpreter do
     # Initialize data model from datamodel_elements
     datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
 
+    # Extract invoke handlers from options
+    invoke_handlers = Keyword.get(opts, :invoke_handlers, %{})
+
     state_chart =
       state_chart
       |> StateChart.update_datamodel(datamodel)
+      # Configure invoke handlers
+      |> Map.put(:invoke_handlers, invoke_handlers)
       # Configure logging based on options or defaults
       |> LogManager.configure_from_options(opts)
       # Execute onentry actions for initial leaf states and queue any raised events

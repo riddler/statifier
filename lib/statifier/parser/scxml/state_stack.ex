@@ -719,7 +719,7 @@ defmodule Statifier.Parser.SCXML.StateStack do
   end
 
   @doc """
-  Handle the end of a param element (child of send).
+  Handle the end of a param element (child of send or invoke).
   """
   @spec handle_param_end(map()) :: {:ok, map()}
   def handle_param_end(
@@ -730,8 +730,16 @@ defmodule Statifier.Parser.SCXML.StateStack do
     {:ok, %{state | stack: [{"send", updated_send} | rest]}}
   end
 
+  def handle_param_end(
+        %{stack: [{_element_name, param} | [{"invoke", invoke_element} | rest]]} = state
+      ) do
+    # Add param to invoke element's params list
+    updated_invoke = %{invoke_element | params: invoke_element.params ++ [param]}
+    {:ok, %{state | stack: [{"invoke", updated_invoke} | rest]}}
+  end
+
   def handle_param_end(state) do
-    # Param not in a send context, just pop it
+    # Param not in a send or invoke context, just pop it
     {:ok, pop_element(state)}
   end
 
@@ -883,6 +891,77 @@ defmodule Statifier.Parser.SCXML.StateStack do
   end
 
   def handle_characters(_character_data, _state), do: :not_handled
+
+  @doc """
+  Handle the end of an invoke element by adding it to its parent context.
+  """
+  @spec handle_invoke_end(map()) :: {:ok, map()}
+  def handle_invoke_end(
+        %{stack: [{_element_name, invoke_element} | [{"onentry", actions} | rest]]} = state
+      )
+      when is_list(actions) do
+    updated_actions = actions ++ [invoke_element]
+    {:ok, %{state | stack: [{"onentry", updated_actions} | rest]}}
+  end
+
+  def handle_invoke_end(
+        %{stack: [{_element_name, invoke_element} | [{"onentry", :onentry_block} | rest]]} = state
+      ) do
+    # First action in this onentry block
+    {:ok, %{state | stack: [{"onentry", [invoke_element]} | rest]}}
+  end
+
+  def handle_invoke_end(
+        %{stack: [{_element_name, invoke_element} | [{"onexit", actions} | rest]]} = state
+      )
+      when is_list(actions) do
+    updated_actions = actions ++ [invoke_element]
+    {:ok, %{state | stack: [{"onexit", updated_actions} | rest]}}
+  end
+
+  def handle_invoke_end(
+        %{stack: [{_element_name, invoke_element} | [{"onexit", :onexit_block} | rest]]} = state
+      ) do
+    # First action in this onexit block
+    {:ok, %{state | stack: [{"onexit", [invoke_element]} | rest]}}
+  end
+
+  def handle_invoke_end(
+        %{stack: [{_element_name, invoke_element} | [{"if", if_container} | rest]]} = state
+      ) do
+    # Add invoke to current conditional block within if container
+    updated_container = add_action_to_current_block(if_container, invoke_element)
+    {:ok, %{state | stack: [{"if", updated_container} | rest]}}
+  end
+
+  def handle_invoke_end(
+        %{stack: [{_element_name, invoke_element} | [{"foreach", foreach_action} | rest]]} = state
+      ) do
+    # Add invoke to foreach's actions list
+    updated_foreach = %{foreach_action | actions: foreach_action.actions ++ [invoke_element]}
+    {:ok, %{state | stack: [{"foreach", updated_foreach} | rest]}}
+  end
+
+  def handle_invoke_end(
+        %{stack: [{_element_name, invoke_element} | [{"transition", transition} | rest]]} = state
+      ) do
+    # Add invoke to transition's actions list
+    updated_transition = %{transition | actions: transition.actions ++ [invoke_element]}
+    {:ok, %{state | stack: [{"transition", updated_transition} | rest]}}
+  end
+
+  def handle_invoke_end(state) do
+    # Invoke element not in a valid context, just pop it
+    {:ok, pop_element(state)}
+  end
+
+  @doc """
+  Peek at the type of the top element on the stack without modifying the stack.
+  Returns nil if stack is empty.
+  """
+  @spec peek_element_type(map()) :: String.t() | nil
+  def peek_element_type(%{stack: []}), do: nil
+  def peek_element_type(%{stack: [{element_type, _element} | _rest]}), do: element_type
 
   # Helper to replace the top element on the stack
   defp replace_top_element([_head | tail], new_head), do: [new_head | tail]
