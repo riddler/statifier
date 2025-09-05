@@ -146,20 +146,19 @@ Also use this initial Elixir implementation as reference: <https://github.com/ca
 
 ### Expression Evaluation and Data Model
 
-- **`Statifier.ValueEvaluator`** - Comprehensive value evaluation system for SCXML expressions
+- **`Statifier.Evaluator`** - Unified expression evaluation system for SCXML
   - **Expression compilation**: `compile_expression/1` for reusable predicator compilation
   - **Value evaluation**: `evaluate_value/2` extracts actual values (not just boolean results)
+  - **Condition evaluation**: `evaluate_condition/2` for boolean transition guards
   - **Location path resolution**: `resolve_location/1,2` validates assignment paths using predicator v3.0's `context_location`
   - **Safe assignment operations**: `assign_value/3` performs type-safe nested data model updates
   - **Integrated assignment**: `evaluate_and_assign/3` combines evaluation and assignment
+  - **Parameter processing**: Centralized `evaluate_params/3` with strict/lenient error handling modes
   - **SCXML context support**: Full integration with state machine context (events, configuration, datamodel)
   - **Nested property access**: Support for deep property access (`user.profile.settings.theme`)
   - **Mixed access patterns**: Combined bracket/dot notation (`users['john'].active`)
   - **Error handling**: Comprehensive error handling with detailed logging
-- **`Statifier.ConditionEvaluator`** - Enhanced with predicator v3.0 integration
-  - **Predicator v3.0**: Upgraded from v2.0 with enhanced nested property access capabilities
-  - **SCXML functions**: Maintains `In()` function and SCXML-specific context building
-  - **Type-safe operations**: Improved type coercion and graceful fallback for missing properties
+  - **Predicator v3.0**: Enhanced nested property access capabilities with SCXML `In()` function support
 
 ### Logging Infrastructure
 
@@ -176,17 +175,31 @@ Also use this initial Elixir implementation as reference: <https://github.com/ca
 ### Actions and Executable Content
 
 - **`Statifier.Actions.AssignAction`** - SCXML `<assign>` element implementation
-  - **Location-based assignment**: Validates assignment paths using Statifier.ValueEvaluator
-  - **Expression evaluation**: Uses Statifier.ValueEvaluator for complex expression processing
+  - **Location-based assignment**: Validates assignment paths using Statifier.Evaluator
+  - **Expression evaluation**: Uses Statifier.Evaluator for complex expression processing
   - **Nested property assignment**: Supports deep assignment (`user.profile.name = "John"`)
   - **Mixed notation support**: Handles both dot and bracket notation in assignments
   - **Context integration**: Access to current event data and state configuration
   - **Error recovery**: Graceful error handling with logging, continues execution on failures
+- **`Statifier.Actions.InvokeAction`** - SCXML `<invoke>` element implementation for external service integration
+  - **Handler-based security**: Only registered handlers can be invoked, preventing arbitrary code execution
+  - **SCXML event generation**: Generates `done.invoke.{id}`, `error.execution`, and `error.communication` events per specification
+  - **Parameter processing**: Uses centralized Evaluator for parameter evaluation with strict error handling
+  - **Service integration**: Safe way to integrate SCXML with external services, APIs, and business logic
+  - **Exception safety**: Comprehensive error handling with try/rescue blocks for handler execution
+- **`Statifier.Actions.Param`** - Unified parameter data structure for `<send>` and `<invoke>` elements
+  - **Expression parameters**: Support for `expr` attribute with dynamic evaluation
+  - **Location parameters**: Support for `location` attribute for datamodel variable references
+  - **Parameter validation**: Name validation with identifier rules per SCXML specification
+- **`Statifier.InvokeHandler`** - Behavior defining secure invoke handler interface
+  - **Handler contract**: Standardized function signature for invoke handlers
+  - **Return value specification**: Supports success with/without data and communication/execution errors
+  - **Security isolation**: Handlers operate in controlled environment with limited access
 - **`Statifier.Actions.LogAction`** - SCXML `<log>` element implementation for debugging
 - **`Statifier.Actions.RaiseAction`** - SCXML `<raise>` element implementation for internal events
 - **`Statifier.Actions.ActionExecutor`** - Centralized action execution system
   - **Phase tracking**: Executes actions during appropriate state entry/exit phases
-  - **Mixed action support**: Handles log, raise, assign, and future action types
+  - **Mixed action support**: Handles log, raise, assign, invoke, and other action types
   - **StateChart integration**: Actions can modify state chart data model and event queues
 
 ### Architecture Flow
@@ -276,20 +289,30 @@ This project includes comprehensive test coverage:
 - Tests both single-line and multiline XML element definitions
 - Ensures proper location tracking for nested elements and datamodel elements
 
-### Expression Evaluation Tests
+### Expression and Action Tests
 
-- **`test/statifier/value_evaluator_test.exs`** - Comprehensive tests for Statifier.ValueEvaluator module
-  - Value evaluation, location resolution, assignment operations
+- **`test/statifier/evaluator_test.exs`** - Comprehensive tests for unified Statifier.Evaluator module
+  - Value evaluation, condition evaluation, location resolution, assignment operations
+  - Parameter processing with strict/lenient error handling modes
   - Nested property access and mixed notation support
   - SCXML context integration and error handling
 - **`test/statifier/actions/assign_action_test.exs`** - Complete assign action functionality
   - Action creation, execution, and error handling
   - Data model integration and context evaluation
   - Mixed action execution and state chart modification
+- **`test/statifier/actions/invoke_action_test.exs`** - Complete invoke action functionality with 100% coverage
+  - Secure handler-based invoke execution
+  - SCXML event generation (done.invoke, error.execution, error.communication)
+  - Parameter evaluation and passing to handlers
+  - Handler exception safety and comprehensive error scenarios
 - **`test/statifier/parser/assign_parsing_test.exs`** - SCXML assign element parsing
   - Assign element parsing in onentry/onexit contexts
   - Mixed action parsing (log, raise, assign together)
   - Complex expression and location parsing
+- **`test/statifier/parser/invoke_parsing_test.exs`** - SCXML invoke element parsing
+  - Invoke element parsing with type, src, id attributes
+  - Parameter child element parsing with expr and location support
+  - Mixed action parsing in onentry/onexit contexts
 
 ## Code Style
 
@@ -316,6 +339,72 @@ xml = """
 ```
 
 XML content within triple quotes uses 4-space base indentation.
+
+## Secure Invoke System Usage
+
+The invoke system provides safe integration between SCXML state machines and external services:
+
+### Handler Implementation
+
+```elixir
+defmodule MyApp.UserService do
+  def handle_invoke("create_user", params, state_chart) do
+    case create_user(params["name"], params["email"]) do
+      {:ok, user} -> 
+        {:ok, %{"user_id" => user.id}, state_chart}
+      {:error, reason} -> 
+        {:error, :execution, "User creation failed: #{reason}"}
+    end
+  end
+  
+  def handle_invoke("get_profile", params, state_chart) do
+    {:ok, state_chart}  # Success with no return data
+  end
+  
+  def handle_invoke(operation, _params, _state_chart) do
+    {:error, :execution, "Unknown operation: #{operation}"}
+  end
+end
+```
+
+### Handler Registration
+
+```elixir
+# Register handlers during StateChart initialization
+invoke_handlers = %{
+  "user_service" => &MyApp.UserService.handle_invoke/3,
+  "email_service" => &MyApp.EmailService.handle_invoke/3
+}
+
+{:ok, state_chart} = Interpreter.initialize(document, [
+  invoke_handlers: invoke_handlers,
+  log_level: :debug
+])
+```
+
+### SCXML Document Usage
+
+```xml
+<state id="creating_user">
+  <onentry>
+    <invoke type="user_service" src="create_user" id="user_creation">
+      <param name="name" expr="user_name"/>
+      <param name="email" location="user.email"/>
+    </invoke>
+  </onentry>
+  
+  <transition event="done.invoke.user_creation" target="success"/>
+  <transition event="error.execution" target="failed"/>
+  <transition event="error.communication" target="retry"/>
+</state>
+```
+
+### Security Benefits
+
+- **No arbitrary code execution** - Only registered handlers can be invoked
+- **Controlled environment** - Handlers operate with limited access to state chart
+- **Exception safety** - Handler exceptions are caught and converted to error events
+- **Parameter validation** - All parameters are validated and evaluated safely
 
 ## SCION Test Results
 
@@ -381,7 +470,7 @@ XML content within triple quotes uses 4-space base indentation.
 - **Exit Set Computation** - W3C SCXML exit set calculation algorithm for proper state exit semantics
 - **LCCA Algorithm** - Full Least Common Compound Ancestor computation for accurate transition conflict resolution
 - **O(1 performance optimizations** via state and transition lookup maps
-- Comprehensive test suite integration (SCION + W3C) - 707 internal tests, 118 regression tests, 91.8% coverage
+- Comprehensive test suite integration (SCION + W3C) - 1030 internal tests, 118 regression tests, 90.9% coverage
 - Test infrastructure with Statifier.Case module using interpreter
 - **Pattern matching in tests** instead of multiple individual assertions
 - XML parsing with namespace support and precise source location tracking
@@ -433,8 +522,9 @@ XML content within triple quotes uses 4-space base indentation.
 - **`<log expr="message"/>` elements** - Debug logging support ✅ COMPLETE
 - **`<assign>` elements** - Variable assignment with nested property access ✅ COMPLETE
 - **`<if>/<elseif>/<else>` blocks** - Conditional execution blocks ✅ COMPLETE
+- **`<invoke>` elements** - Secure external service integration with handler-based system ✅ COMPLETE
 
-**Current Test Coverage**: 707 internal tests, 118 regression tests
+**Current Test Coverage**: 1030 internal tests, 118 regression tests
 
 ### Remaining Implementation Phases
 
