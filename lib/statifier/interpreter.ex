@@ -132,6 +132,9 @@ defmodule Statifier.Interpreter do
   """
   @spec send_event(StateChart.t(), Event.t()) :: {:ok, StateChart.t()}
   def send_event(%StateChart{} = state_chart, %Event{} = event) do
+    # Set current event for expression evaluation during transition execution
+    state_chart = StateChart.set_current_event(state_chart, event)
+
     # Find optimal transition set enabled by this event
     {state_chart, enabled_transitions} =
       TransitionResolver.find_enabled_transitions(state_chart, event)
@@ -139,7 +142,12 @@ defmodule Statifier.Interpreter do
     case enabled_transitions do
       [] ->
         # No enabled transitions - execute any eventless transitions and return
-        state_chart = execute_microsteps(state_chart)
+        state_chart =
+          state_chart
+          |> execute_microsteps()
+          # Clear current event after processing
+          |> StateChart.set_current_event(nil)
+
         {:ok, state_chart}
 
       transitions ->
@@ -149,6 +157,8 @@ defmodule Statifier.Interpreter do
           |> execute_transitions(transitions)
           # Execute any eventless transitions (complete the macrostep)
           |> execute_microsteps()
+          # Clear current event after processing
+          |> StateChart.set_current_event(nil)
 
         {:ok, state_chart}
     end

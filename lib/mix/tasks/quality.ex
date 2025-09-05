@@ -189,13 +189,13 @@ defmodule Mix.Tasks.Quality do
              "*.md",
              "-not",
              "-path",
-             "./deps/*",
+             "*deps/*",
              "-not",
              "-path",
-             "./_build/*",
+             "*_build/*",
              "-not",
              "-path",
-             "./node_modules/*"
+             "*node_modules/*"
            ],
            stderr_to_stdout: true
          ) do

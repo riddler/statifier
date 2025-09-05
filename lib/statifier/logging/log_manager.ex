@@ -271,7 +271,7 @@ defmodule Statifier.Logging.LogManager do
     * A tuple `{AdapterModule, opts}` (e.g., `{TestAdapter, [max_entries: 50]}`)
     * If not provided, uses environment-specific defaults
 
-  * `:log_level` - Minimum log level (`:trace`, `:debug`, `:info`, `:warn`, `:error`)
+  * `:log_level` - Minimum log level (`:trace`, `:debug`, `:info`, `:warning`, `:error`)
     * Defaults to `:debug` in test environment, `:info` otherwise
 
   ## Adapter Shortcuts

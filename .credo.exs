@@ -22,14 +22,10 @@
         # In the latter case `**/*.{ex,exs}` will be used.
         #
         included: [
+          "examples/",
           "lib/",
           "src/",
-          "test/",
-          "web/",
-          "apps/*/lib/",
-          "apps/*/src/",
-          "apps/*/test/",
-          "apps/*/web/"
+          "test/"
         ],
         excluded: [~r"/lib/mix/test", ~r"/lib/mix/quality", ~r"/_build/", ~r"/deps/", ~r"/node_modules/"]
       },
@@ -46,7 +42,7 @@
       # If you want to enforce a style guide and need a more traditional linting
       # experience, you can change `strict` to `true` below:
       #
-      strict: false,
+      strict: true,
       #
       # To modify the timeout for parsing files, change this value:
       #
