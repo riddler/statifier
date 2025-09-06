@@ -72,7 +72,7 @@ defmodule Statifier.Case do
   defp run_scxml_test(xml, _description, expected_initial_config, events) do
     # Parse and initialize the state chart
     {:ok, document, _warnings} = Statifier.parse(xml)
-    {:ok, state_chart} = Interpreter.initialize(document)
+    {:ok, state_chart} = Statifier.initialize(document)
 
     # Verify initial configuration
     assert_configuration(state_chart, expected_initial_config)
@@ -112,7 +112,7 @@ defmodule Statifier.Case do
 
   This helper creates a StateChart with the TestAdapter properly configured,
   which is needed for tests that directly test actions without going through
-  the full Interpreter.initialize process.
+  the full Statifier.initialize process.
   """
   @spec test_state_chart() :: StateChart.t()
   def test_state_chart do

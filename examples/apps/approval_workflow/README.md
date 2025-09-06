@@ -142,6 +142,7 @@ The workflow now uses SCXML `<invoke>` elements for automatic service integratio
 ### Query Operations
 
 ```elixir
+# skip-validation (don't check this code block in CI)
 # Get current active state(s)
 states = PurchaseOrderMachine.current_states(pid)
 
@@ -173,6 +174,7 @@ The comprehensive test suite includes:
 ### Key Test Scenarios
 
 ```elixir
+# skip-validation (don't check this code block in CI)
 # Small PO (≤ $5,000) → Manager approval
 test "manager approval path for small amounts"
 
@@ -240,6 +242,7 @@ The workflow is defined in `priv/scxml/purchase_order.xml` using:
 ### Key SCXML Features Demonstrated
 
 ```xml
+<!-- skip-validation --> 
 <!-- Conditional routing based on amount -->
 <transition target="manager_approval" cond="amount &lt;= 5000"/>
 <transition target="executive_approval" cond="amount &gt; 5000"/>
@@ -287,6 +290,8 @@ The `PurchaseOrderMachine` module:
 ### Invoke Handler System
 
 ```elixir
+# skip-validation (don't check this code block in CI)
+
 # Secure service integration via invoke handlers
 use Statifier.StateMachine,
   scxml: "purchase_order.xml",

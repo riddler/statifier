@@ -186,7 +186,7 @@ invoke_handlers = %{
   "user_service" => &MyApp.UserService.handle_invoke/3
 }
 
-{:ok, state_chart} = Interpreter.initialize(document, [
+{:ok, state_chart} = Statifier.initialize(document, [
   invoke_handlers: invoke_handlers
 ])
 ```
@@ -237,7 +237,7 @@ xml = """
 {:ok, document} = Statifier.parse(xml)
 
 # Initialize state chart
-{:ok, state_chart} = Statifier.Interpreter.initialize(document)
+{:ok, state_chart} = Statifier.initialize(document)
 
 # Check active states
 active_states = Statifier.Configuration.active_leaf_states(state_chart.configuration)
@@ -270,7 +270,7 @@ xml = """
 """
 
 {:ok, document} = Statifier.parse(xml)
-{:ok, state_chart} = Statifier.Interpreter.initialize(document)
+{:ok, state_chart} = Statifier.initialize(document)
 
 # Eventless transitions processed automatically during initialization
 active_states = Statifier.Configuration.active_leaf_states(state_chart.configuration)
@@ -303,7 +303,7 @@ xml = """
 """
 
 {:ok, document} = Statifier.parse(xml)
-{:ok, state_chart} = Statifier.Interpreter.initialize(document)
+{:ok, state_chart} = Statifier.initialize(document)
 
 # Both parallel regions active simultaneously
 active_states = Statifier.Configuration.active_leaf_states(state_chart.configuration)
@@ -344,7 +344,7 @@ xml = """
 """
 
 {:ok, document} = Statifier.parse(xml)
-{:ok, state_chart} = Statifier.Interpreter.initialize(document)
+{:ok, state_chart} = Statifier.initialize(document)
 
 # Progress through states
 {:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, Statifier.Event.new("go"))
@@ -385,7 +385,7 @@ xml = """
 """
 
 {:ok, document} = Statifier.parse(xml)
-{:ok, state_chart} = Statifier.Interpreter.initialize(document)
+{:ok, state_chart} = Statifier.initialize(document)
 
 # Send activate event - enters multiple targets
 {:ok, state_chart} = Statifier.Interpreter.send_event(state_chart, Statifier.Event.new("activate"))
@@ -444,7 +444,7 @@ xml = """
 """
 
 {:ok, document} = Statifier.parse(xml)
-{:ok, state_chart} = Statifier.Interpreter.initialize(document)
+{:ok, state_chart} = Statifier.initialize(document)
 
 # Check the data model after onentry execution
 datamodel = state_chart.datamodel
@@ -464,7 +464,7 @@ Statifier includes a comprehensive logging system designed for both production u
 ```elixir
 # Production logging with Elixir Logger integration
 {:ok, document} = Statifier.parse(xml)
-{:ok, state_chart} = Statifier.Interpreter.initialize(document, [
+{:ok, state_chart} = Statifier.initialize(document, [
   log_adapter: {Statifier.Logging.ElixirLoggerAdapter, []},
   log_level: :info
 ])
@@ -614,7 +614,7 @@ mix test test/statifier/history/
 {:ok, optimized_document, warnings} = Statifier.Validator.validate(document)
 
 # 3. Interpret: Run state chart with optimized lookups
-{:ok, state_chart} = Statifier.Interpreter.initialize(optimized_document)
+{:ok, state_chart} = Statifier.initialize(optimized_document)
 ```
 
 ## Performance Optimizations
@@ -632,7 +632,7 @@ The implementation includes several key optimizations for production use:
 
 ```elixir
 # Automatic hierarchical entry
-{:ok, state_chart} = Statifier.Interpreter.initialize(document)
+{:ok, state_chart} = Statifier.initialize(document)
 active_states = Statifier.Configuration.active_leaf_states(state_chart.configuration)
 # Returns only leaf states (compound/parallel states entered automatically)
 

@@ -73,6 +73,37 @@ defmodule Statifier do
   end
 
   @doc """
+  Initialize a StateChart from a validated SCXML document.
+
+  This is a convenience function that wraps `Interpreter.initialize/2` to provide
+  a simpler API for creating StateChart instances from parsed documents.
+
+  ## Options
+
+  - `:log_level` - Log level for state machine execution (`:trace`, `:debug`, `:info`, `:warning`, `:error`)
+  - `:log_adapter` - Log adapter to use (defaults to environment-specific adapter)
+  - `:invoke_handlers` - Map of invoke type to handler function for `<invoke>` elements
+
+  ## Examples
+
+      {:ok, document, _warnings} = Statifier.parse(xml_string)
+      {:ok, state_chart} = Statifier.initialize(document)
+
+      # With options
+      handlers = %{"user_service" => &MyApp.UserService.handle_invoke/3}
+      {:ok, state_chart} = Statifier.initialize(document,
+        log_level: :debug,
+        invoke_handlers: handlers
+      )
+
+  """
+  @spec initialize(Statifier.Document.t(), keyword()) ::
+          {:ok, Statifier.StateChart.t()} | {:error, [String.t()], [String.t()]}
+  def initialize(document, opts \\ []) do
+    Interpreter.initialize(document, opts)
+  end
+
+  @doc """
   Send an event to a StateChart synchronously.
 
   This processes the event immediately and returns the updated StateChart.
@@ -80,7 +111,7 @@ defmodule Statifier do
 
   ## Examples
 
-      {:ok, state_chart} = Statifier.Interpreter.initialize(document)
+      {:ok, state_chart} = Statifier.initialize(document)
       {:ok, new_state_chart} = Statifier.send_sync(state_chart, "start")
       {:ok, final_state_chart} = Statifier.send_sync(new_state_chart, "process", %{data: "value"})
 
@@ -90,17 +121,6 @@ defmodule Statifier do
   def send_sync(state_chart, event_name, event_data \\ %{}) do
     event = Event.new(event_name, event_data)
     Interpreter.send_event(state_chart, event)
-  end
-
-  @doc """
-  Check if a document has been validated.
-
-  Returns true if the document has been processed through the validator,
-  regardless of whether it passed validation.
-  """
-  @spec validated?(Statifier.Document.t()) :: boolean()
-  def validated?(document) do
-    document.validated
   end
 
   # Private helper to reduce nesting depth

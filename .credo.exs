@@ -27,7 +27,7 @@
           "src/",
           "test/"
         ],
-        excluded: [~r"/lib/mix/test", ~r"/lib/mix/quality", ~r"/_build/", ~r"/deps/", ~r"/node_modules/"]
+        excluded: [~r"/lib/mix", ~r"/_build/", ~r"/deps/", ~r"/node_modules/"]
       },
       #
       # Load and configure plugins here:

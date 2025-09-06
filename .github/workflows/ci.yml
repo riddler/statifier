@@ -224,3 +224,39 @@ jobs:
 
     - name: Run regression tests
       run: mix test.regression
+
+  example-tests:
+    name: Examples Test Suite
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Elixir
+      uses: erlef/setup-beam@v1
+      with:
+        elixir-version: '1.18.3'
+        otp-version: '27.3'
+
+    - name: Cache deps
+      uses: actions/cache@v4
+      with:
+        path: |
+          examples/deps
+          examples/_build
+        key: example-deps-${{ runner.os }}-27.3-1.18.3-${{ hashFiles('examples/**/mix.lock') }}
+        restore-keys: |
+          example-deps-${{ runner.os }}-27.3-1.18.3-
+
+    - name: Install dependencies
+      run: mix deps.get
+
+    - name: Compile project
+      run: mix compile
+
+    - name: Run tests
+      run: mix test

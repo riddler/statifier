@@ -2,7 +2,7 @@ defmodule StatifierTest do
   use ExUnit.Case
   doctest Statifier
 
-  alias Statifier.{Configuration, Document, Interpreter, StateMachine, Validator}
+  alias Statifier.{Configuration, Document, StateMachine, Validator}
 
   describe "Statifier.parse/2" do
     test "parses basic SCXML document successfully" do
@@ -141,30 +141,6 @@ defmodule StatifierTest do
     end
   end
 
-  describe "Statifier.validated?/1" do
-    test "returns true for validated documents" do
-      xml = """
-      <scxml initial="start">
-        <state id="start"/>
-      </scxml>
-      """
-
-      {:ok, document, _warnings} = Statifier.parse(xml)
-      assert Statifier.validated?(document) == true
-    end
-
-    test "returns false for unvalidated documents" do
-      xml = """
-      <scxml initial="start">
-        <state id="start"/>
-      </scxml>
-      """
-
-      {:ok, document, _warnings} = Statifier.parse(xml, validate: false)
-      assert Statifier.validated?(document) == false
-    end
-  end
-
   describe "integration tests" do
     test "full workflow: parse -> interpret" do
       xml = """
@@ -183,7 +159,7 @@ defmodule StatifierTest do
       assert {:ok, document, _warnings} = Statifier.parse(xml, validate: false)
 
       # Interpret
-      assert {:ok, state_chart} = Interpreter.initialize(document)
+      assert {:ok, state_chart} = Statifier.initialize(document)
 
       # Verify initial state is active
       active_states = Configuration.active_leaf_states(state_chart.configuration)
@@ -208,7 +184,7 @@ defmodule StatifierTest do
       assert document.validated == true
 
       # Interpret
-      assert {:ok, state_chart} = Interpreter.initialize(document)
+      assert {:ok, state_chart} = Statifier.initialize(document)
 
       # Verify initial state is active
       active_states = Configuration.active_leaf_states(state_chart.configuration)
@@ -269,7 +245,7 @@ defmodule StatifierTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml)
-      {:ok, state_chart} = Interpreter.initialize(document)
+      {:ok, state_chart} = Statifier.initialize(document)
 
       # Send event synchronously
       assert {:ok, new_state_chart} = Statifier.send_sync(state_chart, "start")
@@ -296,7 +272,7 @@ defmodule StatifierTest do
       """
 
       {:ok, document, _warnings} = Statifier.parse(xml)
-      {:ok, state_chart} = Interpreter.initialize(document)
+      {:ok, state_chart} = Statifier.initialize(document)
 
       assert {:ok, new_state_chart} = Statifier.send_sync(state_chart, "data", %{payload: "test"})
 
