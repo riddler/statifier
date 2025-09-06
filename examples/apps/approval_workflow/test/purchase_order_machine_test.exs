@@ -45,17 +45,18 @@ defmodule ApprovalWorkflow.PurchaseOrderMachineTest do
         requester: "jane@company.com"
       })
 
-      # Approve - should route to manager approval (validates conditional routing)
+      # Approve - should route to manager approval and automatically complete
       PurchaseOrderMachine.approve(pid)
 
-      states = PurchaseOrderMachine.current_states(pid)
-      assert MapSet.member?(states, "manager_approval")
-
-      # Manager approves
-      PurchaseOrderMachine.manager_approved(pid)
+      # Give the workflow a moment to process the invoke handlers
+      Process.sleep(10)
 
       states = PurchaseOrderMachine.current_states(pid)
       assert MapSet.member?(states, "approved")
+
+      # Verify the approver was set
+      po_data = PurchaseOrderMachine.get_po_data(pid)
+      assert po_data["approver"] == "manager.johnson@company.com"
     end
 
     test "executive approval path for large amounts" do
@@ -68,17 +69,18 @@ defmodule ApprovalWorkflow.PurchaseOrderMachineTest do
         requester: "executive@company.com"
       })
 
-      # Approve - should route to executive approval (validates conditional routing)
+      # Approve - should route to executive approval and automatically complete
       PurchaseOrderMachine.approve(pid)
 
-      states = PurchaseOrderMachine.current_states(pid)
-      assert MapSet.member?(states, "executive_approval")
-
-      # Executive approves
-      PurchaseOrderMachine.exec_approved(pid)
+      # Give the workflow a moment to process the invoke handlers
+      Process.sleep(10)
 
       states = PurchaseOrderMachine.current_states(pid)
       assert MapSet.member?(states, "approved")
+
+      # Verify the approver was set
+      po_data = PurchaseOrderMachine.get_po_data(pid)
+      assert po_data["approver"] == "executive.johnson@company.com"
     end
 
     test "rejection workflow" do
@@ -122,27 +124,25 @@ defmodule ApprovalWorkflow.PurchaseOrderMachineTest do
     test "manager can reject with reason" do
       {:ok, pid} = PurchaseOrderMachine.start_link()
 
+      # Use REJECT in PO ID to trigger deterministic rejection  
       PurchaseOrderMachine.submit_po(pid, %{
-        po_id: "PO-006",
+        po_id: "PO-REJECT-006",
         amount: 1500,
         requester: "employee@company.com"
       })
 
       PurchaseOrderMachine.approve(pid)
 
-      # Should be in manager approval (validates amount-based routing)
-      states = PurchaseOrderMachine.current_states(pid)
-      assert MapSet.member?(states, "manager_approval")
-
-      # Manager rejects (validates _event.data assignment for rejection)
-      PurchaseOrderMachine.manager_rejected(pid, "Not in budget")
+      # Give the workflow a moment to process the invoke handlers
+      Process.sleep(10)
 
       states = PurchaseOrderMachine.current_states(pid)
       assert MapSet.member?(states, "rejected")
 
-      # Reason should be stored (validates _event.data assignment)
+      # Validate rejection reason and approver stored correctly
       data = PurchaseOrderMachine.get_po_data(pid)
-      assert data["rejection_reason"] == "Not in budget"
+      assert data["rejection_reason"] == "Test rejection as requested"
+      assert data["approver"] == "manager.smith@company.com"
     end
   end
 
@@ -150,27 +150,25 @@ defmodule ApprovalWorkflow.PurchaseOrderMachineTest do
     test "executive can reject with reason" do
       {:ok, pid} = PurchaseOrderMachine.start_link()
 
+      # Use REJECT in PO ID to trigger deterministic rejection
       PurchaseOrderMachine.submit_po(pid, %{
-        po_id: "PO-007",
+        po_id: "PO-REJECT-007",
         amount: 25_000,
         requester: "bigspender@company.com"
       })
 
       PurchaseOrderMachine.approve(pid)
 
-      # Should be in executive approval (validates amount-based routing)
-      states = PurchaseOrderMachine.current_states(pid)
-      assert MapSet.member?(states, "executive_approval")
-
-      # Executive rejects (validates _event.data assignment for rejection)
-      PurchaseOrderMachine.exec_rejected(pid, "Too expensive")
+      # Give the workflow a moment to process the invoke handlers
+      Process.sleep(10)
 
       states = PurchaseOrderMachine.current_states(pid)
       assert MapSet.member?(states, "rejected")
 
-      # Reason should be stored (validates _event.data assignment)
+      # Validate rejection reason and approver stored correctly
       data = PurchaseOrderMachine.get_po_data(pid)
-      assert data["rejection_reason"] == "Too expensive"
+      assert data["rejection_reason"] == "Test rejection as requested"
+      assert data["approver"] == "executive.smith@company.com"
     end
   end
 
@@ -202,8 +200,8 @@ defmodule ApprovalWorkflow.PurchaseOrderMachineTest do
       assert data_after_routing["amount"] == initial_data.amount
       assert data_after_routing["requester"] == initial_data.requester
 
-      # Complete the approval
-      PurchaseOrderMachine.manager_approved(pid)
+      # Give the workflow a moment to process the invoke handlers (approval is automatic now)
+      Process.sleep(10)
 
       # Verify data persists through final approval
       final_data = PurchaseOrderMachine.get_po_data(pid)
@@ -213,7 +211,7 @@ defmodule ApprovalWorkflow.PurchaseOrderMachineTest do
     end
 
     test "validates conditional routing with exact boundary values" do
-      # Test boundary condition: exactly 5000 (should go to manager)
+      # Test boundary condition: exactly 5000 (should go to manager and auto-approve)
       {:ok, pid_boundary} = PurchaseOrderMachine.start_link()
 
       PurchaseOrderMachine.submit_po(pid_boundary, %{
@@ -223,12 +221,21 @@ defmodule ApprovalWorkflow.PurchaseOrderMachineTest do
       })
 
       PurchaseOrderMachine.approve(pid_boundary)
+
+      # Give the workflow a moment to process the invoke handlers
+      Process.sleep(10)
+
       boundary_states = PurchaseOrderMachine.current_states(pid_boundary)
+      
+      # Should be approved via manager approval path
+      assert MapSet.member?(boundary_states, "approved"),
+             "Amount of exactly 5000 should complete via manager approval"
+      
+      # Verify manager approver was set
+      po_data = PurchaseOrderMachine.get_po_data(pid_boundary)
+      assert po_data["approver"] == "manager.johnson@company.com"
 
-      assert MapSet.member?(boundary_states, "manager_approval"),
-             "Amount of exactly 5000 should route to manager approval"
-
-      # Test just above boundary: 5001 (should go to executive)
+      # Test just above boundary: 5001 (should go to executive and auto-approve)
       {:ok, pid_above} = PurchaseOrderMachine.start_link()
 
       PurchaseOrderMachine.submit_po(pid_above, %{
@@ -238,10 +245,19 @@ defmodule ApprovalWorkflow.PurchaseOrderMachineTest do
       })
 
       PurchaseOrderMachine.approve(pid_above)
+
+      # Give the workflow a moment to process the invoke handlers
+      Process.sleep(10)
+
       above_states = PurchaseOrderMachine.current_states(pid_above)
 
-      assert MapSet.member?(above_states, "executive_approval"),
-             "Amount of 5001 should route to executive approval"
+      # Should be approved via executive approval path
+      assert MapSet.member?(above_states, "approved"),
+             "Amount of 5001 should complete via executive approval"
+
+      # Verify executive approver was set
+      po_data_above = PurchaseOrderMachine.get_po_data(pid_above)
+      assert po_data_above["approver"] == "executive.johnson@company.com"
     end
   end
 end

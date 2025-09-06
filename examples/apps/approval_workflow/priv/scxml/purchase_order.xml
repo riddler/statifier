@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" 
-       initial="draft" datamodel="ecmascript">
+       initial="draft">
   
   <datamodel>
     <data id="amount" expr="0"/>
@@ -27,6 +27,14 @@
   <state id="pending_approval">
     <onentry>
       <log expr="'PO ' + po_id + ' submitted for approval by ' + requester"/>
+      <!-- Send notification to approver -->
+      <send event="notification" type="email_service">
+        <param name="to" expr="'approver@company.com'"/>
+        <param name="subject" expr="'PO Approval Required: ' + po_id"/>
+        <param name="po_id" expr="po_id"/>
+        <param name="amount" expr="amount"/>
+        <param name="requester" expr="requester"/>
+      </send>
     </onentry>
     
     <transition event="approve" target="checking_amount"/>
@@ -55,11 +63,28 @@
   <state id="manager_approval">
     <onentry>
       <log expr="'Routing to manager approval'"/>
+      <!-- Invoke approval service to get manager decision -->
+      <invoke type="approval_service" src="request_manager_approval" id="manager_approval_request">
+        <param name="po_id" expr="po_id"/>
+        <param name="amount" expr="amount"/>
+        <param name="requester" expr="requester"/>
+        <param name="approval_type" expr="'manager'"/>
+      </invoke>
     </onentry>
     
-    <transition event="manager_approved" target="approved"/>
-    <transition event="manager_rejected" target="rejected">
+    <!-- Handle approval service responses -->
+    <transition event="done.invoke.manager_approval_request" target="approved" cond="_event.data.approved">
+      <assign location="approver" expr="_event.data.approver"/>
+    </transition>
+    
+    <transition event="done.invoke.manager_approval_request" target="rejected" cond="!_event.data.approved">
       <assign location="rejection_reason" expr="_event.data.reason"/>
+      <assign location="approver" expr="_event.data.approver"/>
+    </transition>
+    
+    <!-- Handle service errors -->
+    <transition event="error.execution" target="rejected">
+      <assign location="rejection_reason" expr="'Approval service failed: ' + _event.data.reason"/>
     </transition>
   </state>
 
@@ -67,18 +92,50 @@
   <state id="executive_approval">
     <onentry>
       <log expr="'Routing to executive approval'"/>
+      <!-- Invoke approval service to get executive decision -->
+      <invoke type="approval_service" src="request_executive_approval" id="executive_approval_request">
+        <param name="po_id" expr="po_id"/>
+        <param name="amount" expr="amount"/>
+        <param name="requester" expr="requester"/>
+        <param name="approval_type" expr="'executive'"/>
+      </invoke>
     </onentry>
     
-    <transition event="exec_approved" target="approved"/>
-    <transition event="exec_rejected" target="rejected">
+    <!-- Handle approval service responses -->
+    <transition event="done.invoke.executive_approval_request" target="approved" cond="_event.data.approved">
+      <assign location="approver" expr="_event.data.approver"/>
+    </transition>
+    
+    <transition event="done.invoke.executive_approval_request" target="rejected" cond="!_event.data.approved">
       <assign location="rejection_reason" expr="_event.data.reason"/>
+      <assign location="approver" expr="_event.data.approver"/>
+    </transition>
+    
+    <!-- Handle service errors -->
+    <transition event="error.execution" target="rejected">
+      <assign location="rejection_reason" expr="'Approval service failed: ' + _event.data.reason"/>
     </transition>
   </state>
 
   <!-- Final approved state -->
   <final id="approved">
     <onentry>
-      <log expr="'Purchase order ' + po_id + ' approved!'"/>
+      <log expr="'Purchase order ' + po_id + ' approved by ' + approver"/>
+      <!-- Process the approved purchase order -->
+      <invoke type="purchase_service" src="process_approved_po" id="po_processing">
+        <param name="po_id" expr="po_id"/>
+        <param name="amount" expr="amount"/>
+        <param name="requester" expr="requester"/>
+        <param name="approver" expr="approver"/>
+      </invoke>
+      <!-- Send approval notification -->
+      <send event="notification" type="email_service">
+        <param name="to" expr="requester"/>
+        <param name="subject" expr="'PO Approved: ' + po_id"/>
+        <param name="po_id" expr="po_id"/>
+        <param name="status" expr="'approved'"/>
+        <param name="approver" expr="approver"/>
+      </send>
     </onentry>
   </final>
 
@@ -86,6 +143,14 @@
   <final id="rejected">
     <onentry>
       <log expr="'Purchase order ' + po_id + ' rejected: ' + rejection_reason"/>
+      <!-- Send rejection notification -->
+      <send event="notification" type="email_service">
+        <param name="to" expr="requester"/>
+        <param name="subject" expr="'PO Rejected: ' + po_id"/>
+        <param name="po_id" expr="po_id"/>
+        <param name="status" expr="'rejected'"/>
+        <param name="reason" expr="rejection_reason"/>
+      </send>
     </onentry>
   </final>
 

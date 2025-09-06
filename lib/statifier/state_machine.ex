@@ -27,6 +27,7 @@ defmodule Statifier.StateMachine do
   - `:scxml` - SCXML file path or XML string (required)
   - `:name` - GenServer registration name
   - `:snapshot_interval` - Milliseconds between snapshot calls
+  - `:invoke_handlers` - Map of invoke type to handler function for `<invoke>` elements
 
   ## Manual Usage (without macro)
 
@@ -104,6 +105,10 @@ defmodule Statifier.StateMachine do
       scxml_source = Keyword.fetch!(opts, :scxml)
       gen_server_name = Keyword.get(opts, :name)
       snapshot_interval = Keyword.get(opts, :snapshot_interval)
+      invoke_handlers = Keyword.get(opts, :invoke_handlers)
+      
+      # Escape invoke_handlers for safe quoting
+      escaped_invoke_handlers = if invoke_handlers, do: Macro.escape(invoke_handlers), else: nil
 
       # Generate start_link function
       if gen_server_name do
@@ -114,6 +119,11 @@ defmodule Statifier.StateMachine do
           base_opts =
             if unquote(snapshot_interval),
               do: Keyword.put(base_opts, :snapshot_interval, unquote(snapshot_interval)),
+              else: base_opts
+
+          base_opts =
+            if unquote(escaped_invoke_handlers),
+              do: Keyword.put(base_opts, :invoke_handlers, unquote(escaped_invoke_handlers)),
               else: base_opts
 
           merged_opts = Keyword.merge(base_opts, additional_opts)
@@ -129,6 +139,11 @@ defmodule Statifier.StateMachine do
           base_opts =
             if unquote(snapshot_interval),
               do: Keyword.put(base_opts, :snapshot_interval, unquote(snapshot_interval)),
+              else: base_opts
+
+          base_opts =
+            if unquote(escaped_invoke_handlers),
+              do: Keyword.put(base_opts, :invoke_handlers, unquote(escaped_invoke_handlers)),
               else: base_opts
 
           merged_opts = Keyword.merge(base_opts, additional_opts)
@@ -251,8 +266,9 @@ defmodule Statifier.StateMachine do
     callback_module = Keyword.get(opts, :callback_module)
     snapshot_interval = Keyword.get(opts, :snapshot_interval)
 
-    # Extract interpreter options (log_level, log_adapter, etc.)
-    interpreter_opts = Keyword.take(opts, [:log_level, :log_adapter])
+    # Extract interpreter options (log_level, log_adapter, invoke_handlers, etc.)
+    interpreter_opts = Keyword.take(opts, [:log_level, :log_adapter, :invoke_handlers])
+
 
     case initialize_state_chart(actual_init_arg, interpreter_opts) do
       {:ok, state_chart} ->

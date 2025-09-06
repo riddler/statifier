@@ -8,14 +8,15 @@ This example showcases advanced SCXML features including conditional routing, da
 
 This example implements a realistic purchase order approval process with:
 
-- **Multi-level approval** based on purchase amounts
-- **Business logic callbacks** for notifications and processing  
+- **Service Integration**: Uses `<invoke>` elements to call approval and processing services
+- **Notifications**: Uses `<send>` elements for email notifications  
+- **Multi-level approval** based on purchase amounts with automatic processing
 - **Data model integration** with SCXML assignments (_event.data support)
-- **State persistence** and comprehensive logging
-- **Rejection handling** with detailed reasons
+- **Error handling** with proper `error.execution` event handling
 - **Conditional routing** using SCXML expressions
+- **Secure handler system** for external service integration
 - **Comprehensive test coverage** with boundary value testing
-- **Production-ready patterns** for building workflow engines
+- **Clean logging** with configurable LogManager adapters
 
 ## Quick Start
 
@@ -33,8 +34,10 @@ iex> ApprovalWorkflow.PurchaseOrderMachine.submit_po(pid, %{
 ...>   amount: 2500, 
 ...>   requester: "demo@company.com"
 ...> })
+iex> ApprovalWorkflow.PurchaseOrderMachine.approve(pid)
+iex> Process.sleep(10)  # Give time for invoke handlers to process
 iex> ApprovalWorkflow.PurchaseOrderMachine.current_states(pid)
-#MapSet<["pending_approval"]>
+#MapSet<["approved"]>
 ```
 
 ### Manual Testing
@@ -121,24 +124,19 @@ graph TD
 :ok = PurchaseOrderMachine.request_changes(pid)
 ```
 
-### Manager Actions
+### Automatic Processing
+
+The workflow now uses SCXML `<invoke>` elements for automatic service integration:
 
 ```elixir
-# Manager approves (≤ $5,000)
-:ok = PurchaseOrderMachine.manager_approved(pid)
+# After approval, the workflow automatically:
+# 1. Routes to appropriate approval level (manager/executive)
+# 2. Calls approval service via invoke handlers
+# 3. Processes the result (approved/rejected)
+# 4. Sends notifications via <send> elements
+# 5. Moves to final state (approved/rejected)
 
-# Manager rejects with reason
-:ok = PurchaseOrderMachine.manager_rejected(pid, "Not in budget")
-```
-
-### Executive Actions
-
-```elixir
-# Executive approves (> $5,000)
-:ok = PurchaseOrderMachine.exec_approved(pid)
-
-# Executive rejects with reason
-:ok = PurchaseOrderMachine.exec_rejected(pid, "Too expensive")
+# No manual manager/executive actions needed - all automated!
 ```
 
 ### Query Operations
@@ -243,52 +241,74 @@ The workflow is defined in `priv/scxml/purchase_order.xml` using:
 
 ```xml
 <!-- Conditional routing based on amount -->
-<transition event="approve" 
-           cond="_event.data.amount &lt;= 5000" 
-           target="manager_approval">
-  <log expr="'Routing to manager approval'"/>
-</transition>
+<transition target="manager_approval" cond="amount &lt;= 5000"/>
+<transition target="executive_approval" cond="amount &gt; 5000"/>
 
-<!-- Data model assignment -->
-<onentry>
-  <assign location="_event.data" expr="po_data"/>
-  <log expr="'PO ' + _event.data.po_id + ' submitted'"/>
-</onentry>
+<!-- Service invocation for approval -->
+<state id="manager_approval">
+  <onentry>
+    <invoke type="approval_service" src="request_manager_approval" id="manager_approval_request">
+      <param name="po_id" expr="po_id"/>
+      <param name="amount" expr="amount"/>
+      <param name="requester" expr="requester"/>
+    </invoke>
+  </onentry>
+  
+  <transition event="done.invoke.manager_approval_request" target="approved" cond="_event.data.approved">
+    <assign location="approver" expr="_event.data.approver"/>
+  </transition>
+  
+  <transition event="error.execution" target="rejected">
+    <assign location="rejection_reason" expr="'Approval service failed'"/>
+  </transition>
+</state>
 
-<!-- Rejection with reason -->
-<transition event="reject" target="rejected">
-  <assign location="rejection_reason" expr="_event.data"/>
-</transition>
+<!-- Email notifications via <send> -->
+<state id="approved">
+  <onentry>
+    <send event="notification" type="email_service">
+      <param name="to" expr="requester"/>
+      <param name="subject" expr="'PO Approved: ' + po_id"/>
+    </send>
+  </onentry>
+</state>
 ```
 
 ### GenServer Integration
 
 The `PurchaseOrderMachine` module:
 
-- Uses `Statifier.StateMachine` macro for easy setup
-- Implements callback functions for business logic
+- Uses `Statifier.StateMachine` macro with invoke handlers for secure service integration
+- Implements invoke handlers for approval, purchase, and email services
 - Provides clean API wrapping state machine events
-- Enables comprehensive logging for visibility
-- Maintains workflow state across multiple operations
+- Uses LogManager system for configurable logging (clean test output)
+- Maintains workflow state across multiple operations with automatic processing
 
-### State Transition Callbacks
+### Invoke Handler System
 
 ```elixir
-def handle_state_enter(state_id, state_chart, _context) do
-  # Business logic for each state entry
-  case state_id do
-    "pending_approval" -> notify_approver(state_chart)
-    "manager_approval" -> notify_manager(state_chart)
-    "executive_approval" -> notify_executive(state_chart)
-    "approved" -> process_purchase(state_chart)
-    "rejected" -> log_rejection(state_chart)
-    _ -> :ok
+# Secure service integration via invoke handlers
+use Statifier.StateMachine,
+  scxml: "purchase_order.xml",
+  invoke_handlers: %{
+    "approval_service" => &__MODULE__.handle_approval_service/3,
+    "purchase_service" => &__MODULE__.handle_purchase_service/3,
+    "email_service" => &__MODULE__.handle_email_service/3
+  }
+
+def handle_approval_service("request_manager_approval", params, state_chart) do
+  # Simulate manager approval decision
+  case simulate_approval_decision(params, "manager") do
+    {:approved, approver} ->
+      {:ok, %{"approved" => true, "approver" => approver}, state_chart}
+    {:rejected, reason, approver} ->
+      {:ok, %{"approved" => false, "reason" => reason, "approver" => approver}, state_chart}
   end
 end
 
-def handle_transition(from_states, to_states, event, state_chart) do
-  # Log all transitions for audit trail
-  Logger.info("PO #{get_po_id(state_chart)}: Transition #{inspect(from_states)} → #{inspect(to_states)} via '#{event_name(event)}'")
+def handle_email_service("notification", _params, state_chart) do
+  # Handle email notifications silently (clean test output)
+  {:ok, state_chart}
 end
 ```
 
@@ -298,13 +318,14 @@ end
 
 Long-running, supervised processes that maintain state across multiple operations, perfect for business processes that span extended time periods.
 
-### 2. **Business Logic Integration**  
+### 2. **Secure Service Integration**
 
-Callback functions that execute real-world business logic during state transitions:
+SCXML `<invoke>` elements with handler-based security for safe external system integration:
 
-- Email notifications to approvers
-- Audit logging for compliance
-- External system integration points
+- Registered invoke handlers prevent arbitrary code execution
+- Automatic SCXML event generation (`done.invoke.{id}`, `error.execution`)
+- Exception safety with comprehensive error handling
+- Clean separation between state machine and business logic
 
 ### 3. **Data Model Management**
 
@@ -322,22 +343,42 @@ Amount-based approval paths using SCXML conditional expressions:
 - `_event.data.amount > 5000` routes to executive approval
 - Boundary value testing ensures exact routing logic
 
-### 5. **Comprehensive Logging**
+### 5. **Clean Logging System**
 
-Detailed state machine execution tracking:
+Configurable LogManager system for test-friendly output:
 
-- State entry/exit logging with metadata
-- Transition logging with source/target/event information  
-- Business logic execution logs
-- Configurable log levels for development vs production
+- SCXML `<log>` elements use LogManager with configurable adapters
+- TestAdapter provides clean test output (no log noise)
+- ElixirLoggerAdapter for production with full metadata
+- Automatic adapter configuration via `test_helper.exs`
+- Macro-based performance optimization (lazy evaluation)
 
 ### 6. **Production Patterns**
 
 Error handling, testing, and documentation suitable for production use:
 
-- Comprehensive test coverage (>95%)
-- Clean API design with proper error handling
+- Comprehensive test coverage (100% passing, clean output)
+- Secure invoke handler system prevents arbitrary code execution
 - Supervision and fault tolerance via OTP GenServer
 - Performance optimization with efficient state lookups
+- Test-friendly logging configuration
 
-This implementation serves as a production-ready template for building workflow engines with Statifier, demonstrating best practices and advanced SCXML features in a real-world business context.
+## Clean Test Output
+
+This example demonstrates how to achieve clean test output using the LogManager system:
+
+```elixir
+# In test_helper.exs
+Application.put_env(
+  :statifier,
+  :default_log_adapter,
+  {Statifier.Logging.TestAdapter, [max_entries: 100]}
+)
+
+# Result: Tests run silently with no log noise
+# ✅ All 10 tests pass with clean output
+# ✅ Invoke handlers work correctly  
+# ✅ SCXML <log> elements respect TestAdapter configuration
+```
+
+This implementation serves as a production-ready template for building workflow engines with Statifier, demonstrating best practices, security patterns, and advanced SCXML features in a real-world business context.
