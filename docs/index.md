@@ -83,11 +83,10 @@ xml = """
 
 # Initialize state chart
 {:ok, document, _warnings} = Statifier.parse(xml)
-{:ok, state_chart} = Statifier.Interpreter.initialize(document)
+{:ok, state_chart} = Statifier.initialize(document)
 
 # Process events
-event = %Statifier.Event{name: "start"}
-{:ok, new_state_chart} = Statifier.Interpreter.send_event(state_chart, event)
+{:ok, new_state_chart} = Statifier.send_sync(state_chart, "start")
 ```
 
 ## Installation
@@ -95,11 +94,7 @@ event = %Statifier.Event{name: "start"}
 Add `statifier` to your list of dependencies in `mix.exs`:
 
 ```elixir
-def deps do
-  [
-    {:statifier, "~> 1.7"}
-  ]
-end
+{:statifier, "~> 1.7"}
 ```
 
 ## Learn More

@@ -42,6 +42,13 @@ When verifying code changes, always follow this sequence (also automated via pre
 - `mix test test/statifier/logging/` - Run comprehensive logging infrastructure tests (30 tests)
 - `mix test test/statifier/actions/` - Run action execution tests with integrated StateChart logging
 
+**Documentation:**
+
+- `mix docs.validate` - Validate code examples in documentation files (README.md, docs/*.md)
+- `mix docs.validate --file README.md` - Validate specific file only
+- `mix docs.validate --verbose` - Show detailed validation output
+- `mix docs.validate --path docs/` - Validate specific directory
+
 **Development:**
 
 - `mix deps.get` - Install dependencies

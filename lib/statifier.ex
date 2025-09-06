@@ -91,8 +91,8 @@ defmodule Statifier do
 
       # With options
       handlers = %{"user_service" => &MyApp.UserService.handle_invoke/3}
-      {:ok, state_chart} = Statifier.initialize(document, 
-        log_level: :debug, 
+      {:ok, state_chart} = Statifier.initialize(document,
+        log_level: :debug,
         invoke_handlers: handlers
       )
 

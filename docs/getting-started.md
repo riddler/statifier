@@ -7,11 +7,7 @@ Welcome to Statifier! This guide will walk you through setting up your first SCX
 Add `statifier` to your list of dependencies in `mix.exs`:
 
 ```elixir
-def deps do
-  [
-    {:statifier, "~> 1.7"}
-  ]
-end
+{:statifier, "~> 1.7"}
 ```
 
 Then run:
@@ -48,15 +44,14 @@ xml = """
 {:ok, state_chart} = Statifier.Interpreter.initialize(document)
 
 # Check current state
-IO.inspect(Statifier.Configuration.active_states(state_chart.configuration))
+IO.inspect(Statifier.Configuration.active_leaf_states(state_chart.configuration))
 # [:red]
 
 # Send an event
-event = %Statifier.Event{name: "timer"}
-{:ok, new_state_chart} = Statifier.Interpreter.send_event(state_chart, event)
+{:ok, new_state_chart} = Statifier.send_sync(state_chart, "timer")
 
 # Check new state  
-IO.inspect(Statifier.Configuration.active_states(new_state_chart.configuration))
+IO.inspect(Statifier.Configuration.active_leaf_states(new_state_chart.configuration))
 # [:green]
 ```
 
