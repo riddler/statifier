@@ -214,7 +214,7 @@ The implementation follows a clean **Parse → Validate → Optimize** architect
 {:ok, optimized_document, warnings} = Statifier.Validator.validate(document)
 
 # 3. Interpret Phase: Use optimized document for runtime
-{:ok, state_chart} = Statifier.Interpreter.initialize(optimized_document)
+{:ok, state_chart} = Statifier.initialize(optimized_document)
 ```
 
 **Benefits:**
@@ -376,7 +376,7 @@ invoke_handlers = %{
   "email_service" => &MyApp.EmailService.handle_invoke/3
 }
 
-{:ok, state_chart} = Interpreter.initialize(document, [
+{:ok, state_chart} = Statifier.initialize(document, [
   invoke_handlers: invoke_handlers,
   log_level: :debug
 ])
@@ -629,13 +629,13 @@ When debugging state chart execution, configure enhanced logging for detailed vi
 
 ```elixir
 # Enable detailed tracing for debugging
-{:ok, state_chart} = Interpreter.initialize(document, [
+{:ok, state_chart} = Statifier.initialize(document, [
   log_adapter: :elixir,
   log_level: :trace
 ])
 
 # Alternative: use internal adapter for testing/development
-{:ok, state_chart} = Interpreter.initialize(document, [
+{:ok, state_chart} = Statifier.initialize(document, [
   log_adapter: :internal,  
   log_level: :trace
 ])
@@ -697,10 +697,10 @@ config :statifier,
 ```elixir
 # In dev environment, no additional configuration needed
 {:ok, document, _warnings} = Statifier.parse(xml)
-{:ok, state_chart} = Interpreter.initialize(document)  # Auto-configured for dev
+{:ok, state_chart} = Statifier.initialize(document)  # Auto-configured for dev
 
 # Manual configuration for other environments
-{:ok, state_chart} = Interpreter.initialize(document, [
+{:ok, state_chart} = Statifier.initialize(document, [
   log_adapter: :elixir,
   log_level: :trace
 ])
