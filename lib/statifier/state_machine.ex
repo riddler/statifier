@@ -106,7 +106,7 @@ defmodule Statifier.StateMachine do
       gen_server_name = Keyword.get(opts, :name)
       snapshot_interval = Keyword.get(opts, :snapshot_interval)
       invoke_handlers = Keyword.get(opts, :invoke_handlers)
-      
+
       # Escape invoke_handlers for safe quoting
       escaped_invoke_handlers = if invoke_handlers, do: Macro.escape(invoke_handlers), else: nil
 
@@ -268,7 +268,6 @@ defmodule Statifier.StateMachine do
 
     # Extract interpreter options (log_level, log_adapter, invoke_handlers, etc.)
     interpreter_opts = Keyword.take(opts, [:log_level, :log_adapter, :invoke_handlers])
-
 
     case initialize_state_chart(actual_init_arg, interpreter_opts) do
       {:ok, state_chart} ->

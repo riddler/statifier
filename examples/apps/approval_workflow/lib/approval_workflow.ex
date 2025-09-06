@@ -11,7 +11,7 @@ defmodule ApprovalWorkflow do
   This example implements a realistic purchase order approval process with:
 
   - **Service Integration**: Uses `<invoke>` elements for approval and processing services
-  - **Automatic Notifications**: Uses `<send>` elements for email notifications  
+  - **Automatic Notifications**: Uses `<send>` elements for email notifications
   - **Multi-level approval** based on purchase amounts
   - **Data model integration** with SCXML assignments
   - **Error handling** with proper SCXML error events

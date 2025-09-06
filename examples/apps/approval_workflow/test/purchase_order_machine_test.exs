@@ -124,7 +124,7 @@ defmodule ApprovalWorkflow.PurchaseOrderMachineTest do
     test "manager can reject with reason" do
       {:ok, pid} = PurchaseOrderMachine.start_link()
 
-      # Use REJECT in PO ID to trigger deterministic rejection  
+      # Use REJECT in PO ID to trigger deterministic rejection
       PurchaseOrderMachine.submit_po(pid, %{
         po_id: "PO-REJECT-006",
         amount: 1500,
@@ -226,11 +226,11 @@ defmodule ApprovalWorkflow.PurchaseOrderMachineTest do
       Process.sleep(10)
 
       boundary_states = PurchaseOrderMachine.current_states(pid_boundary)
-      
+
       # Should be approved via manager approval path
       assert MapSet.member?(boundary_states, "approved"),
              "Amount of exactly 5000 should complete via manager approval"
-      
+
       # Verify manager approver was set
       po_data = PurchaseOrderMachine.get_po_data(pid_boundary)
       assert po_data["approver"] == "manager.johnson@company.com"

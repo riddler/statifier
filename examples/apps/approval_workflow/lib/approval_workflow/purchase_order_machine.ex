@@ -9,7 +9,7 @@ defmodule ApprovalWorkflow.PurchaseOrderMachine do
   ## Key Features
 
   - **Service Integration**: Uses `<invoke>` elements to call approval and processing services
-  - **Notifications**: Uses `<send>` elements for email notifications  
+  - **Notifications**: Uses `<send>` elements for email notifications
   - **Error Handling**: Proper error handling with `error.execution` events
   - **Automatic Processing**: Business logic runs automatically via SCXML actions
 
@@ -43,7 +43,7 @@ defmodule ApprovalWorkflow.PurchaseOrderMachine do
 
   This module implements three invoke handlers:
   - `approval_service` - Handles approval requests
-  - `purchase_service` - Handles PO processing  
+  - `purchase_service` - Handles PO processing
   - `email_service` - Handles email notifications
 
   """
@@ -129,6 +129,8 @@ defmodule ApprovalWorkflow.PurchaseOrderMachine do
   ## Invoke Handlers - Replace StateMachine callbacks with service handlers
 
   @doc "Handle approval service invocations"
+  @spec handle_approval_service(String.t(), map(), Statifier.StateChart.t()) ::
+          {:ok, map(), Statifier.StateChart.t()} | {:error, atom(), String.t()}
   def handle_approval_service("request_manager_approval", params, state_chart) do
     # Request manager approval for PO
 
@@ -143,6 +145,8 @@ defmodule ApprovalWorkflow.PurchaseOrderMachine do
     end
   end
 
+  @spec handle_approval_service(String.t(), map(), Statifier.StateChart.t()) ::
+          {:ok, map(), Statifier.StateChart.t()} | {:error, atom(), String.t()}
   def handle_approval_service("request_executive_approval", params, state_chart) do
     # Request executive approval for PO
 
@@ -156,11 +160,15 @@ defmodule ApprovalWorkflow.PurchaseOrderMachine do
     end
   end
 
+  @spec handle_approval_service(String.t(), map(), Statifier.StateChart.t()) ::
+          {:ok, map(), Statifier.StateChart.t()} | {:error, atom(), String.t()}
   def handle_approval_service(operation, _params, _state_chart) do
     {:error, :execution, "Unknown approval operation: #{operation}"}
   end
 
   @doc "Handle purchase service invocations"
+  @spec handle_purchase_service(String.t(), map(), Statifier.StateChart.t()) ::
+          {:ok, map(), Statifier.StateChart.t()} | {:error, atom(), String.t()}
   def handle_purchase_service("process_approved_po", params, state_chart) do
     # Process the approved purchase order
 
@@ -176,11 +184,15 @@ defmodule ApprovalWorkflow.PurchaseOrderMachine do
     end
   end
 
+  @spec handle_purchase_service(String.t(), map(), Statifier.StateChart.t()) ::
+          {:ok, map(), Statifier.StateChart.t()} | {:error, atom(), String.t()}
   def handle_purchase_service(operation, _params, _state_chart) do
     {:error, :execution, "Unknown purchase operation: #{operation}"}
   end
 
   @doc "Handle email service invocations"
+  @spec handle_email_service(String.t(), map(), Statifier.StateChart.t()) ::
+          {:ok, Statifier.StateChart.t()} | {:error, atom(), String.t()}
   def handle_email_service("notification", _params, state_chart) do
     # For <send> elements, we handle the notification silently
     # In a real system, this would integrate with email services like SendGrid, etc.
@@ -189,6 +201,8 @@ defmodule ApprovalWorkflow.PurchaseOrderMachine do
     {:ok, state_chart}
   end
 
+  @spec handle_email_service(String.t(), map(), Statifier.StateChart.t()) ::
+          {:ok, Statifier.StateChart.t()} | {:error, atom(), String.t()}
   def handle_email_service(operation, _params, _state_chart) do
     {:error, :execution, "Unknown email operation: #{operation}"}
   end
@@ -205,21 +219,21 @@ defmodule ApprovalWorkflow.PurchaseOrderMachine do
     # Test-friendly deterministic approval logic
     cond do
       # Specific test cases for predictable behavior
-      String.contains?(po_id, "REJECT") -> 
+      String.contains?(po_id, "REJECT") ->
         reason = "Test rejection as requested"
         approver = "#{approval_type}.smith@company.com"
         {:rejected, reason, approver}
-      
+
       # Normal approval for reasonable amounts
       approval_type == "manager" and amount <= 5000 ->
         approver = "#{approval_type}.johnson@company.com"
         {:approved, approver}
-      
+
       # Normal approval for executive amounts
       approval_type == "executive" and amount > 5000 ->
         approver = "#{approval_type}.johnson@company.com"
         {:approved, approver}
-      
+
       # Default approval for other cases
       true ->
         approver = "#{approval_type}.johnson@company.com"
