@@ -1,7 +1,7 @@
 defmodule Statifier.Actions.SendActionTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.Actions.{SendAction, SendContent, SendParam}
+  alias Statifier.Actions.{Param, SendAction, SendContent}
   alias Statifier.StateChart
 
   # Helper to create a test state chart with datamodel
@@ -122,8 +122,8 @@ defmodule Statifier.Actions.SendActionTest do
 
     test "executes send with param data" do
       params = [
-        %SendParam{name: "key1", expr: "'value1'"},
-        %SendParam{name: "key2", location: "myVar"}
+        %Param{name: "key1", expr: "'value1'"},
+        %Param{name: "key2", location: "myVar"}
       ]
 
       send_action = %SendAction{
@@ -164,7 +164,7 @@ defmodule Statifier.Actions.SendActionTest do
     end
 
     test "combines namelist and params when no content" do
-      params = [%SendParam{name: "param", expr: "'param_value'"}]
+      params = [%Param{name: "param", expr: "'param_value'"}]
 
       send_action = %SendAction{
         event: "combinedEvent",
@@ -426,8 +426,8 @@ defmodule Statifier.Actions.SendActionTest do
   describe "SendAction parameter evaluation" do
     test "handles param with expr evaluation error" do
       params = [
-        %SendParam{name: "badParam", expr: "invalid.expression"},
-        %SendParam{name: "goodParam", expr: "'valid'"}
+        %Param{name: "badParam", expr: "invalid.expression"},
+        %Param{name: "goodParam", expr: "'valid'"}
       ]
 
       send_action = %SendAction{
@@ -447,8 +447,8 @@ defmodule Statifier.Actions.SendActionTest do
 
     test "handles param with location evaluation error" do
       params = [
-        %SendParam{name: "badLocation", location: "nonExistentVar"},
-        %SendParam{name: "goodLocation", location: "existingVar"}
+        %Param{name: "badLocation", location: "nonExistentVar"},
+        %Param{name: "goodLocation", location: "existingVar"}
       ]
 
       send_action = %SendAction{
@@ -468,7 +468,7 @@ defmodule Statifier.Actions.SendActionTest do
     end
 
     test "handles param with no value source" do
-      params = [%SendParam{name: "noSource"}]
+      params = [%Param{name: "noSource"}]
 
       send_action = %SendAction{
         event: "noSourceEvent",

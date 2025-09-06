@@ -17,11 +17,19 @@ defmodule Statifier.StateChart do
     external_queue: [],
     # History tracking
     history_tracker: %HistoryTracker{},
+    # Invoke handler registration
+    invoke_handlers: %{},
     # Logging fields
     log_adapter: nil,
     log_level: :info,
     logs: []
   ]
+
+  @type invoke_handler :: (String.t(), map(), t() ->
+                             {:ok, t()}
+                             | {:ok, term(), t()}
+                             | {:error, :communication, term()}
+                             | {:error, :execution, term()})
 
   @type t :: %__MODULE__{
           document: Document.t(),
@@ -31,6 +39,7 @@ defmodule Statifier.StateChart do
           internal_queue: [Event.t()],
           external_queue: [Event.t()],
           history_tracker: HistoryTracker.t(),
+          invoke_handlers: %{String.t() => invoke_handler()},
           log_adapter: struct() | nil,
           log_level: atom(),
           logs: [map()]
@@ -49,6 +58,7 @@ defmodule Statifier.StateChart do
       internal_queue: [],
       external_queue: [],
       history_tracker: HistoryTracker.new(),
+      invoke_handlers: %{},
       log_adapter: nil,
       log_level: :info,
       logs: []

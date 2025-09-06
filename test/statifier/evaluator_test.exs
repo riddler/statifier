@@ -482,4 +482,231 @@ defmodule Statifier.EvaluatorTest do
       assert {:ok, "alice"} = Evaluator.evaluate_value(compiled, state_chart)
     end
   end
+
+  describe "parameter evaluation" do
+    alias Statifier.Actions.Param
+
+    # Helper to create a test state chart with datamodel
+    defp create_test_state_chart(datamodel \\ %{}) do
+      %StateChart{
+        configuration: Configuration.new([]),
+        current_event: nil,
+        datamodel: datamodel
+      }
+    end
+
+    test "evaluate_params/3 with lenient error handling (default)" do
+      params = [
+        %Param{name: "valid_expr", expr: "'hello'"},
+        %Param{name: "valid_location", location: "user_name"},
+        # property access on undefined returns {:ok, :undefined}
+        %Param{name: "invalid_expr", expr: "invalid.expression"},
+        # undefined variable returns {:error, ...}
+        %Param{name: "missing_var", expr: "missing"},
+        # property access on undefined returns {:ok, :undefined}
+        %Param{name: "missing_location", location: "nonexistent.path"},
+        # neither expr nor location
+        %Param{name: "no_value_source"}
+      ]
+
+      state_chart = create_test_state_chart(%{"user_name" => "alice"})
+
+      assert {:ok, result} = Evaluator.evaluate_params(params, state_chart)
+
+      # Lenient mode includes successful evaluations (including :undefined values) and skips errors
+      assert result["valid_expr"] == "hello"
+      assert result["valid_location"] == "alice"
+      # Property access on undefined -> {:ok, :undefined}
+      assert result["invalid_expr"] == :undefined
+      # Property access on undefined -> {:ok, :undefined}
+      assert result["missing_location"] == :undefined
+      # "missing_var" should be skipped (evaluation error)
+      refute Map.has_key?(result, "missing_var")
+      # "no_value_source" should be skipped (validation error)
+      refute Map.has_key?(result, "no_value_source")
+    end
+
+    test "evaluate_params/3 with strict error handling" do
+      params = [
+        %Param{name: "valid", expr: "'test'"},
+        # No expr or location - validation error
+        %Param{name: "invalid"}
+      ]
+
+      state_chart = create_test_state_chart()
+
+      assert {:error, reason} =
+               Evaluator.evaluate_params(params, state_chart, error_handling: :strict)
+
+      assert reason =~ "must specify either expr or location"
+    end
+
+    test "evaluate_params/3 strict mode succeeds when all params are valid" do
+      params = [
+        %Param{name: "expr_param", expr: "'value1'"},
+        %Param{name: "location_param", location: "my_var"}
+      ]
+
+      state_chart = create_test_state_chart(%{"my_var" => "value2"})
+
+      assert {:ok, result} =
+               Evaluator.evaluate_params(params, state_chart, error_handling: :strict)
+
+      assert result == %{"expr_param" => "value1", "location_param" => "value2"}
+    end
+
+    test "evaluate_param/2 with expression parameter" do
+      param = %Param{name: "test_param", expr: "'computed_value'"}
+      state_chart = create_test_state_chart()
+
+      assert {:ok, {"test_param", "computed_value"}} =
+               Evaluator.evaluate_param(param, state_chart)
+    end
+
+    test "evaluate_param/2 with location parameter" do
+      param = %Param{name: "location_param", location: "stored_value"}
+      state_chart = create_test_state_chart(%{"stored_value" => 42})
+
+      assert {:ok, {"location_param", 42}} = Evaluator.evaluate_param(param, state_chart)
+    end
+
+    test "evaluate_param/2 with complex nested location" do
+      param = %Param{name: "nested_param", location: "user.profile.name"}
+
+      state_chart =
+        create_test_state_chart(%{
+          "user" => %{"profile" => %{"name" => "John Doe"}}
+        })
+
+      assert {:ok, {"nested_param", "John Doe"}} = Evaluator.evaluate_param(param, state_chart)
+    end
+
+    test "evaluate_param/2 normalizes different value types" do
+      params = [
+        %Param{name: "string_val", expr: "'text'"},
+        %Param{name: "number_val", expr: "42"},
+        %Param{name: "boolean_val", expr: "true"},
+        %Param{name: "map_val", location: "user_data"},
+        %Param{name: "list_val", location: "tags"},
+        # property access on undefined -> :undefined
+        %Param{name: "undefined_val", location: "missing.path"}
+      ]
+
+      state_chart =
+        create_test_state_chart(%{
+          "user_data" => %{"id" => 123},
+          "tags" => ["urgent", "review"]
+        })
+
+      assert {:ok, result} =
+               Evaluator.evaluate_params(params, state_chart, error_handling: :lenient)
+
+      assert result["string_val"] == "text"
+      assert result["number_val"] == 42
+      assert result["boolean_val"] == true
+      assert result["map_val"] == %{"id" => 123}
+      assert result["list_val"] == ["urgent", "review"]
+      # Property access on undefined returns :undefined (which is included)
+      assert result["undefined_val"] == :undefined
+    end
+
+    test "evaluate_param/2 validates parameter names" do
+      invalid_params = [
+        %Param{name: nil, expr: "'value'"},
+        %Param{name: "", expr: "'value'"},
+        %Param{name: "123invalid", expr: "'value'"},
+        %Param{name: "invalid-name", expr: "'value'"},
+        # non-string name
+        %Param{name: 123, expr: "'value'"}
+      ]
+
+      state_chart = create_test_state_chart()
+
+      for param <- invalid_params do
+        assert {:error, reason} = Evaluator.evaluate_param(param, state_chart)
+        assert reason =~ "Invalid param name" or reason =~ "must have a name attribute"
+      end
+    end
+
+    test "evaluate_param/2 requires either expr or location" do
+      param = %Param{name: "no_value", expr: nil, location: nil}
+      state_chart = create_test_state_chart()
+
+      assert {:error, reason} = Evaluator.evaluate_param(param, state_chart)
+      assert reason =~ "must specify either expr or location"
+    end
+
+    test "evaluate_param/2 handles expression evaluation errors" do
+      param = %Param{name: "bad_expr", expr: "undefined_variable + 1"}
+      state_chart = create_test_state_chart()
+
+      assert {:error, reason} = Evaluator.evaluate_param(param, state_chart)
+      assert reason =~ "Failed to evaluate param 'bad_expr'"
+    end
+
+    test "evaluate_param/2 handles location resolution errors" do
+      param = %Param{name: "bad_location", location: "nonexistent.path"}
+      state_chart = create_test_state_chart()
+
+      # Property access on undefined objects returns :undefined in Predicator v3.0
+      assert {:ok, {"bad_location", :undefined}} = Evaluator.evaluate_param(param, state_chart)
+    end
+
+    test "evaluate_params/3 with empty params list" do
+      assert {:ok, %{}} = Evaluator.evaluate_params([], create_test_state_chart())
+    end
+
+    test "parameter evaluation with event data context" do
+      param = %Param{name: "event_param", expr: "_event.data.message"}
+
+      event = %Event{name: "test", data: %{"message" => "hello world"}}
+
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        current_event: event,
+        datamodel: %{}
+      }
+
+      assert {:ok, {"event_param", "hello world"}} = Evaluator.evaluate_param(param, state_chart)
+    end
+
+    test "parameter evaluation preserves original error handling behavior" do
+      # Test that SendAction-style (lenient) skips errors
+      params_with_errors = [
+        %Param{name: "good", expr: "'success'"},
+        %Param{name: "bad", expr: "nonexistent_var"},
+        %Param{name: "also_good", expr: "'also_success'"}
+      ]
+
+      state_chart = create_test_state_chart()
+
+      # Lenient mode (default) - only includes successful evaluations
+      assert {:ok, result} = Evaluator.evaluate_params(params_with_errors, state_chart)
+      assert result == %{"good" => "success", "also_good" => "also_success"}
+      refute Map.has_key?(result, "bad")
+
+      # Strict mode fails fast
+      assert {:error, _reason} =
+               Evaluator.evaluate_params(params_with_errors, state_chart, error_handling: :strict)
+    end
+
+    test "parameter name validation follows identifier rules" do
+      valid_names = ["validName", "valid_name", "_validName", "valid123", "a"]
+      invalid_names = ["123invalid", "invalid-name", "invalid.name", "invalid name", ""]
+
+      state_chart = create_test_state_chart()
+
+      # Valid names should work
+      for name <- valid_names do
+        param = %Param{name: name, expr: "'test'"}
+        assert {:ok, {^name, "test"}} = Evaluator.evaluate_param(param, state_chart)
+      end
+
+      # Invalid names should fail
+      for name <- invalid_names do
+        param = %Param{name: name, expr: "'test'"}
+        assert {:error, _reason} = Evaluator.evaluate_param(param, state_chart)
+      end
+    end
+  end
 end

@@ -14,13 +14,15 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 
 - ✅ **Complete SCXML Parser** - Converts XML documents to structured data with precise location tracking
 - ✅ **State Chart Interpreter** - Runtime engine for executing SCXML state charts  
+- ✅ **Secure Invoke System** - Handler-based external service integration with SCXML compliance
 - ✅ **Modular Validation** - Document validation with focused sub-validators for maintainability
 - ✅ **Compound States** - Support for hierarchical states with automatic initial child entry
 - ✅ **Initial State Elements** - Full support for `<initial>` elements with transitions (W3C compliant)
 - ✅ **Parallel States** - Support for concurrent state regions with simultaneous execution
 - ✅ **Eventless Transitions** - Automatic transitions without event attributes (W3C compliant)
 - ✅ **Conditional Transitions** - Full support for `cond` attributes with expression evaluation
-- ✅ **Assign Elements** - Complete `<assign>` element support with location-based assignment and nested property access
+- ✅ **Executable Content** - Complete support for `<assign>`, `<log>`, `<raise>`, `<if>`, `<invoke>` elements
+- ✅ **Parameter Processing** - Unified parameter evaluation for `<send>` and `<invoke>` elements
 - ✅ **Value Evaluation** - Non-boolean expression evaluation using Predicator v3.0 for actual data values
 - ✅ **Data Model Integration** - StateChart data model with dynamic variable assignment and persistence
 - ✅ **O(1) Performance** - Optimized state and transition lookups via Maps
@@ -47,7 +49,9 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 - ✅ **Conditional transitions** - Full `cond` attribute support with Predicator v3.0 expression evaluation and SCXML `In()` function
 - ✅ **Assign elements** - Complete `<assign>` element support with location-based assignment, nested property access, and mixed notation
 - ✅ **If/Else/ElseIf conditional actions** - Complete `<if>`, `<elseif>`, `<else>` conditional execution blocks
-- ✅ **Value evaluation system** - Statifier.ValueEvaluator module for non-boolean expression evaluation and data model operations
+- ✅ **Invoke elements** - Secure `<invoke>` element support with handler-based external service integration and SCXML-compliant event generation
+- ✅ **Parameter processing** - Unified `<param>` element evaluation with strict/lenient error handling modes
+- ✅ **Value evaluation system** - Enhanced Evaluator module with centralized parameter processing and non-boolean expression evaluation
 - ✅ **Enhanced expression evaluation** - Predicator v3.0 integration with deep property access and type-safe operations
 - ✅ **History states** - Complete shallow and deep history state implementation with recording, restoration, and validation
 - ✅ **Multiple transition targets** - Support for space-separated multiple targets (e.g., `target="state1 state2"`)
@@ -65,10 +69,19 @@ An Elixir implementation of SCXML (State Chart XML) state charts with a focus on
 
 - Internal and targetless transitions
 - More executable content (`<script>`, `<send>`, etc.)
-- Enhanced datamodel support with more expression functions
+- Enhanced datamodel support with JavaScript expression engine
 - Enhanced validation for complex SCXML constructs
 
 ## Recent Completions
+
+### **✅ Secure Invoke System with Centralized Parameters (v1.9.0)**
+
+- **`Handler-Based Security`** - Replaces dangerous arbitrary function execution with secure handler registration system
+- **`SCXML Event Compliance`** - Generates proper `done.invoke.{id}`, `error.execution`, and `error.communication` events per specification
+- **`Centralized Parameter Processing`** - Unified `<param>` evaluation with strict (InvokeAction) and lenient (SendAction) error handling modes  
+- **`External Service Integration`** - Safe way to integrate SCXML state machines with external services and APIs
+- **`Complete Test Coverage`** - InvokeAction and InvokeHandler modules achieve 100% test coverage
+- **`Parameter Architecture Refactor`** - Consolidated parameter evaluation logic removes code duplication across actions
 
 ### **✅ Complete History State Support (v1.4.0)**
 
@@ -144,6 +157,54 @@ The next major areas for development focus on expanding SCXML feature support:
 - **Targetless Transitions** - Transitions without target for pure actions
 - **Enhanced Error Handling** - Better error messages with source locations
 - **Performance Benchmarking** - Establish performance baselines and optimize hot paths
+
+## Usage Examples
+
+### Secure Invoke System
+
+The invoke system allows SCXML state machines to safely integrate with external services:
+
+```elixir
+# Define a secure handler
+defmodule MyApp.UserService do
+  def handle_invoke("create_user", params, state_chart) do
+    case create_user(params["name"], params["email"]) do
+      {:ok, user} -> 
+        {:ok, %{"user_id" => user.id}, state_chart}
+      {:error, reason} -> 
+        {:error, :execution, "User creation failed: #{reason}"}
+    end
+  end
+  
+  def handle_invoke(operation, _params, _state_chart) do
+    {:error, :execution, "Unknown operation: #{operation}"}
+  end
+end
+
+# Register handlers during StateChart initialization  
+invoke_handlers = %{
+  "user_service" => &MyApp.UserService.handle_invoke/3
+}
+
+{:ok, state_chart} = Interpreter.initialize(document, [
+  invoke_handlers: invoke_handlers
+])
+```
+
+```xml
+<!-- SCXML usage -->
+<state id="creating_user">
+  <onentry>
+    <invoke type="user_service" src="create_user" id="user_creation">
+      <param name="name" expr="user_name"/>
+      <param name="email" expr="user_email"/>
+    </invoke>
+  </onentry>
+  
+  <transition event="done.invoke.user_creation" target="success"/>
+  <transition event="error.execution" target="failed"/>
+</state>
+```
 
 ## Installation
 

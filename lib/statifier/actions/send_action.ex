@@ -30,7 +30,7 @@ defmodule Statifier.Actions.SendAction do
           delay_expr: String.t() | nil,
           compiled_delay_expr: term() | nil,
           namelist: String.t() | nil,
-          params: [Statifier.Actions.SendParam.t()],
+          params: [Statifier.Actions.Param.t()],
           content: Statifier.Actions.SendContent.t() | nil,
           source_location: map() | nil
         }
@@ -66,7 +66,7 @@ defmodule Statifier.Actions.SendAction do
     :compiled_delay_expr,
     # Space-separated variable names
     :namelist,
-    # List of SendParam structs
+    # List of Param structs
     :params,
     # SendContent struct
     :content,
@@ -259,91 +259,10 @@ defmodule Statifier.Actions.SendAction do
   defp serialize_content_value(value), do: inspect(value)
 
   defp build_param_data(params, state_chart) do
-    Enum.reduce(params, %{}, fn param, acc ->
-      process_single_param(param, state_chart, acc)
-    end)
-  end
-
-  defp process_single_param(param, state_chart, acc) do
-    case validate_param_name(param) do
-      :ok ->
-        case get_param_value(param, state_chart) do
-          {:ok, value} ->
-            Map.put(acc, param.name, value)
-
-          {:error, reason} ->
-            LogManager.warn(state_chart, "Parameter evaluation failed", %{
-              action_type: "send_action",
-              param_name: param.name,
-              param_expr: param.expr,
-              param_location: param.location,
-              error_reason: inspect(reason),
-              phase: "parameter_evaluation"
-            })
-
-            acc
-        end
-
-      {:error, reason} ->
-        LogManager.warn(state_chart, "Invalid parameter name: #{inspect(reason)}", %{
-          action_type: "send_action",
-          param_name: param.name,
-          phase: "parameter_validation"
-        })
-
-        acc
+    case Evaluator.evaluate_params(params, state_chart, error_handling: :lenient) do
+      {:ok, param_map} -> param_map
     end
   end
-
-  # Enhanced parameter name validation
-  defp validate_param_name(%{name: name})
-       when is_nil(name) or name == "" do
-    {:error, "Parameter name is required"}
-  end
-
-  defp validate_param_name(%{name: name})
-       when not is_binary(name) do
-    {:error, "Parameter name must be a string"}
-  end
-
-  defp validate_param_name(%{name: name}) do
-    if String.match?(name, ~r/^[a-zA-Z_][a-zA-Z0-9_]*$/) do
-      :ok
-    else
-      {:error, "Parameter name must be a valid identifier"}
-    end
-  end
-
-  defp get_param_value(%{expr: expr} = _param, state_chart)
-       when not is_nil(expr) do
-    # Better handling of complex parameter values
-    case evaluate_expression_value(expr, state_chart) do
-      {:ok, value} -> {:ok, normalize_param_value(value)}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp get_param_value(%{location: location} = _param, state_chart)
-       when not is_nil(location) do
-    # Get value from datamodel location with enhanced error handling
-    case evaluate_expression_value(location, state_chart) do
-      {:ok, value} -> {:ok, normalize_param_value(value)}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp get_param_value(_param, _state_chart) do
-    {:error, :no_value_source}
-  end
-
-  # Normalize parameter values for consistent handling
-  defp normalize_param_value(value) when is_binary(value), do: value
-  defp normalize_param_value(value) when is_number(value), do: value
-  defp normalize_param_value(value) when is_boolean(value), do: value
-  defp normalize_param_value(value) when is_map(value), do: value
-  defp normalize_param_value(value) when is_list(value), do: value
-  defp normalize_param_value(:undefined), do: :undefined
-  defp normalize_param_value(value), do: inspect(value)
 
   defp build_namelist_data(nil, _state_chart), do: %{}
 

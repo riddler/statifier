@@ -63,6 +63,7 @@ defmodule Statifier.Parser.SCXML.Handler do
   def handle_event(:end_element, "elseif", state), do: StateStack.handle_elseif_end(state)
   def handle_event(:end_element, "else", state), do: StateStack.handle_else_end(state)
   def handle_event(:end_element, "foreach", state), do: StateStack.handle_foreach_end(state)
+  def handle_event(:end_element, "invoke", state), do: StateStack.handle_invoke_end(state)
 
   def handle_event(:end_element, state_type, state)
       when state_type in ["state", "parallel", "final", "initial", "history"],
@@ -308,20 +309,32 @@ defmodule Statifier.Parser.SCXML.Handler do
   end
 
   defp dispatch_element_start("param", attributes, location, state) do
+    # Use unified param structure for both send and invoke contexts
     param =
-      ElementBuilder.build_send_param(
+      ElementBuilder.build_param(
         attributes,
         location,
         state.xml_string,
         state.element_counts
       )
 
+    # Tag the param based on parent context for proper handling by StateStack
+    # Cast to ensure dialyzer understands the type
+    stack_container = %{stack: state.stack}
+
+    param_type =
+      case StateStack.peek_element_type(stack_container) do
+        "invoke" -> "invoke_param"
+        "send" -> "send_param"
+        _other -> "param"
+      end
+
     updated_state = %{
       state
-      | current_element: {:param, param}
+      | current_element: {String.to_atom(param_type), param}
     }
 
-    {:ok, StateStack.push_element(updated_state, "param", param)}
+    {:ok, StateStack.push_element(updated_state, param_type, param)}
   end
 
   defp dispatch_element_start("content", attributes, location, state) do
@@ -412,6 +425,23 @@ defmodule Statifier.Parser.SCXML.Handler do
     }
 
     {:ok, StateStack.push_element(updated_state, "foreach", foreach_action)}
+  end
+
+  defp dispatch_element_start("invoke", attributes, location, state) do
+    invoke_element =
+      ElementBuilder.build_invoke(
+        attributes,
+        location,
+        state.xml_string,
+        state.element_counts
+      )
+
+    updated_state = %{
+      state
+      | current_element: {:invoke, invoke_element}
+    }
+
+    {:ok, StateStack.push_element(updated_state, "invoke", invoke_element)}
   end
 
   defp dispatch_element_start(unknown_element_name, _attributes, _location, state) do

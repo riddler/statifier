@@ -10,6 +10,7 @@ defmodule Statifier.Actions.ActionExecutor do
     Actions.AssignAction,
     Actions.ForeachAction,
     Actions.IfAction,
+    Actions.InvokeAction,
     Actions.LogAction,
     Actions.RaiseAction,
     Actions.SendAction,
@@ -189,6 +190,24 @@ defmodule Statifier.Actions.ActionExecutor do
     SendAction.execute(state_chart, send_action)
   end
 
+  defp execute_single_action(%InvokeAction{} = invoke_action, state_id, phase, state_chart) do
+    # Log context information for debugging
+    state_chart =
+      LogManager.debug(state_chart, "Executing invoke action", %{
+        action_type: "invoke_action",
+        state_id: state_id,
+        phase: phase,
+        invoke_type: invoke_action.type,
+        invoke_src: invoke_action.src,
+        invoke_id: invoke_action.id
+      })
+
+    # Use the InvokeAction's execute method which handles all the invoke logic
+    # InvokeAction.execute always returns {:ok, state_chart} - errors become events
+    {:ok, updated_state_chart} = InvokeAction.execute(invoke_action, state_chart)
+    updated_state_chart
+  end
+
   defp execute_single_action(unknown_action, state_id, phase, state_chart) do
     # Log unknown action type for debugging
     state_chart =
@@ -235,6 +254,9 @@ defmodule Statifier.Actions.ActionExecutor do
 
         %SendAction{} ->
           %{type: "send", event: "..."}
+
+        %InvokeAction{type: type, src: src} ->
+          %{type: "invoke", invoke_type: type, src: src}
 
         _unknown_action ->
           %{type: "unknown"}

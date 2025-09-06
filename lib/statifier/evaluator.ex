@@ -205,4 +205,131 @@ defmodule Statifier.Evaluator do
   rescue
     error -> {:error, error}
   end
+
+  @doc """
+  Evaluates a list of SCXML parameters and returns a map of name-value pairs.
+
+  Supports both strict mode (fail on first error) and lenient mode (skip failed params).
+  This is the central parameter evaluation logic used by both SendAction and InvokeAction.
+
+  ## Options
+
+  - `:error_handling` - `:strict` (InvokeAction style - fail on first error) or `:lenient` (SendAction style - skip failed params)
+  """
+  @spec evaluate_params([Statifier.Actions.Param.t()], Statifier.StateChart.t(), keyword()) ::
+          {:ok, map()} | {:error, String.t()}
+  def evaluate_params(params, state_chart, opts \\ []) do
+    error_handling = Keyword.get(opts, :error_handling, :lenient)
+
+    case error_handling do
+      :strict ->
+        evaluate_params_strict(params, state_chart)
+
+      :lenient ->
+        evaluate_params_lenient(params, state_chart)
+    end
+  end
+
+  @doc """
+  Evaluates a single SCXML parameter and returns its name-value pair.
+  """
+  @spec evaluate_param(Statifier.Actions.Param.t(), Statifier.StateChart.t()) ::
+          {:ok, {String.t(), term()}} | {:error, String.t()}
+  def evaluate_param(%Statifier.Actions.Param{name: name} = param, state_chart)
+      when not is_nil(name) do
+    case validate_param_name(param) do
+      :ok ->
+        case get_param_value(param, state_chart) do
+          {:ok, value} ->
+            {:ok, {name, normalize_param_value(value)}}
+
+          {:error, reason} ->
+            {:error, "Failed to evaluate param '#{name}': #{inspect(reason)}"}
+        end
+
+      {:error, reason} ->
+        {:error, "Invalid param name '#{name}': #{reason}"}
+    end
+  end
+
+  def evaluate_param(%Statifier.Actions.Param{name: nil}, _state_chart) do
+    {:error, "Param element must have a name attribute"}
+  end
+
+  # Private helper functions for parameter evaluation
+
+  # Strict evaluation - stop on first error (InvokeAction style)
+  defp evaluate_params_strict(params, state_chart) do
+    Enum.reduce_while(params, {:ok, %{}}, fn param, {:ok, acc_params} ->
+      case evaluate_param(param, state_chart) do
+        {:ok, {param_name, param_value}} ->
+          updated_params = Map.put(acc_params, param_name, param_value)
+          {:cont, {:ok, updated_params}}
+
+        {:error, reason} ->
+          {:halt, {:error, reason}}
+      end
+    end)
+  end
+
+  # Lenient evaluation - skip errors and continue (SendAction style)
+  defp evaluate_params_lenient(params, state_chart) do
+    param_map =
+      Enum.reduce(params, %{}, fn param, acc ->
+        case evaluate_param(param, state_chart) do
+          {:ok, {param_name, param_value}} ->
+            Map.put(acc, param_name, param_value)
+
+          {:error, _reason} ->
+            # Skip failed params in lenient mode
+            acc
+        end
+      end)
+
+    {:ok, param_map}
+  end
+
+  defp validate_param_name(%{name: name}) when is_nil(name) or name == "" do
+    {:error, "Parameter name is required"}
+  end
+
+  defp validate_param_name(%{name: name}) when not is_binary(name) do
+    {:error, "Parameter name must be a string"}
+  end
+
+  defp validate_param_name(%{name: name}) do
+    if String.match?(name, ~r/^[a-zA-Z_][a-zA-Z0-9_]*$/) do
+      :ok
+    else
+      {:error, "Parameter name must be a valid identifier"}
+    end
+  end
+
+  defp get_param_value(%{expr: expr}, state_chart) when not is_nil(expr) do
+    case evaluate_value(expr, state_chart) do
+      {:ok, value} -> {:ok, value}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp get_param_value(%{location: location}, state_chart) when not is_nil(location) do
+    # For location parameters, we need to evaluate the location as a variable reference
+    case evaluate_value(location, state_chart) do
+      {:ok, value} -> {:ok, value}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp get_param_value(_param, _state_chart) do
+    {:error, "Param must specify either expr or location"}
+  end
+
+  # Normalize parameter values for consistent handling
+  defp normalize_param_value(value) when is_binary(value), do: value
+  defp normalize_param_value(value) when is_number(value), do: value
+  defp normalize_param_value(value) when is_boolean(value), do: value
+  defp normalize_param_value(value) when is_map(value), do: value
+  defp normalize_param_value(value) when is_list(value), do: value
+  defp normalize_param_value(:undefined), do: :undefined
+  defp normalize_param_value(value), do: inspect(value)
 end

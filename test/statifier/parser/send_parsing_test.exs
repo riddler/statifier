@@ -1,7 +1,7 @@
 defmodule Statifier.Parser.SendParsingTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.Actions.{SendAction, SendContent, SendParam}
+  alias Statifier.Actions.{Param, SendAction, SendContent}
   alias Statifier.Parser.SCXML
 
   describe "send element parsing" do
@@ -134,12 +134,12 @@ defmodule Statifier.Parser.SendParsingTest do
 
       [param1, param2] = send_action.params
 
-      assert %SendParam{} = param1
+      assert %Param{} = param1
       assert param1.name == "key1"
       assert param1.expr == "'value1'"
       assert param1.location == nil
 
-      assert %SendParam{} = param2
+      assert %Param{} = param2
       assert param2.name == "key2"
       assert param2.expr == nil
       assert param2.location == "myVar"
