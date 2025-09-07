@@ -41,7 +41,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
 
     %Statifier.Document{
       name: get_attr_value(attrs_map, "name"),
-      initial: get_attr_value(attrs_map, "initial"),
+      initial: parse_initial_attribute(get_attr_value(attrs_map, "initial")),
       datamodel: get_attr_value(attrs_map, "datamodel"),
       version: get_attr_value(attrs_map, "version"),
       xmlns: get_attr_value(attrs_map, "xmlns"),
@@ -73,7 +73,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
 
     %Statifier.State{
       id: get_attr_value(attrs_map, "id"),
-      initial: get_attr_value(attrs_map, "initial"),
+      initial: parse_initial_attribute(get_attr_value(attrs_map, "initial")),
       # Will be updated later based on children and structure
       type: :atomic,
       states: [],
@@ -100,7 +100,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
     %Statifier.State{
       id: get_attr_value(attrs_map, "id"),
       # Parallel states don't have initial attributes
-      initial: nil,
+      initial: [],
       # Set type directly during parsing
       type: :parallel,
       states: [],
@@ -128,7 +128,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
     %Statifier.State{
       id: get_attr_value(attrs_map, "id"),
       # Final states don't have initial attributes
-      initial: nil,
+      initial: [],
       # Set type directly during parsing
       type: :final,
       states: [],
@@ -155,7 +155,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
     %Statifier.State{
       # Initial states generate unique IDs since they don't have explicit IDs
       id: generate_initial_id(element_counts),
-      initial: nil,
+      initial: [],
       type: :initial,
       states: [],
       transitions: [],
@@ -196,7 +196,7 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
 
     %Statifier.State{
       id: get_attr_value(attrs_map, "id"),
-      initial: nil,
+      initial: [],
       type: :history,
       history_type: history_type,
       states: [],
@@ -515,5 +515,19 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
   defp generate_initial_id(element_counts) do
     initial_count = Map.get(element_counts, "initial", 1)
     "__initial_#{initial_count}__"
+  end
+
+  # Parse the initial attribute which can be space-separated state IDs.
+  #
+  # Returns a list of state IDs. If the attribute is nil or empty, returns an empty list.
+  # If it contains space-separated values, splits them and returns the list.
+  defp parse_initial_attribute(nil), do: []
+  defp parse_initial_attribute(""), do: []
+
+  defp parse_initial_attribute(initial_string) when is_binary(initial_string) do
+    initial_string
+    |> String.split()
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
   end
 end

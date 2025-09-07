@@ -24,14 +24,14 @@ defmodule Statifier.HistoryResolutionTest do
             %State{
               id: "parent",
               type: :compound,
-              initial: "child1",
+              initial: ["child1"],
               states: [
                 %State{id: "child1", type: :atomic, parent: "parent"},
                 %State{id: "child2", type: :atomic, parent: "parent"},
                 %State{
                   id: "nested",
                   type: :compound,
-                  initial: "grandchild1",
+                  initial: ["grandchild1"],
                   parent: "parent",
                   states: [
                     %State{id: "grandchild1", type: :atomic, parent: "nested"},

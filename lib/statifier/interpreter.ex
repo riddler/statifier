@@ -240,6 +240,8 @@ defmodule Statifier.Interpreter do
     end
   end
 
+  defp get_initial_configuration(%Document{initial: [], states: []}), do: %Configuration{}
+
   defp get_initial_configuration(%Document{initial: nil, states: []}), do: %Configuration{}
 
   defp get_initial_configuration(
@@ -249,16 +251,21 @@ defmodule Statifier.Interpreter do
     Configuration.new(initial_states)
   end
 
-  defp get_initial_configuration(%Document{initial: initial_id} = document) do
-    case Document.find_state(document, initial_id) do
-      # Invalid initial state
-      nil ->
-        %Configuration{}
+  defp get_initial_configuration(%Document{initial: [], states: [first_state | _rest]} = document) do
+    initial_states = enter_state(first_state, document)
+    Configuration.new(initial_states)
+  end
 
-      state ->
-        initial_states = enter_state(state, document)
-        Configuration.new(initial_states)
-    end
+  defp get_initial_configuration(%Document{initial: initial_ids} = document)
+       when length(initial_ids) > 0 do
+    initial_states =
+      initial_ids
+      |> Enum.map(&Document.find_state(document, &1))
+      # Remove any invalid states
+      |> Enum.filter(&(&1 != nil))
+      |> Enum.flat_map(&enter_state(&1, document))
+
+    Configuration.new(initial_states)
   end
 
   defp enter_state(%State{} = state, %Document{} = document),
@@ -283,17 +290,14 @@ defmodule Statifier.Interpreter do
   end
 
   defp enter_state(
-         %State{type: :compound, states: child_states, initial: initial_id},
+         %State{type: :compound, states: child_states, initial: initial_ids},
          %StateChart{} = state_chart
        ) do
-    # Compound state - find and enter initial child (don't add compound state to active set)
-    initial_child = get_initial_child_state(initial_id, child_states)
+    # Compound state - find and enter initial children (don't add compound state to active set)
+    initial_children = get_initial_child_states(initial_ids, child_states)
 
-    case initial_child do
-      # No valid child - compound state with no children is not active
-      nil -> []
-      child -> enter_state(child, state_chart)
-    end
+    initial_children
+    |> Enum.flat_map(&enter_state(&1, state_chart))
   end
 
   defp enter_state(
@@ -330,8 +334,23 @@ defmodule Statifier.Interpreter do
     end
   end
 
-  # Get the initial child state for a compound state
-  defp get_initial_child_state(nil, child_states) do
+  # Get the initial child states for a compound state (handles multiple initial states)
+  defp get_initial_child_states([], child_states) do
+    # No initial attribute - check for <initial> element first or use first child
+    case get_initial_child_state_legacy([], child_states) do
+      nil -> []
+      child -> [child]
+    end
+  end
+
+  defp get_initial_child_states(initial_ids, child_states) when is_list(initial_ids) do
+    initial_ids
+    |> Enum.map(&find_child_by_id(child_states, &1))
+    |> Enum.filter(&(&1 != nil))
+  end
+
+  # Legacy function for backward compatibility (single child)
+  defp get_initial_child_state_legacy([], child_states) do
     # No initial attribute - check for <initial> element first
     case find_initial_element(child_states) do
       %State{type: :initial, transitions: [transition | _rest]} ->
@@ -356,12 +375,6 @@ defmodule Statifier.Interpreter do
         end
     end
   end
-
-  defp get_initial_child_state(initial_id, child_states) when is_binary(initial_id) do
-    Enum.find(child_states, &(&1.id == initial_id))
-  end
-
-  defp get_initial_child_state(_initial_id, []), do: nil
 
   # Find the initial element among child states
   defp find_initial_element(child_states) do

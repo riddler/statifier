@@ -16,7 +16,7 @@ defmodule StatifierTest do
       assert {:ok, document, warnings} = Statifier.parse(xml)
       assert %Document{} = document
       assert document.name == nil
-      assert document.initial == "start"
+      assert document.initial == ["start"]
       assert document.validated == true
       assert is_list(warnings)
     end
@@ -68,7 +68,7 @@ defmodule StatifierTest do
 
       assert {:ok, document, warnings} = Statifier.parse(xml)
       assert document.validated == true
-      assert document.initial == "start"
+      assert document.initial == ["start"]
       assert document.xmlns == "http://www.w3.org/2005/07/scxml"
       assert document.version == "1.0"
       assert is_list(warnings)
@@ -84,7 +84,7 @@ defmodule StatifierTest do
 
       assert {:ok, document, _warnings} = Statifier.parse(xml)
       assert document.validated == true
-      assert document.initial == "start"
+      assert document.initial == ["start"]
       assert document.xmlns == "http://www.w3.org/2005/07/scxml"
       assert document.version == "1.0"
     end
@@ -98,7 +98,7 @@ defmodule StatifierTest do
 
       assert {:ok, document, _warnings} = Statifier.parse(xml)
       assert document.validated == true
-      assert document.initial == "start"
+      assert document.initial == ["start"]
       # XML declaration should not be added by default
     end
 
@@ -111,7 +111,7 @@ defmodule StatifierTest do
 
       assert {:ok, document, _warnings} = Statifier.parse(xml, xml_declaration: true)
       assert document.validated == true
-      assert document.initial == "start"
+      assert document.initial == ["start"]
     end
 
     test "returns validation errors when document is invalid" do

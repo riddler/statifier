@@ -7,7 +7,7 @@ defmodule Statifier.InterpreterCoverageTest do
       # Test initializing interpreter with empty document
       empty_document = %Document{
         states: [],
-        initial: nil,
+        initial: [],
         state_lookup: %{},
         transitions_by_source: %{}
       }
@@ -31,7 +31,7 @@ defmodule Statifier.InterpreterCoverageTest do
 
       document = %Document{
         states: [state1],
-        initial: "state1",
+        initial: ["state1"],
         state_lookup: %{"state1" => state1},
         transitions_by_source: %{"state1" => []}
       }
@@ -308,7 +308,7 @@ defmodule Statifier.InterpreterCoverageTest do
     test "initialize with validation error returns error tuple" do
       # Create an unvalidated document with validation errors
       unvalidated_document = %Document{
-        initial: "nonexistent",
+        initial: ["nonexistent"],
         states: [%State{id: "s1", type: :atomic, states: [], transitions: []}],
         validated: false,
         state_lookup: %{"s1" => %State{id: "s1", type: :atomic, states: [], transitions: []}},
@@ -324,7 +324,7 @@ defmodule Statifier.InterpreterCoverageTest do
     test "get_initial_configuration with invalid initial state" do
       # Test document with nonexistent initial state - covers the nil case in get_initial_configuration
       document = %Document{
-        initial: "nonexistent_state",
+        initial: ["nonexistent_state"],
         states: [%State{id: "s1", type: :atomic, states: [], transitions: []}],
         validated: true,
         state_lookup: %{"s1" => %State{id: "s1", type: :atomic, states: [], transitions: []}},
@@ -420,7 +420,7 @@ defmodule Statifier.InterpreterCoverageTest do
     test "compound state with no children" do
       # Test compound state with empty children list - covers the nil return case
       document = %Document{
-        initial: "empty_compound",
+        initial: ["empty_compound"],
         states: [
           %State{
             id: "empty_compound",
@@ -428,7 +428,7 @@ defmodule Statifier.InterpreterCoverageTest do
             # No children
             states: [],
             transitions: [],
-            initial: nil
+            initial: []
           }
         ],
         validated: true,
@@ -438,7 +438,7 @@ defmodule Statifier.InterpreterCoverageTest do
             type: :compound,
             states: [],
             transitions: [],
-            initial: nil
+            initial: []
           }
         },
         transitions_by_source: %{}

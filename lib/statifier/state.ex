@@ -32,7 +32,7 @@ defmodule Statifier.State do
 
   @type t :: %__MODULE__{
           id: String.t(),
-          initial: String.t() | nil,
+          initial: [String.t()],
           type: state_type(),
           states: [Statifier.State.t()],
           transitions: [Statifier.Transition.t()],

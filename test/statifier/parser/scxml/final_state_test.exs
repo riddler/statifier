@@ -22,7 +22,7 @@ defmodule Statifier.Parser.SCXML.FinalStateTest do
     assert final_state != nil
     assert final_state.type == :final
     assert final_state.id == "final_state"
-    assert final_state.initial == nil
+    assert final_state.initial == []
     assert final_state.states == []
     assert final_state.transitions == []
   end
@@ -140,7 +140,7 @@ defmodule Statifier.Parser.SCXML.FinalStateTest do
     assert final_state != nil
     assert final_state.type == :final
     assert final_state.states == []
-    assert final_state.initial == nil
+    assert final_state.initial == []
     assert final_state.initial_location == nil
   end
 
