@@ -5,13 +5,10 @@ hero:
   name: Statifier
   text: SCXML State Machines for Elixir
   tagline: Complete W3C compliant implementation with high-performance state chart execution
-  image:
-    src: /logo.svg
-    alt: Statifier Logo
   actions:
     - theme: brand
       text: Get Started
-      link: /getting-started
+      link: /tutorials/getting-started
     - theme: alt
       text: View on GitHub
       link: https://github.com/riddler/statifier
@@ -83,11 +80,10 @@ xml = """
 
 # Initialize state chart
 {:ok, document, _warnings} = Statifier.parse(xml)
-{:ok, state_chart} = Statifier.Interpreter.initialize(document)
+{:ok, state_chart} = Statifier.initialize(document)
 
 # Process events
-event = %Statifier.Event{name: "start"}
-{:ok, new_state_chart} = Statifier.Interpreter.send_event(state_chart, event)
+{:ok, new_state_chart} = Statifier.send_sync(state_chart, "start")
 ```
 
 ## Installation
@@ -95,19 +91,26 @@ event = %Statifier.Event{name: "start"}
 Add `statifier` to your list of dependencies in `mix.exs`:
 
 ```elixir
-def deps do
-  [
-    {:statifier, "~> 1.7"}
-  ]
-end
+{:statifier, "~> 1.7"}
 ```
 
 ## Learn More
 
-- **[Getting Started](/getting-started)** - Build your first state machine
+- **[Getting Started](/getting-started)** - Build your first state machine with working examples
+- **[External Services](/external-services)** - Integrate safely with APIs and external systems
+- **[Installation Guide](/installation)** - Set up Statifier in your project
+
+## Project Information
+
+- **[Architecture](/architecture)** - Technical design and component overview
+- **[Changelog](/changelog)** - Recent major feature completions and implementation details
+- **[Roadmap](/roadmap)** - Planned features and development priorities
+
+## Resources
+
 - **[GitHub Repository](https://github.com/riddler/statifier)** - Source code and issues  
 - **[Hex Package](https://hex.pm/packages/statifier)** - Package information
-- **[API Documentation](https://hexdocs.pm/statifier/)** - Complete module documentation
+- **[HexDocs API](https://hexdocs.pm/statifier/)** - Complete API documentation
 
 ---
 

@@ -9,6 +9,7 @@ defmodule Mix.Tasks.Quality do
   - Trailing whitespace check (and auto-fix if needed)
   - Markdown linting (and auto-fix if needed, if markdownlint-cli2 is available)
   - Regression tests (critical tests that should always pass)
+  - Examples tests (validates example applications work correctly)
   - Test coverage check (requires >90% coverage)
   - Static code analysis with Credo (strict mode)
   - Type checking with Dialyzer
@@ -61,13 +62,16 @@ defmodule Mix.Tasks.Quality do
     # Step 4: Regression tests
     run_regression_tests()
 
-    # Step 5: Coverage check
+    # Step 5: Examples tests
+    run_examples_tests()
+
+    # Step 6: Coverage check
     run_coverage_check()
 
-    # Step 6: Static analysis
+    # Step 7: Static analysis
     run_static_analysis()
 
-    # Step 7: Type checking (unless skipped)
+    # Step 8: Type checking (unless skipped)
     unless opts[:skip_dialyzer] do
       run_type_checking()
     end
@@ -283,6 +287,35 @@ defmodule Mix.Tasks.Quality do
       _error ->
         Mix.shell().error("❌ Regression tests failed. These tests should always pass!")
         Mix.raise("Regression tests failed")
+    end
+  end
+
+  defp run_examples_tests do
+    Mix.shell().info("📚 Running examples tests...")
+
+    # Change to examples directory and run tests
+    original_dir = File.cwd!()
+    examples_dir = Path.join(original_dir, "examples")
+
+    if File.exists?(examples_dir) do
+      try do
+        File.cd!(examples_dir)
+
+        case System.cmd("mix", ["test"], stderr_to_stdout: true) do
+          {_output, 0} ->
+            Mix.shell().info("✅ Examples tests passed")
+
+          {output, _exit_code} ->
+            Mix.shell().error("❌ Examples tests failed!")
+            Mix.shell().info("Output from examples tests:")
+            Mix.shell().info(output)
+            Mix.raise("Examples tests failed")
+        end
+      after
+        File.cd!(original_dir)
+      end
+    else
+      Mix.shell().info("ℹ️  No examples directory found, skipping examples tests")
     end
   end
 
