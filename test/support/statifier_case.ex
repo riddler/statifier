@@ -136,7 +136,8 @@ defmodule Statifier.Case do
     }
 
     # Configure with default logging from environment
-    LogManager.configure_from_options(state_chart, [])
+    state_chart
+    |> LogManager.configure_from_options([])
   end
 
   @doc """
