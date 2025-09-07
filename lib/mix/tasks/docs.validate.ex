@@ -219,7 +219,6 @@ defmodule Mix.Tasks.Docs.Validate do
       end
 
       []
-
     else
       validate_scxml_syntax(code, file, line_num, block_index, opts)
     end
@@ -227,7 +226,77 @@ defmodule Mix.Tasks.Docs.Validate do
 
   # Validate Elixir syntax by attempting to compile
   defp validate_elixir_syntax(code, file, line_num, block_index, _opts) do
-    # Wrap code in a module to make it compilable
+    # Determine validation approach based on code type
+    case needs_wrapping?(code) do
+      true ->
+        # Regular expressions - wrap in function
+        validate_wrapped_code(code, file, line_num, block_index)
+
+      :module_wrap ->
+        # Standalone functions - wrap in module
+        validate_module_wrapped_code(code, file, line_num, block_index)
+
+      false ->
+        # Full modules or module-level constructs - compile directly
+        validate_direct_code(code, file, line_num, block_index)
+    end
+  rescue
+    error ->
+      [{:syntax_error, file, line_num, block_index, format_compile_error(error)}]
+  end
+
+  # Check if code contains module-level constructs that shouldn't be wrapped
+  defp needs_wrapping?(code) do
+    # Full module definitions don't need wrapping
+    full_module_patterns = [
+      # Module definitions
+      ~r/^\s*defmodule\s/m,
+      # Protocol implementations
+      ~r/^\s*defimpl\s/m,
+      # Protocol definitions
+      ~r/^\s*defprotocol\s/m
+    ]
+
+    # Standalone function definitions need to be wrapped in a module
+    standalone_function_patterns = [
+      # Function definitions
+      ~r/^\s*def\s/m,
+      # Private function definitions
+      ~r/^\s*defp\s/m
+    ]
+
+    # Other module-level constructs that need special handling
+    other_module_patterns = [
+      # Struct definitions
+      ~r/^\s*defstruct\s/m,
+      # Exception definitions
+      ~r/^\s*defexception\s/m,
+      # Module attributes
+      ~r/^\s*@\w+\s/m,
+      # Use directives
+      ~r/^\s*use\s/m,
+      # Import directives
+      ~r/^\s*import\s/m,
+      # Alias directives
+      ~r/^\s*alias\s/m,
+      # Require directives
+      ~r/^\s*require\s/m
+    ]
+
+    cond do
+      # Full modules can be compiled directly
+      Enum.any?(full_module_patterns, &Regex.match?(&1, code)) -> false
+      # Standalone functions need module wrapping (different from expression wrapping)
+      Enum.any?(standalone_function_patterns, &Regex.match?(&1, code)) -> :module_wrap
+      # Other module constructs need direct compilation
+      Enum.any?(other_module_patterns, &Regex.match?(&1, code)) -> false
+      # Everything else needs expression wrapping
+      true -> true
+    end
+  end
+
+  # Validate code that needs to be wrapped in a function
+  defp validate_wrapped_code(code, file, line_num, block_index) do
     wrapped_code = """
     defmodule DocExample#{block_index} do
       def run do
@@ -237,15 +306,31 @@ defmodule Mix.Tasks.Docs.Validate do
     """
 
     case Code.compile_string(wrapped_code, "#{file}:#{line_num}") do
-      [] ->
-        []
-
-      _modules ->
-        []
+      [] -> []
+      _modules -> []
     end
-  rescue
-    error ->
-      [{:syntax_error, file, line_num, block_index, format_compile_error(error)}]
+  end
+
+  # Validate standalone functions that need to be wrapped in a module
+  defp validate_module_wrapped_code(code, file, line_num, block_index) do
+    wrapped_code = """
+    defmodule DocExample#{block_index} do
+      #{code}
+    end
+    """
+
+    case Code.compile_string(wrapped_code, "#{file}:#{line_num}") do
+      [] -> []
+      _modules -> []
+    end
+  end
+
+  # Validate code that can be compiled directly (module-level constructs)
+  defp validate_direct_code(code, file, line_num, _block_index) do
+    case Code.compile_string(code, "#{file}:#{line_num}") do
+      [] -> []
+      _modules -> []
+    end
   end
 
   # Validate Elixir code with expected outputs

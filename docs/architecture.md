@@ -61,7 +61,7 @@ The implementation follows a clean **Parse → Validate → Optimize** architect
 ### **Parse → Validate → Optimize Flow**
 
 - **SAX-based parsing**: Memory-efficient XML processing with accurate location tracking
-- **Modular validation**: Focused sub-validators (StateValidator, TransitionValidator, etc.) 
+- **Modular validation**: Focused sub-validators (StateValidator, TransitionValidator, etc.)
 - **Lazy optimization**: Expensive operations only performed on valid documents
 - **Source field optimization**: Transitions include source state for faster event processing
 
