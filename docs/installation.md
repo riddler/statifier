@@ -52,6 +52,6 @@ If this runs without errors and outputs `#MapSet<["start"]>`, your installation 
 
 ## Next Steps
 
-- **[Getting Started Tutorial](/tutorials/getting-started)** - Build your first state machine
-- **[Your First State Machine](/tutorials/first-state-machine)** - Learn the basics step by step
+- **[Getting Started Guide](/getting-started)** - Build your first state machine with working examples
+- **[External Services](/external-services)** - Learn about secure integration with APIs and external systems
 - **[API Documentation](https://hexdocs.pm/statifier/)** - Explore the complete API reference
