@@ -5,10 +5,10 @@ defmodule Statifier.Document do
 
   defstruct [
     :name,
-    :initial,
     :datamodel,
     :version,
     :xmlns,
+    initial: [],
     states: [],
     datamodel_elements: [],
     # Performance optimization: O(1) lookups
@@ -30,10 +30,10 @@ defmodule Statifier.Document do
 
   @type t :: %__MODULE__{
           name: String.t() | nil,
-          initial: [String.t()],
           datamodel: String.t() | nil,
           version: String.t() | nil,
           xmlns: String.t() | nil,
+          initial: [String.t()],
           states: [Statifier.State.t()],
           datamodel_elements: [Statifier.Data.t()],
           # Lookup maps for O(1) access

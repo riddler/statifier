@@ -7,7 +7,7 @@ defmodule Statifier.InterpreterCoverageTest do
       # Test initializing interpreter with empty document
       empty_document = %Document{
         states: [],
-        initial: nil,
+        initial: [],
         state_lookup: %{},
         transitions_by_source: %{}
       }

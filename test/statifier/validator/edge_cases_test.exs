@@ -79,7 +79,7 @@ defmodule Statifier.Validator.EdgeCasesTest do
     test "handles unreachable state from first state when no initial specified" do
       state1 = %State{id: "first", transitions: [], states: []}
       state2 = %State{id: "unreachable", transitions: [], states: []}
-      document = %Document{initial: nil, states: [state1, state2]}
+      document = %Document{initial: [], states: [state1, state2]}
 
       {:ok, _document, warnings} = Validator.validate(document)
 
