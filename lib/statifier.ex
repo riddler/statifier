@@ -6,7 +6,7 @@ defmodule Statifier do
   and optimization, including relaxed parsing mode for simplified tests.
   """
 
-  alias Statifier.{Event, Interpreter, Parser.SCXML, StateMachine, Validator}
+  alias Statifier.{Configuration, Event, Interpreter, Parser.SCXML, StateMachine, Validator}
 
   @doc """
   Parse and validate an SCXML document in one step.
@@ -121,6 +121,42 @@ defmodule Statifier do
   def send_sync(state_chart, event_name, event_data \\ %{}) do
     event = Event.new(event_name, event_data)
     Interpreter.send_event(state_chart, event)
+  end
+
+  @doc """
+  Get the active leaf states from a StateChart.
+
+  Returns a MapSet containing the IDs of all currently active leaf states.
+  Leaf states are atomic states that have no child states. This is the
+  most common way to check which states are currently active in a state chart.
+
+  For hierarchical state charts, this only returns the deepest active states
+  (leaf nodes), not their parent states. Use `Configuration.active_ancestors/2`
+  if you need to include parent states in the hierarchy.
+
+  ## Examples
+
+      {:ok, state_chart} = Statifier.initialize(document)
+      active_states = Statifier.active_leaf_states(state_chart)
+      # Returns: #MapSet<["initial_state"]>
+
+      {:ok, new_state_chart} = Statifier.send_sync(state_chart, "transition_event")
+      active_states = Statifier.active_leaf_states(new_state_chart)
+      # Returns: #MapSet<["target_state"]>
+
+      # For parallel states, multiple states can be active simultaneously
+      active_states = Statifier.active_leaf_states(parallel_state_chart)
+      # Returns: #MapSet<["region1_state", "region2_state"]>
+
+  ## See Also
+
+  - `Statifier.Configuration.active_leaf_states/1` - The underlying implementation
+  - `Statifier.Configuration.active_ancestors/2` - Get all active states including ancestors
+
+  """
+  @spec active_leaf_states(Statifier.StateChart.t()) :: MapSet.t(String.t())
+  def active_leaf_states(%Statifier.StateChart{configuration: config}) do
+    Configuration.active_leaf_states(config)
   end
 
   # Private helper to reduce nesting depth
