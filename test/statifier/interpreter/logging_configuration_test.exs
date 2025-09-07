@@ -7,9 +7,9 @@ defmodule Statifier.Interpreter.LoggingConfigurationTest do
   # Simple test document for initialization tests
   @test_document %Document{
     name: "test",
-    initial: "idle",
+    initial: ["idle"],
     states: [
-      %Statifier.State{id: "idle", initial: nil, parent: nil, states: [], transitions: []}
+      %Statifier.State{id: "idle", initial: [], parent: nil, states: [], transitions: []}
     ],
     state_lookup: %{"idle" => %Statifier.State{id: "idle"}},
     transitions_by_source: %{},

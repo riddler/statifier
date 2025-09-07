@@ -5,7 +5,7 @@
     "test/statifier/**/*_test.exs",
     "test/mix/**/*_test.exs"
   ],
-  "last_updated": "2025-09-02",
+  "last_updated": "2025-09-07",
   "scion_tests": [
     "test/scion_tests/actionSend/send1_test.exs",
     "test/scion_tests/actionSend/send2_test.exs",
@@ -93,6 +93,7 @@
     "test/scxml_tests/mandatory/SelectingTransitions/test403a_test.exs",
     "test/scxml_tests/mandatory/SelectingTransitions/test407_test.exs",
     "test/scxml_tests/mandatory/SelectingTransitions/test411_test.exs",
+    "test/scxml_tests/mandatory/SelectingTransitions/test413_test.exs",
     "test/scxml_tests/mandatory/SelectingTransitions/test419_test.exs",
     "test/scxml_tests/mandatory/SelectingTransitions/test503_test.exs",
     "test/scxml_tests/mandatory/data/test280_test.exs",
@@ -108,6 +109,7 @@
     "test/scxml_tests/mandatory/onexit/test377_test.exs",
     "test/scxml_tests/mandatory/onexit/test378_test.exs",
     "test/scxml_tests/mandatory/raise/test144_test.exs",
-    "test/scxml_tests/mandatory/scxml/test355_test.exs"
+    "test/scxml_tests/mandatory/scxml/test355_test.exs",
+    "test/scxml_tests/mandatory/scxml/test576_test.exs"
   ]
 }

@@ -12,7 +12,7 @@ defmodule Statifier.InterpreterHistorySimpleTest do
             %State{
               id: "parent",
               type: :compound,
-              initial: "child1",
+              initial: ["child1"],
               states: [
                 %State{id: "child1", type: :atomic, parent: "parent"},
                 %State{id: "child2", type: :atomic, parent: "parent"},
@@ -62,7 +62,7 @@ defmodule Statifier.InterpreterHistorySimpleTest do
             %State{
               id: "simple_parent",
               type: :compound,
-              initial: "child1",
+              initial: ["child1"],
               states: [
                 %State{id: "child1", type: :atomic, parent: "simple_parent"},
                 %State{id: "child2", type: :atomic, parent: "simple_parent"}

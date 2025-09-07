@@ -6,7 +6,7 @@ defmodule Statifier.StateChartTest do
   setup do
     document = %Document{
       name: "test_chart",
-      initial: "state_a",
+      initial: ["state_a"],
       states: []
     }
 

@@ -30,7 +30,7 @@ defmodule Statifier.Document do
 
   @type t :: %__MODULE__{
           name: String.t() | nil,
-          initial: String.t() | nil,
+          initial: [String.t()],
           datamodel: String.t() | nil,
           version: String.t() | nil,
           xmlns: String.t() | nil,

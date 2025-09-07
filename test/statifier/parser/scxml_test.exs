@@ -16,12 +16,12 @@ defmodule Statifier.Parser.SCXMLTest do
               %Document{
                 xmlns: "http://www.w3.org/2005/07/scxml",
                 version: "1.0",
-                initial: "a",
+                initial: ["a"],
                 document_order: 1,
                 states: [
                   %Statifier.State{
                     id: "a",
-                    initial: nil,
+                    initial: [],
                     document_order: 2,
                     states: [],
                     transitions: []
@@ -103,7 +103,7 @@ defmodule Statifier.Parser.SCXMLTest do
                 states: [
                   %Statifier.State{
                     id: "parent",
-                    initial: "child1",
+                    initial: ["child1"],
                     states: [
                       %Statifier.State{
                         id: "child1",
@@ -133,10 +133,10 @@ defmodule Statifier.Parser.SCXMLTest do
 
       assert {:ok,
               %Document{
-                initial: nil,
+                initial: [],
                 states: [
                   %Statifier.State{
-                    initial: nil,
+                    initial: [],
                     transitions: [
                       %Statifier.Transition{
                         event: nil,
@@ -231,7 +231,7 @@ defmodule Statifier.Parser.SCXMLTest do
                 name: nil,
                 states: [
                   %Statifier.State{
-                    initial: nil,
+                    initial: [],
                     transitions: [
                       %Statifier.Transition{
                         event: nil,

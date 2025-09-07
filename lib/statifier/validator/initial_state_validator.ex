@@ -13,20 +13,29 @@ defmodule Statifier.Validator.InitialStateValidator do
   """
   @spec validate_initial_state(Statifier.Validator.validation_result(), Statifier.Document.t()) ::
           Statifier.Validator.validation_result()
-  def validate_initial_state(%Statifier.Validator{} = result, %Statifier.Document{initial: nil}) do
+  def validate_initial_state(%Statifier.Validator{} = result, %Statifier.Document{initial: []}) do
     # No initial state specified - this is valid, first state becomes initial
+    result
+  end
+
+  def validate_initial_state(%Statifier.Validator{} = result, %Statifier.Document{initial: nil}) do
+    # Backward compatibility: nil initial state
     result
   end
 
   def validate_initial_state(
         %Statifier.Validator{} = result,
-        %Statifier.Document{initial: initial} = document
-      ) do
-    if Utils.state_exists?(initial, document) do
-      result
-    else
-      Utils.add_error(result, "Initial state '#{initial}' does not exist")
-    end
+        %Statifier.Document{initial: initial_ids} = document
+      )
+      when is_list(initial_ids) do
+    # Validate each initial state ID
+    Enum.reduce(initial_ids, result, fn initial_id, acc ->
+      if Utils.state_exists?(initial_id, document) do
+        acc
+      else
+        Utils.add_error(acc, "Initial state '#{initial_id}' does not exist")
+      end
+    end)
   end
 
   @doc """
@@ -57,27 +66,37 @@ defmodule Statifier.Validator.InitialStateValidator do
         ) ::
           Statifier.Validator.validation_result()
   def validate_initial_state_hierarchy(%Statifier.Validator{} = result, %Statifier.Document{
+        initial: []
+      }) do
+    result
+  end
+
+  def validate_initial_state_hierarchy(%Statifier.Validator{} = result, %Statifier.Document{
         initial: nil
       }) do
+    # Backward compatibility: nil initial state
     result
   end
 
   def validate_initial_state_hierarchy(
         %Statifier.Validator{} = result,
-        %Statifier.Document{initial: initial_id} = document
-      ) do
-    # Check if initial state is a direct child of the document (top-level)
-    if Enum.any?(document.states, &(&1.id == initial_id)) do
-      result
-    else
-      Utils.add_warning(result, "Document initial state '#{initial_id}' is not a top-level state")
-    end
+        %Statifier.Document{initial: initial_ids} = document
+      )
+      when is_list(initial_ids) do
+    # Check if all initial states are direct children of the document (top-level)
+    Enum.reduce(initial_ids, result, fn initial_id, acc ->
+      if Enum.any?(document.states, &(&1.id == initial_id)) do
+        acc
+      else
+        Utils.add_warning(acc, "Document initial state '#{initial_id}' is not a top-level state")
+      end
+    end)
   end
 
   # Validate that compound states with initial attributes reference valid child states
   defp validate_compound_state_initial(
          %Statifier.Validator{} = result,
-         %Statifier.State{initial: nil} = state,
+         %Statifier.State{initial: []} = state,
          _document
        ) do
     # No initial attribute - check for initial element validation
@@ -86,14 +105,24 @@ defmodule Statifier.Validator.InitialStateValidator do
 
   defp validate_compound_state_initial(
          %Statifier.Validator{} = result,
-         %Statifier.State{initial: initial_id} = state,
+         %Statifier.State{initial: nil} = state,
          _document
        ) do
+    # Backward compatibility: nil initial state
+    validate_initial_element(result, state)
+  end
+
+  defp validate_compound_state_initial(
+         %Statifier.Validator{} = result,
+         %Statifier.State{initial: initial_ids} = state,
+         _document
+       )
+       when is_list(initial_ids) and length(initial_ids) > 0 do
     result
     # First check if state has both initial attribute and initial element (invalid)
     |> validate_no_conflicting_initial_specs(state)
-    # Then validate the initial attribute reference
-    |> validate_initial_attribute_reference(state, initial_id)
+    # Then validate each initial attribute reference
+    |> validate_initial_attribute_references(state, initial_ids)
   end
 
   # Validate that a state doesn't have both initial attribute and initial element
@@ -102,8 +131,9 @@ defmodule Statifier.Validator.InitialStateValidator do
          %Statifier.State{initial: initial_attr} = state
        ) do
     has_initial_element = Enum.any?(state.states, &(&1.type == :initial))
+    has_initial_attr = is_list(initial_attr) and length(initial_attr) > 0
 
-    if initial_attr && has_initial_element do
+    if has_initial_attr and has_initial_element do
       Utils.add_error(
         result,
         "State '#{state.id}' cannot have both initial attribute and initial element - use one or the other"
@@ -113,21 +143,24 @@ defmodule Statifier.Validator.InitialStateValidator do
     end
   end
 
-  # Validate the initial attribute reference
-  defp validate_initial_attribute_reference(
+  # Validate multiple initial attribute references
+  defp validate_initial_attribute_references(
          %Statifier.Validator{} = result,
          %Statifier.State{} = state,
-         initial_id
-       ) do
-    # Check if the initial state is a direct child of this compound state
-    if Enum.any?(state.states, &(&1.id == initial_id)) do
-      result
-    else
-      Utils.add_error(
-        result,
-        "State '#{state.id}' specifies initial='#{initial_id}' but '#{initial_id}' is not a direct child"
-      )
-    end
+         initial_ids
+       )
+       when is_list(initial_ids) do
+    # Check each initial state is a direct child of this compound state
+    Enum.reduce(initial_ids, result, fn initial_id, acc ->
+      if Enum.any?(state.states, &(&1.id == initial_id)) do
+        acc
+      else
+        Utils.add_error(
+          acc,
+          "State '#{state.id}' specifies initial='#{initial_id}' but '#{initial_id}' is not a direct child"
+        )
+      end
+    end)
   end
 
   # Validate initial element constraints

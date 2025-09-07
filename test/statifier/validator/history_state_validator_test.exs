@@ -74,7 +74,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
       document = %Document{
         version: "1.0",
         xmlns: "http://www.w3.org/2005/07/scxml",
-        initial: "main",
+        initial: ["main"],
         states: [
           %Statifier.State{
             id: "main",
@@ -183,7 +183,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
       document = %Document{
         version: "1.0",
         xmlns: "http://www.w3.org/2005/07/scxml",
-        initial: "main",
+        initial: ["main"],
         states: [
           %Statifier.State{
             id: "main",
@@ -227,7 +227,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
       document = %Document{
         version: "1.0",
         xmlns: "http://www.w3.org/2005/07/scxml",
-        initial: "main",
+        initial: ["main"],
         states: [
           %Statifier.State{
             id: "main",
@@ -286,7 +286,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
       document = %Document{
         version: "1.0",
         xmlns: "http://www.w3.org/2005/07/scxml",
-        initial: "main",
+        initial: ["main"],
         states: [
           %Statifier.State{
             id: "main",
@@ -327,12 +327,12 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
       document = %Document{
         version: "1.0",
         xmlns: "http://www.w3.org/2005/07/scxml",
-        initial: "main",
+        initial: ["main"],
         states: [
           %Statifier.State{
             id: "main",
             type: :compound,
-            initial: "sub1",
+            initial: ["sub1"],
             states: [
               %Statifier.State{
                 id: "hist",
@@ -382,7 +382,7 @@ defmodule Statifier.Validator.HistoryStateValidatorTest do
       document = %Document{
         version: "1.0",
         xmlns: "http://www.w3.org/2005/07/scxml",
-        initial: "main",
+        initial: ["main"],
         states: [
           %Statifier.State{
             id: "rootHist",

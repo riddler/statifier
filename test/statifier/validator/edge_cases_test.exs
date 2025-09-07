@@ -65,7 +65,7 @@ defmodule Statifier.Validator.EdgeCasesTest do
     test "handles invalid initial state reference in compound state" do
       child1 = %State{id: "child1", states: []}
       child2 = %State{id: "child2", states: []}
-      parent = %State{id: "parent", initial: "nonexistent", states: [child1, child2]}
+      parent = %State{id: "parent", initial: ["nonexistent"], states: [child1, child2]}
       document = %Document{states: [parent]}
 
       {:error, errors, _warnings} = Validator.validate(document)
@@ -90,7 +90,7 @@ defmodule Statifier.Validator.EdgeCasesTest do
     test "handles document initial state that is not top-level" do
       child = %State{id: "nested_initial", states: []}
       parent = %State{id: "parent", states: [child]}
-      document = %Document{initial: "nested_initial", states: [parent]}
+      document = %Document{initial: ["nested_initial"], states: [parent]}
 
       {:ok, _document, warnings} = Validator.validate(document)
 
@@ -151,7 +151,7 @@ defmodule Statifier.Validator.EdgeCasesTest do
       child = %State{id: "child", states: [grandchild]}
       parent = %State{id: "parent", states: [child]}
       unreachable = %State{id: "unreachable", states: []}
-      document = %Document{initial: "parent", states: [parent, unreachable]}
+      document = %Document{initial: ["parent"], states: [parent, unreachable]}
 
       {:ok, _document, warnings} = Validator.validate(document)
 
@@ -165,7 +165,7 @@ defmodule Statifier.Validator.EdgeCasesTest do
       state1 = %State{id: "s1", transitions: [transition], states: []}
       state2 = %State{id: "s2", transitions: [], states: []}
       unreachable = %State{id: "unreachable", states: []}
-      document = %Document{initial: "s1", states: [state1, state2, unreachable]}
+      document = %Document{initial: ["s1"], states: [state1, state2, unreachable]}
 
       {:ok, _document, warnings} = Validator.validate(document)
 
@@ -179,7 +179,7 @@ defmodule Statifier.Validator.EdgeCasesTest do
       transition2 = %Transition{event: "back", targets: ["s1"]}
       state1 = %State{id: "s1", transitions: [transition1], states: []}
       state2 = %State{id: "s2", transitions: [transition2], states: []}
-      document = %Document{initial: "s1", states: [state1, state2]}
+      document = %Document{initial: ["s1"], states: [state1, state2]}
 
       {:ok, _document, warnings} = Validator.validate(document)
 

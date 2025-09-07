@@ -8,7 +8,7 @@ defmodule Statifier.Actions.InvokeActionTest do
   defp create_test_state_chart(datamodel \\ %{}, invoke_handlers \\ %{}) do
     document = %Statifier.Document{
       name: nil,
-      initial: "test",
+      initial: ["test"],
       states: [],
       state_lookup: %{},
       transitions_by_source: %{}
