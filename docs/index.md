@@ -5,13 +5,10 @@ hero:
   name: Statifier
   text: SCXML State Machines for Elixir
   tagline: Complete W3C compliant implementation with high-performance state chart execution
-  image:
-    src: /logo.svg
-    alt: Statifier Logo
   actions:
     - theme: brand
       text: Get Started
-      link: /getting-started
+      link: /tutorials/getting-started
     - theme: alt
       text: View on GitHub
       link: https://github.com/riddler/statifier
@@ -99,10 +96,21 @@ Add `statifier` to your list of dependencies in `mix.exs`:
 
 ## Learn More
 
-- **[Getting Started](/getting-started)** - Build your first state machine
+- **[Getting Started](/getting-started)** - Build your first state machine with working examples
+- **[External Services](/external-services)** - Integrate safely with APIs and external systems
+- **[Installation Guide](/installation)** - Set up Statifier in your project
+
+## Project Information
+
+- **[Architecture](/architecture)** - Technical design and component overview
+- **[Changelog](/changelog)** - Recent major feature completions and implementation details
+- **[Roadmap](/roadmap)** - Planned features and development priorities
+
+## Resources
+
 - **[GitHub Repository](https://github.com/riddler/statifier)** - Source code and issues  
 - **[Hex Package](https://hex.pm/packages/statifier)** - Package information
-- **[API Documentation](https://hexdocs.pm/statifier/)** - Complete module documentation
+- **[HexDocs API](https://hexdocs.pm/statifier/)** - Complete API documentation
 
 ---
 

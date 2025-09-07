@@ -16,6 +16,8 @@ export default defineConfig({
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Get Started', link: '/getting-started' },
+      { text: 'External Services', link: '/external-services' },
+      { text: 'Changelog', link: '/changelog' },
       { 
         text: 'Links', 
         items: [
@@ -28,10 +30,20 @@ export default defineConfig({
 
     sidebar: [
       {
-        text: 'Introduction',
+        text: 'Documentation',
         items: [
           { text: 'What is Statifier?', link: '/' },
-          { text: 'Getting Started', link: '/getting-started' }
+          { text: 'Installation', link: '/installation' },
+          { text: 'Getting Started', link: '/getting-started' },
+          { text: 'External Services', link: '/external-services' }
+        ]
+      },
+      {
+        text: 'Project Info',
+        items: [
+          { text: 'Architecture', link: '/architecture' },
+          { text: 'Changelog', link: '/changelog' },
+          { text: 'Roadmap', link: '/roadmap' }
         ]
       }
     ],
