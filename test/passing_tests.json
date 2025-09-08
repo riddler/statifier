@@ -107,6 +107,7 @@
     "test/scxml_tests/mandatory/data/test550_test.exs",
     "test/scxml_tests/mandatory/events/test396_test.exs",
     "test/scxml_tests/mandatory/events/test399_test.exs",
+    "test/scxml_tests/mandatory/events/test402_test.exs",
     "test/scxml_tests/mandatory/foreach/test152_test.exs",
     "test/scxml_tests/mandatory/foreach/test153_test.exs",
     "test/scxml_tests/mandatory/foreach/test155_test.exs",
