@@ -42,7 +42,26 @@ defmodule Statifier.Actions.AssignActionTest do
       assert %StateChart{datamodel: %{"userName" => "John Doe"}} = result
     end
 
-    test "executes nested assignment", %{state_chart: state_chart} do
+    test "fails nested assignment when intermediate structures don't exist", %{
+      state_chart: state_chart
+    } do
+      action = AssignAction.new("user.profile.name", "'Jane Smith'")
+
+      result = AssignAction.execute(state_chart, action)
+
+      # Should fail and generate error.execution event
+      assert result.internal_queue |> length() == 1
+      [error_event] = result.internal_queue
+      assert error_event.name == "error.execution"
+      assert error_event.data["type"] == "assign.execution"
+      assert error_event.data["location"] == "user.profile.name"
+    end
+
+    test "executes nested assignment when intermediate structures exist", %{
+      state_chart: state_chart
+    } do
+      # Set up intermediate structures first
+      state_chart = %{state_chart | datamodel: %{"user" => %{"profile" => %{}}}}
       action = AssignAction.new("user.profile.name", "'Jane Smith'")
 
       result = AssignAction.execute(state_chart, action)
@@ -60,8 +79,25 @@ defmodule Statifier.Actions.AssignActionTest do
       assert %StateChart{datamodel: %{"counter" => 8}} = result
     end
 
-    test "executes assignment with mixed notation", %{state_chart: state_chart} do
+    test "fails assignment with mixed notation when intermediate structures don't exist", %{
+      state_chart: state_chart
+    } do
       state_chart = %{state_chart | datamodel: %{"users" => %{}}}
+      action = AssignAction.new("users['john'].active", "true")
+
+      result = AssignAction.execute(state_chart, action)
+
+      # Should fail and generate error.execution event because users['john'] doesn't exist
+      assert result.internal_queue |> length() == 1
+      [error_event] = result.internal_queue
+      assert error_event.name == "error.execution"
+      assert error_event.data["type"] == "assign.execution"
+    end
+
+    test "executes assignment with mixed notation when intermediate structures exist", %{
+      state_chart: state_chart
+    } do
+      state_chart = %{state_chart | datamodel: %{"users" => %{"john" => %{}}}}
       action = AssignAction.new("users['john'].active", "true")
 
       result = AssignAction.execute(state_chart, action)
@@ -152,9 +188,27 @@ defmodule Statifier.Actions.AssignActionTest do
       assert log_entry.metadata.location == "result"
     end
 
-    test "assigns complex data structures", %{state_chart: state_chart} do
-      # This would work with enhanced expression evaluation that supports object literals
-      # For now, we test with a simple string that predictor can handle
+    test "fails to assign complex data structures when intermediate structures don't exist", %{
+      state_chart: state_chart
+    } do
+      # Assignment to config.settings should fail because config doesn't exist
+      action = AssignAction.new("config.settings", "'complex_value'")
+
+      result = AssignAction.execute(state_chart, action)
+
+      # Should fail and generate error.execution event
+      assert result.internal_queue |> length() == 1
+      [error_event] = result.internal_queue
+      assert error_event.name == "error.execution"
+      assert error_event.data["type"] == "assign.execution"
+      assert error_event.data["location"] == "config.settings"
+    end
+
+    test "assigns complex data structures when intermediate structures exist", %{
+      state_chart: state_chart
+    } do
+      # Set up intermediate structure first
+      state_chart = %{state_chart | datamodel: %{"config" => %{}}}
       action = AssignAction.new("config.settings", "'complex_value'")
 
       result = AssignAction.execute(state_chart, action)
@@ -187,20 +241,24 @@ defmodule Statifier.Actions.AssignActionTest do
       assert action.expr == "'John Doe'"
     end
 
-    test "expressions work correctly with validation-time compilation", %{
-      state_chart: state_chart
-    } do
+    test "expressions work correctly with validation-time compilation - fails when intermediate structures don't exist",
+         %{
+           state_chart: state_chart
+         } do
       action = AssignAction.new("user.settings.theme", "'dark'")
 
       # Verify expression is not compiled during creation
       assert is_nil(action.compiled_expr)
 
-      # Execute should work with runtime compilation as fallback
+      # Execute should fail because user doesn't exist
       result = AssignAction.execute(state_chart, action)
 
-      # Verify result is correct
-      expected_data = %{"user" => %{"settings" => %{"theme" => "dark"}}}
-      assert %StateChart{datamodel: ^expected_data} = result
+      # Should fail and generate error.execution event
+      assert result.internal_queue |> length() == 1
+      [error_event] = result.internal_queue
+      assert error_event.name == "error.execution"
+      assert error_event.data["type"] == "assign.execution"
+      assert error_event.data["location"] == "user.settings.theme"
     end
   end
 end

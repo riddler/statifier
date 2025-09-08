@@ -27,7 +27,7 @@ defmodule Statifier.Actions.AssignAction do
 
   """
 
-  alias Statifier.{Evaluator, StateChart}
+  alias Statifier.{Evaluator, Event, StateChart}
   alias Statifier.Logging.LogManager
   require LogManager
 
@@ -93,9 +93,21 @@ defmodule Statifier.Actions.AssignAction do
         %{state_chart | datamodel: updated_datamodel}
 
       {:error, reason} ->
-        # Log the error and continue without modification
-        LogManager.error(
-          state_chart,
+        # Create error.execution event per SCXML specification
+        error_event = %Event{
+          name: "error.execution",
+          data: %{
+            "reason" => inspect(reason),
+            "type" => "assign.execution",
+            "location" => assign_action.location,
+            "expr" => assign_action.expr
+          },
+          origin: :internal
+        }
+
+        # Log the error and generate error.execution event per SCXML spec
+        state_chart
+        |> LogManager.error(
           "Assign action failed: #{inspect(reason)}",
           %{
             action_type: "assign_action",
@@ -104,6 +116,7 @@ defmodule Statifier.Actions.AssignAction do
             error: inspect(reason)
           }
         )
+        |> StateChart.enqueue_event(error_event)
     end
   end
 end

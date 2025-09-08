@@ -322,17 +322,17 @@ defmodule Statifier.EvaluatorTest do
                Evaluator.assign_value(["user"], "John", datamodel)
     end
 
-    test "assigns to nested path" do
+    test "fails to assign to nested path when intermediate structure doesn't exist" do
       datamodel = %{}
 
-      assert {:ok, %{"user" => %{"name" => "John"}}} =
+      assert {:error, "Cannot assign to nested path: 'user' does not exist"} =
                Evaluator.assign_value(["user", "name"], "John", datamodel)
     end
 
-    test "assigns to deeply nested path" do
+    test "fails to assign to deeply nested path when intermediate structures don't exist" do
       datamodel = %{}
 
-      assert {:ok, %{"user" => %{"profile" => %{"settings" => %{"theme" => "dark"}}}}} =
+      assert {:error, "Cannot assign to nested path: 'user' does not exist"} =
                Evaluator.assign_value(
                  ["user", "profile", "settings", "theme"],
                  "dark",
@@ -371,13 +371,13 @@ defmodule Statifier.EvaluatorTest do
                Evaluator.evaluate_and_assign("result", "counter * 2", state_chart)
     end
 
-    test "works with nested assignments" do
+    test "fails with nested assignments when intermediate structures don't exist" do
       state_chart = %StateChart{
         configuration: Configuration.new([]),
         datamodel: %{"name" => "John"}
       }
 
-      assert {:ok, %{"user" => %{"profile" => %{"name" => "John"}}}} =
+      assert {:error, "Cannot assign to nested path: 'user' does not exist"} =
                Evaluator.evaluate_and_assign("user.profile.name", "name", state_chart)
     end
 

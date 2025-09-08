@@ -340,14 +340,22 @@ defmodule Statifier.DatamodelTest do
       {:ok, result1} = Datamodel.put_in_path(datamodel, ["key"], "value")
       assert result1 == %{"key" => "value"}
 
-      # Test nested path
-      {:ok, result2} = Datamodel.put_in_path(datamodel, ["user", "profile", "name"], "John")
-      assert result2 == %{"user" => %{"profile" => %{"name" => "John"}}}
+      # Test nested path fails when intermediate structures don't exist
+      {:error, error_msg} = Datamodel.put_in_path(datamodel, ["user", "profile", "name"], "John")
+      assert error_msg == "Cannot assign to nested path: 'user' does not exist"
 
       # Test updating existing nested structure
       existing = %{"user" => %{"age" => 30}}
       {:ok, result3} = Datamodel.put_in_path(existing, ["user", "name"], "Jane")
       assert result3 == %{"user" => %{"age" => 30, "name" => "Jane"}}
+
+      # Test creating nested path only when intermediate structures exist
+      existing_with_profile = %{"user" => %{"profile" => %{}}}
+
+      {:ok, result4} =
+        Datamodel.put_in_path(existing_with_profile, ["user", "profile", "name"], "John")
+
+      assert result4 == %{"user" => %{"profile" => %{"name" => "John"}}}
     end
 
     test "handles non-map structures with error" do
@@ -355,7 +363,7 @@ defmodule Statifier.DatamodelTest do
       datamodel = %{"user" => "not_a_map"}
 
       {:error, msg} = Datamodel.put_in_path(datamodel, ["user", "name"], "John")
-      assert msg == "Cannot assign to non-map structure"
+      assert msg == "Cannot assign to nested path: 'user' is not a map"
 
       # Try to assign to primitive value
       {:error, msg2} = Datamodel.put_in_path("string", ["key"], "value")
