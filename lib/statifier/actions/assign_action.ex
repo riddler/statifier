@@ -93,18 +93,6 @@ defmodule Statifier.Actions.AssignAction do
         %{state_chart | datamodel: updated_datamodel}
 
       {:error, reason} ->
-        # Log the error and generate error.execution event per SCXML spec
-        logged_state_chart = LogManager.error(
-          state_chart,
-          "Assign action failed: #{inspect(reason)}",
-          %{
-            action_type: "assign_action",
-            location: assign_action.location,
-            expr: assign_action.expr,
-            error: inspect(reason)
-          }
-        )
-
         # Create error.execution event per SCXML specification
         error_event = %Event{
           name: "error.execution",
@@ -117,9 +105,18 @@ defmodule Statifier.Actions.AssignAction do
           origin: :internal
         }
 
-        # Add to internal event queue
-        updated_queue = [error_event | logged_state_chart.internal_queue]
-        %{logged_state_chart | internal_queue: updated_queue}
+        # Log the error and generate error.execution event per SCXML spec
+        state_chart
+          |> LogManager.error(
+            "Assign action failed: #{inspect(reason)}",
+            %{
+              action_type: "assign_action",
+              location: assign_action.location,
+              expr: assign_action.expr,
+              error: inspect(reason)
+            }
+          )
+          |> StateChart.enqueue_event(error_event)
     end
   end
 end

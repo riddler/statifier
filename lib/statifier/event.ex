@@ -65,7 +65,7 @@ defmodule Statifier.Event do
       # Split event descriptor into space-separated alternatives
       descriptors = String.split(event_spec, " ")
       event_tokens = String.split(name, ".")
-      
+
       # Event matches if ANY descriptor matches
       Enum.any?(descriptors, fn descriptor ->
         if String.ends_with?(descriptor, ".*") do
@@ -87,7 +87,7 @@ defmodule Statifier.Event do
     # Spec tokens must be a prefix of event tokens for exact/prefix matching
     spec_length = length(spec_tokens)
     event_length = length(event_tokens)
-    
+
     # For prefix matching, spec can be shorter or equal length
     if spec_length <= event_length do
       event_prefix = Enum.take(event_tokens, spec_length)
@@ -102,7 +102,7 @@ defmodule Statifier.Event do
   defp matches_wildcard_prefix?(event_tokens, prefix_tokens) do
     prefix_length = length(prefix_tokens)
     event_length = length(event_tokens)
-    
+
     # Event must have more tokens than prefix for wildcard match
     if event_length > prefix_length do
       event_prefix = Enum.take(event_tokens, prefix_length)
