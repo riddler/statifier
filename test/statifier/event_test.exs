@@ -88,5 +88,83 @@ defmodule Statifier.EventTest do
       assert Event.matches?(event, "timeout")
       refute Event.matches?(event, "other_event")
     end
+
+    test "supports universal wildcard '*'" do
+      event1 = Event.new("any_event")
+      event2 = Event.new("foo.bar.baz")
+      event3 = Event.internal("internal_event")
+
+      # Universal wildcard should match any event
+      assert Event.matches?(event1, "*")
+      assert Event.matches?(event2, "*")
+      assert Event.matches?(event3, "*")
+    end
+
+    test "supports prefix matching" do
+      event = Event.new("foo.bar.baz")
+
+      # Prefix matching - spec tokens must be prefix of event tokens
+      # foo matches foo.bar.baz
+      assert Event.matches?(event, "foo")
+      # foo.bar matches foo.bar.baz
+      assert Event.matches?(event, "foo.bar")
+      # exact match
+      assert Event.matches?(event, "foo.bar.baz")
+
+      # Should not match if spec is longer than event
+      refute Event.matches?(event, "foo.bar.baz.qux")
+
+      # Should not match different prefixes
+      refute Event.matches?(event, "bar")
+      refute Event.matches?(event, "foo.different")
+    end
+
+    test "supports multiple descriptors with OR logic" do
+      event = Event.new("user.login")
+
+      # Should match if ANY descriptor matches
+      # matches "user"
+      assert Event.matches?(event, "user admin")
+      # matches "user"
+      assert Event.matches?(event, "admin user")
+      # matches "user.login"
+      assert Event.matches?(event, "foo user.login bar")
+
+      # Should not match if NO descriptor matches
+      refute Event.matches?(event, "admin system")
+      refute Event.matches?(event, "foo bar baz")
+    end
+
+    test "supports wildcard suffix patterns" do
+      # Test foo.* pattern matching
+      # matches foo.bar
+      assert Event.matches?(Event.new("foo.bar"), "foo.*")
+      # matches foo.baz
+      assert Event.matches?(Event.new("foo.baz"), "foo.*")
+      # matches foo.bar.qux
+      assert Event.matches?(Event.new("foo.bar.qux"), "foo.*")
+
+      # Should not match just "foo" (wildcard requires additional tokens)
+      refute Event.matches?(Event.new("foo"), "foo.*")
+
+      # Should not match different prefixes
+      refute Event.matches?(Event.new("bar.baz"), "foo.*")
+
+      # Test more complex wildcard patterns
+      assert Event.matches?(Event.new("user.profile.updated"), "user.profile.*")
+      refute Event.matches?(Event.new("user.profile"), "user.profile.*")
+    end
+
+    test "combines multiple patterns correctly" do
+      event = Event.new("system.error.critical")
+
+      # Multiple patterns with wildcards and prefixes
+      # matches system.*
+      assert Event.matches?(event, "system.* user.*")
+      # matches system prefix
+      assert Event.matches?(event, "system user.*")
+      # matches neither
+      refute Event.matches?(event, "admin.* user.*")
+    end
   end
 end

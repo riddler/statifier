@@ -107,16 +107,16 @@ defmodule Statifier.Actions.AssignAction do
 
         # Log the error and generate error.execution event per SCXML spec
         state_chart
-          |> LogManager.error(
-            "Assign action failed: #{inspect(reason)}",
-            %{
-              action_type: "assign_action",
-              location: assign_action.location,
-              expr: assign_action.expr,
-              error: inspect(reason)
-            }
-          )
-          |> StateChart.enqueue_event(error_event)
+        |> LogManager.error(
+          "Assign action failed: #{inspect(reason)}",
+          %{
+            action_type: "assign_action",
+            location: assign_action.location,
+            expr: assign_action.expr,
+            error: inspect(reason)
+          }
+        )
+        |> StateChart.enqueue_event(error_event)
     end
   end
 end

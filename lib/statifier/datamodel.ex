@@ -127,13 +127,13 @@ defmodule Statifier.Datamodel do
       nil ->
         # Key doesn't exist - cannot assign to nested path on nil
         {:error, "Cannot assign to nested path: '#{key}' does not exist"}
-      
+
       nested_map when is_map(nested_map) ->
         case put_in_path(nested_map, rest, value) do
           {:ok, updated_nested} -> {:ok, Map.put(map, key, updated_nested)}
           error -> error
         end
-      
+
       _non_map ->
         {:error, "Cannot assign to nested path: '#{key}' is not a map"}
     end

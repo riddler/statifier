@@ -57,58 +57,47 @@ defmodule Statifier.Event do
   @spec matches?(t(), String.t() | nil) :: boolean()
   def matches?(%__MODULE__{}, nil), do: false
 
-  def matches?(%__MODULE__{name: name}, event_spec) when is_binary(event_spec) do
-    # Universal wildcard matches any event
-    if event_spec == "*" do
-      true
-    else
-      # Split event descriptor into space-separated alternatives
-      descriptors = String.split(event_spec, " ")
-      event_tokens = String.split(name, ".")
+  # Universal wildcard matches any event
+  def matches?(%__MODULE__{name: _name}, "*"), do: true
 
-      # Event matches if ANY descriptor matches
-      Enum.any?(descriptors, fn descriptor ->
-        if String.ends_with?(descriptor, ".*") do
-          # Wildcard pattern: "foo.*" matches "foo.bar" but not "foo"
-          prefix = String.slice(descriptor, 0, String.length(descriptor) - 2)
-          prefix_tokens = String.split(prefix, ".")
-          matches_wildcard_prefix?(event_tokens, prefix_tokens)
-        else
-          # Regular prefix matching: "foo" matches "foo", "foo.bar", etc.
-          descriptor_tokens = String.split(descriptor, ".")
-          matches_prefix?(event_tokens, descriptor_tokens)
-        end
-      end)
-    end
+  def matches?(%__MODULE__{name: name}, event_spec) when is_binary(event_spec) do
+    # Split event descriptor into space-separated alternatives
+    descriptors = String.split(event_spec, " ")
+    event_tokens = String.split(name, ".")
+
+    # Event matches if ANY descriptor matches
+    Enum.any?(descriptors, fn descriptor ->
+      if String.ends_with?(descriptor, ".*") do
+        # Wildcard pattern: "foo.*" matches "foo.bar" but not "foo"
+        prefix = String.slice(descriptor, 0, String.length(descriptor) - 2)
+        prefix_tokens = String.split(prefix, ".")
+        matches_wildcard_prefix?(event_tokens, prefix_tokens)
+      else
+        # Regular prefix matching: "foo" matches "foo", "foo.bar", etc.
+        descriptor_tokens = String.split(descriptor, ".")
+        matches_prefix?(event_tokens, descriptor_tokens)
+      end
+    end)
   end
 
   # Check if event tokens match spec tokens as prefix
-  defp matches_prefix?(event_tokens, spec_tokens) do
-    # Spec tokens must be a prefix of event tokens for exact/prefix matching
+  defp matches_prefix?(event_tokens, spec_tokens)
+       when length(spec_tokens) <= length(event_tokens) do
     spec_length = length(spec_tokens)
-    event_length = length(event_tokens)
-
-    # For prefix matching, spec can be shorter or equal length
-    if spec_length <= event_length do
-      event_prefix = Enum.take(event_tokens, spec_length)
-      event_prefix == spec_tokens
-    else
-      false
-    end
+    event_prefix = Enum.take(event_tokens, spec_length)
+    event_prefix == spec_tokens
   end
+
+  defp matches_prefix?(_event_tokens, _spec_tokens), do: false
 
   # Check wildcard prefix patterns like "foo.*"
   # Requires event to have MORE tokens than prefix (wildcard means additional tokens)
-  defp matches_wildcard_prefix?(event_tokens, prefix_tokens) do
+  defp matches_wildcard_prefix?(event_tokens, prefix_tokens)
+       when length(event_tokens) > length(prefix_tokens) do
     prefix_length = length(prefix_tokens)
-    event_length = length(event_tokens)
-
-    # Event must have more tokens than prefix for wildcard match
-    if event_length > prefix_length do
-      event_prefix = Enum.take(event_tokens, prefix_length)
-      event_prefix == prefix_tokens
-    else
-      false
-    end
+    event_prefix = Enum.take(event_tokens, prefix_length)
+    event_prefix == prefix_tokens
   end
+
+  defp matches_wildcard_prefix?(_event_tokens, _prefix_tokens), do: false
 end

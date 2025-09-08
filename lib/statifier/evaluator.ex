@@ -112,6 +112,7 @@ defmodule Statifier.Evaluator do
     # Validate location expression doesn't have leading/trailing whitespace
     # Per SCXML spec and test401 expectation, locations should be clean identifiers
     trimmed = String.trim(location_expr)
+
     if trimmed != location_expr do
       {:error, "Location expression cannot have leading or trailing whitespace"}
     else
@@ -138,6 +139,7 @@ defmodule Statifier.Evaluator do
     # Validate location expression doesn't have leading/trailing whitespace
     # Per SCXML spec and test401 expectation, locations should be clean identifiers
     trimmed = String.trim(location_expr)
+
     if trimmed != location_expr do
       {:error, "Location expression cannot have leading or trailing whitespace"}
     else

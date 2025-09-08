@@ -42,7 +42,9 @@ defmodule Statifier.Actions.AssignActionTest do
       assert %StateChart{datamodel: %{"userName" => "John Doe"}} = result
     end
 
-    test "fails nested assignment when intermediate structures don't exist", %{state_chart: state_chart} do
+    test "fails nested assignment when intermediate structures don't exist", %{
+      state_chart: state_chart
+    } do
       action = AssignAction.new("user.profile.name", "'Jane Smith'")
 
       result = AssignAction.execute(state_chart, action)
@@ -55,7 +57,9 @@ defmodule Statifier.Actions.AssignActionTest do
       assert error_event.data["location"] == "user.profile.name"
     end
 
-    test "executes nested assignment when intermediate structures exist", %{state_chart: state_chart} do
+    test "executes nested assignment when intermediate structures exist", %{
+      state_chart: state_chart
+    } do
       # Set up intermediate structures first
       state_chart = %{state_chart | datamodel: %{"user" => %{"profile" => %{}}}}
       action = AssignAction.new("user.profile.name", "'Jane Smith'")
@@ -75,7 +79,9 @@ defmodule Statifier.Actions.AssignActionTest do
       assert %StateChart{datamodel: %{"counter" => 8}} = result
     end
 
-    test "fails assignment with mixed notation when intermediate structures don't exist", %{state_chart: state_chart} do
+    test "fails assignment with mixed notation when intermediate structures don't exist", %{
+      state_chart: state_chart
+    } do
       state_chart = %{state_chart | datamodel: %{"users" => %{}}}
       action = AssignAction.new("users['john'].active", "true")
 
@@ -88,7 +94,9 @@ defmodule Statifier.Actions.AssignActionTest do
       assert error_event.data["type"] == "assign.execution"
     end
 
-    test "executes assignment with mixed notation when intermediate structures exist", %{state_chart: state_chart} do
+    test "executes assignment with mixed notation when intermediate structures exist", %{
+      state_chart: state_chart
+    } do
       state_chart = %{state_chart | datamodel: %{"users" => %{"john" => %{}}}}
       action = AssignAction.new("users['john'].active", "true")
 
@@ -180,7 +188,9 @@ defmodule Statifier.Actions.AssignActionTest do
       assert log_entry.metadata.location == "result"
     end
 
-    test "fails to assign complex data structures when intermediate structures don't exist", %{state_chart: state_chart} do
+    test "fails to assign complex data structures when intermediate structures don't exist", %{
+      state_chart: state_chart
+    } do
       # Assignment to config.settings should fail because config doesn't exist
       action = AssignAction.new("config.settings", "'complex_value'")
 
@@ -194,7 +204,9 @@ defmodule Statifier.Actions.AssignActionTest do
       assert error_event.data["location"] == "config.settings"
     end
 
-    test "assigns complex data structures when intermediate structures exist", %{state_chart: state_chart} do
+    test "assigns complex data structures when intermediate structures exist", %{
+      state_chart: state_chart
+    } do
       # Set up intermediate structure first
       state_chart = %{state_chart | datamodel: %{"config" => %{}}}
       action = AssignAction.new("config.settings", "'complex_value'")
@@ -229,9 +241,10 @@ defmodule Statifier.Actions.AssignActionTest do
       assert action.expr == "'John Doe'"
     end
 
-    test "expressions work correctly with validation-time compilation - fails when intermediate structures don't exist", %{
-      state_chart: state_chart
-    } do
+    test "expressions work correctly with validation-time compilation - fails when intermediate structures don't exist",
+         %{
+           state_chart: state_chart
+         } do
       action = AssignAction.new("user.settings.theme", "'dark'")
 
       # Verify expression is not compiled during creation

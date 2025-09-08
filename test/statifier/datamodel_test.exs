@@ -351,7 +351,10 @@ defmodule Statifier.DatamodelTest do
 
       # Test creating nested path only when intermediate structures exist
       existing_with_profile = %{"user" => %{"profile" => %{}}}
-      {:ok, result4} = Datamodel.put_in_path(existing_with_profile, ["user", "profile", "name"], "John")
+
+      {:ok, result4} =
+        Datamodel.put_in_path(existing_with_profile, ["user", "profile", "name"], "John")
+
       assert result4 == %{"user" => %{"profile" => %{"name" => "John"}}}
     end
 
