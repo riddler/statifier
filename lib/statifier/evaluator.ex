@@ -65,7 +65,7 @@ defmodule Statifier.Evaluator do
 
   def evaluate_condition(compiled_cond, state_chart) do
     # Build context once using the unified approach
-    context = Datamodel.build_evaluation_context(state_chart.datamodel, state_chart)
+    context = Datamodel.build_evaluation_context(state_chart)
     functions = Datamodel.build_predicator_functions(state_chart.configuration)
 
     case Predicator.evaluate(compiled_cond, context, functions: functions) do
@@ -88,7 +88,7 @@ defmodule Statifier.Evaluator do
 
   def evaluate_value(compiled_expr, state_chart) do
     # Build context once using the unified approach
-    context = Datamodel.build_evaluation_context(state_chart.datamodel, state_chart)
+    context = Datamodel.build_evaluation_context(state_chart)
     functions = Datamodel.build_predicator_functions(state_chart.configuration)
 
     case Predicator.evaluate(compiled_expr, context, functions: functions) do
@@ -129,7 +129,7 @@ defmodule Statifier.Evaluator do
           {:ok, [String.t()]} | {:error, term()}
   def resolve_location(location_expr, state_chart) when is_binary(location_expr) do
     # Build evaluation context for location resolution
-    context = Datamodel.build_evaluation_context(state_chart.datamodel, state_chart)
+    context = Datamodel.build_evaluation_context(state_chart)
 
     # Note: context_location doesn't need functions parameter
     case Predicator.context_location(location_expr, context) do
@@ -195,7 +195,7 @@ defmodule Statifier.Evaluator do
 
   # Evaluate using predicator with proper SCXML context and functions
   defp evaluate_with_predicator(expression_or_instructions, state_chart) do
-    context = Datamodel.build_evaluation_context(state_chart.datamodel, state_chart)
+    context = Datamodel.build_evaluation_context(state_chart)
     functions = Datamodel.build_predicator_functions(state_chart.configuration)
 
     case Predicator.evaluate(expression_or_instructions, context, functions: functions) do

@@ -101,26 +101,67 @@ defmodule Statifier.Actions.ForeachAction do
   """
   @spec execute(StateChart.t(), t()) :: StateChart.t()
   def execute(%StateChart{} = state_chart, %__MODULE__{} = foreach_action) do
-    # Step 1: Evaluate array expression
-    case evaluate_array(foreach_action, state_chart) do
-      {:ok, collection} when is_list(collection) ->
-        # Step 2: Execute iteration with proper variable scoping
-        execute_iteration(foreach_action, collection, state_chart)
+    # Step 1: Validate item and index parameters are legal variable names
+    case validate_variable_names(foreach_action) do
+      :ok ->
+        # Step 2: Evaluate array expression
+        case evaluate_array(foreach_action, state_chart) do
+          {:ok, collection} when is_list(collection) ->
+            # Step 3: Execute iteration with proper variable scoping
+            execute_iteration(foreach_action, collection, state_chart)
 
-      {:ok, _non_list} ->
-        # Not an iterable collection - raise error.execution
-        raise_execution_error(
-          state_chart,
-          "Array expression did not evaluate to an iterable collection"
-        )
+          {:ok, _non_list} ->
+            # Not an iterable collection - raise error.execution
+            raise_execution_error(
+              state_chart,
+              "Array expression did not evaluate to an iterable collection"
+            )
+
+          {:error, reason} ->
+            # Array evaluation failed - raise error.execution
+            raise_execution_error(state_chart, "Array evaluation failed: #{inspect(reason)}")
+        end
 
       {:error, reason} ->
-        # Array evaluation failed - raise error.execution
-        raise_execution_error(state_chart, "Array evaluation failed: #{inspect(reason)}")
+        # Invalid variable names - raise error.execution
+        raise_execution_error(state_chart, reason)
     end
   end
 
   # Private functions
+
+  # Validate that item and index parameters are legal variable names
+  defp validate_variable_names(foreach_action) do
+    # Validate item parameter (required)
+    case validate_single_variable_name(foreach_action.item, "item") do
+      :ok ->
+        # Validate index parameter (optional)
+        if foreach_action.index do
+          validate_single_variable_name(foreach_action.index, "index")
+        else
+          :ok
+        end
+
+      error ->
+        error
+    end
+  end
+
+  # Validate a single variable name using the Evaluator location validation
+  defp validate_single_variable_name(variable_name, param_type) do
+    case Evaluator.resolve_location(variable_name) do
+      {:ok, _location} ->
+        :ok
+
+      {:error, %{type: :not_assignable}} ->
+        {:error,
+         "#{param_type} parameter '#{variable_name}' is not a legal variable name - cannot assign to literals"}
+
+      {:error, reason} ->
+        {:error,
+         "#{param_type} parameter '#{variable_name}' is not a legal variable name: #{inspect(reason)}"}
+    end
+  end
 
   # Evaluate the array expression to get the collection
   defp evaluate_array(%{compiled_array: compiled_array, array: array_expr}, state_chart) do

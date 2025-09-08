@@ -1,7 +1,7 @@
 defmodule Statifier.Actions.IfActionTest do
   use ExUnit.Case, async: true
 
-  alias Statifier.{Actions.AssignAction, Actions.IfAction, Configuration, StateChart}
+  alias Statifier.{Actions.AssignAction, Actions.IfAction, Configuration, Evaluator, StateChart}
 
   describe "IfAction.new/2" do
     test "creates if action with single block" do
@@ -102,6 +102,83 @@ defmodule Statifier.Actions.IfActionTest do
 
       # Should execute the elseif block and assign "second" to result
       assert result.datamodel["result"] == "second"
+    end
+
+    test "handles empty conditional blocks list" do
+      if_action = IfAction.new([])
+
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{"existing" => "value"}
+      }
+
+      result = IfAction.execute(state_chart, if_action)
+
+      # Should return unchanged state chart
+      assert result == state_chart
+    end
+
+    test "handles invalid condition expressions" do
+      assign_action = AssignAction.new("result", "'executed'")
+
+      blocks = [
+        %{type: :if, cond: "invalid@#$syntax", actions: [assign_action]}
+      ]
+
+      if_action = IfAction.new(blocks)
+
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{}
+      }
+
+      result = IfAction.execute(state_chart, if_action)
+
+      # Should not execute actions due to invalid condition
+      refute Map.has_key?(result.datamodel, "result")
+    end
+
+    test "handles nil condition in conditional block" do
+      assign_action = AssignAction.new("result", "'executed'")
+
+      blocks = [
+        %{type: :if, cond: nil, actions: [assign_action]}
+      ]
+
+      if_action = IfAction.new(blocks)
+
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{}
+      }
+
+      result = IfAction.execute(state_chart, if_action)
+
+      # Should not execute actions due to nil condition
+      refute Map.has_key?(result.datamodel, "result")
+    end
+
+    test "handles pre-compiled conditions" do
+      assign_action = AssignAction.new("result", "'precompiled'")
+
+      # Create a block with a pre-compiled condition
+      {:ok, compiled_condition} = Evaluator.compile_expression("true")
+
+      blocks = [
+        %{type: :if, cond: "true", compiled_cond: compiled_condition, actions: [assign_action]}
+      ]
+
+      if_action = IfAction.new(blocks)
+
+      state_chart = %StateChart{
+        configuration: Configuration.new([]),
+        datamodel: %{}
+      }
+
+      result = IfAction.execute(state_chart, if_action)
+
+      # Should execute actions using pre-compiled condition
+      assert result.datamodel["result"] == "precompiled"
     end
   end
 end

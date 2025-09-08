@@ -76,11 +76,92 @@ defmodule Statifier.Parser.SCXMLTest do
                   %Statifier.Data{
                     id: "counter",
                     expr: "0",
-                    src: nil
+                    src: nil,
+                    child_content: nil
                   },
                   %Statifier.Data{
                     id: "name",
-                    expr: nil
+                    expr: nil,
+                    child_content: nil
+                  }
+                ]
+              }} = SCXML.parse(xml)
+    end
+
+    test "parses SCXML data elements with child content" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="elixir">
+        <datamodel>
+          <data id="config">
+            {"theme": "dark", "lang": "en"}
+          </data>
+          <data id="items">
+            [1, 2, 3, 4, 5]
+          </data>
+          <data id="mixed" expr="'override'">
+            {"should": "be ignored"}
+          </data>
+        </datamodel>
+        <state id="start"/>
+      </scxml>
+      """
+
+      assert {:ok,
+              %Document{
+                datamodel: "elixir",
+                datamodel_elements: [
+                  %Statifier.Data{
+                    id: "config",
+                    expr: nil,
+                    src: nil,
+                    child_content: ~s|{"theme": "dark", "lang": "en"}|
+                  },
+                  %Statifier.Data{
+                    id: "items",
+                    expr: nil,
+                    src: nil,
+                    child_content: "[1, 2, 3, 4, 5]"
+                  },
+                  %Statifier.Data{
+                    id: "mixed",
+                    expr: "'override'",
+                    src: nil,
+                    child_content: ~s|{"should": "be ignored"}|
+                  }
+                ]
+              }} = SCXML.parse(xml)
+    end
+
+    test "parses SCXML data elements ignoring whitespace-only child content" do
+      xml = """
+      <scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" datamodel="elixir">
+        <datamodel>
+          <data id="empty1">
+
+          </data>
+          <data id="empty2">	</data>
+          <data id="hasContent">
+            "real content"
+          </data>
+        </datamodel>
+        <state id="start"/>
+      </scxml>
+      """
+
+      assert {:ok,
+              %Document{
+                datamodel_elements: [
+                  %Statifier.Data{
+                    id: "empty1",
+                    child_content: nil
+                  },
+                  %Statifier.Data{
+                    id: "empty2",
+                    child_content: nil
+                  },
+                  %Statifier.Data{
+                    id: "hasContent",
+                    child_content: ~s|"real content"|
                   }
                 ]
               }} = SCXML.parse(xml)

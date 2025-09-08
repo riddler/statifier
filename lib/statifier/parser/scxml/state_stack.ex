@@ -169,6 +169,7 @@ defmodule Statifier.Parser.SCXML.StateStack do
 
     case parent_stack do
       [{"datamodel", _datamodel_placeholder} | [{"scxml", document} | rest]] ->
+        # Document-level datamodel: add to document and continue
         updated_document = %{
           document
           | datamodel_elements: document.datamodel_elements ++ [data_element]
@@ -182,9 +183,64 @@ defmodule Statifier.Parser.SCXML.StateStack do
 
         {:ok, updated_state}
 
+      [{"datamodel", _datamodel_placeholder} | [{"state", state_data} | rest]] ->
+        # State-level datamodel: check binding and add to document if early binding
+        case find_document_in_stack([{"state", state_data} | rest]) do
+          {document, updated_stack} when document.binding == "early" ->
+            # Early binding: add state-level data element to document's datamodel_elements
+            updated_document = %{
+              document
+              | datamodel_elements: document.datamodel_elements ++ [data_element]
+            }
+
+            # Update the document in the stack
+            final_stack = replace_document_in_stack(updated_stack, updated_document)
+
+            updated_state = %{
+              state
+              | result: updated_document,
+                stack: [{"datamodel", nil} | final_stack]
+            }
+
+            {:ok, updated_state}
+
+          _binding ->
+            # Late binding or no binding: just remove from stack (state-level data not implemented yet)
+            {:ok, %{state | stack: [{"datamodel", nil}, {"state", state_data} | rest]}}
+        end
+
       _other_parent ->
         {:ok, %{state | stack: parent_stack}}
     end
+  end
+
+  # Helper function to find document in the stack and return it with the remaining stack
+  defp find_document_in_stack([{"scxml", document} | rest]) do
+    {document, [{"scxml", document} | rest]}
+  end
+
+  defp find_document_in_stack([other | rest]) do
+    case find_document_in_stack(rest) do
+      {document, updated_rest} -> {document, [other | updated_rest]}
+      nil -> nil
+    end
+  end
+
+  defp find_document_in_stack([]) do
+    nil
+  end
+
+  # Helper function to replace document in the stack
+  defp replace_document_in_stack([{"scxml", _old_document} | rest], new_document) do
+    [{"scxml", new_document} | rest]
+  end
+
+  defp replace_document_in_stack([other | rest], new_document) do
+    [other | replace_document_in_stack(rest, new_document)]
+  end
+
+  defp replace_document_in_stack([], _new_document) do
+    []
   end
 
   @doc """
@@ -867,7 +923,7 @@ defmodule Statifier.Parser.SCXML.StateStack do
   end
 
   @doc """
-  Handle text content for elements that support it (like <content>).
+  Handle text content for elements that support it (like <content> and <data>).
   """
   @spec handle_characters(String.t(), map()) :: {:ok, map()} | :not_handled
   def handle_characters(character_data, %{stack: [{element_name, element} | _rest]} = state) do
@@ -879,6 +935,19 @@ defmodule Statifier.Parser.SCXML.StateStack do
         if trimmed_content != "" do
           updated_content = %{element | content: trimmed_content}
           updated_stack = replace_top_element(state.stack, {"content", updated_content})
+          {:ok, %{state | stack: updated_stack}}
+        else
+          # Ignore whitespace-only content
+          {:ok, state}
+        end
+
+      "data" ->
+        # Add child content to data element
+        trimmed_content = String.trim(character_data)
+
+        if trimmed_content != "" do
+          updated_data = %{element | child_content: trimmed_content}
+          updated_stack = replace_top_element(state.stack, {"data", updated_data})
           {:ok, %{state | stack: updated_stack}}
         else
           # Ignore whitespace-only content

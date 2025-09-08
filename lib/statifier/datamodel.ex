@@ -17,17 +17,17 @@ defmodule Statifier.Datamodel do
         %Statifier.Data{id: "counter", expr: "0"},
         %Statifier.Data{id: "name", expr: "'John'"}
       ]
-      datamodel = Statifier.Datamodel.initialize(data_elements, state_chart)
+      state_chart = Statifier.Datamodel.initialize(state_chart, data_elements)
 
       # Access variables
-      value = Statifier.Datamodel.get(datamodel, "counter")
+      value = Statifier.Datamodel.get(state_chart.datamodel, "counter")
       # => 0
 
       # Update variables
       datamodel = Statifier.Datamodel.set(datamodel, "counter", 1)
   """
 
-  alias Statifier.{Configuration, Evaluator}
+  alias Statifier.{Configuration, Evaluator, Event, StateChart}
   alias Statifier.Logging.LogManager
   require LogManager
 
@@ -45,13 +45,19 @@ defmodule Statifier.Datamodel do
   Initialize a datamodel from a list of data elements.
 
   Processes each `<data>` element, evaluates its expression (if any),
-  and stores the result in the datamodel.
+  and stores the result in the datamodel. Returns the updated StateChart
+  with the initialized datamodel and any error events that were generated.
   """
-  @spec initialize(list(Statifier.Data.t()), Statifier.StateChart.t()) :: t()
-  def initialize(data_elements, state_chart) when is_list(data_elements) do
-    Enum.reduce(data_elements, new(), fn data_element, model ->
-      initialize_variable(data_element, model, state_chart)
-    end)
+  @spec initialize(Statifier.StateChart.t(), list(Statifier.Data.t())) ::
+          Statifier.StateChart.t()
+  def initialize(state_chart, data_elements) when is_list(data_elements) do
+    {datamodel, updated_state_chart} =
+      Enum.reduce(data_elements, {new(), state_chart}, fn data_element, {model, sc} ->
+        initialize_variable(sc, data_element, model)
+      end)
+
+    # Return StateChart with updated datamodel
+    %{updated_state_chart | datamodel: datamodel}
   end
 
   @doc """
@@ -132,11 +138,11 @@ defmodule Statifier.Datamodel do
   @doc """
   Build evaluation context for Predicator expressions.
 
-  Takes the datamodel and state_chart, returns a context ready for evaluation.
+  Takes the state_chart, extracts its datamodel, and returns a context ready for evaluation.
   This is the single source of truth for context preparation.
   """
-  @spec build_evaluation_context(t(), Statifier.StateChart.t()) :: map()
-  def build_evaluation_context(datamodel, state_chart) do
+  @spec build_evaluation_context(Statifier.StateChart.t()) :: map()
+  def build_evaluation_context(%Statifier.StateChart{datamodel: datamodel} = state_chart) do
     %{}
     # Start with datamodel variables as base
     |> Map.merge(datamodel)
@@ -194,56 +200,107 @@ defmodule Statifier.Datamodel do
     |> Map.put("_ioprocessors", [])
   end
 
-  defp initialize_variable(%{id: id, expr: expr}, model, state_chart)
+  defp initialize_variable(state_chart, %{id: id} = data_element, model)
        when is_binary(id) do
     # Build context for expression evaluation using the simplified approach
     # Create a temporary state chart with current datamodel for evaluation
     temp_state_chart = %{state_chart | datamodel: model}
 
-    # Evaluate the expression or use nil as default
-    value = evaluate_initial_expression(expr, temp_state_chart)
+    # Evaluate the data value using SCXML precedence: expr > child_content > src
+    case determine_data_value(temp_state_chart, data_element) do
+      {:ok, value, updated_state_chart} ->
+        # Store in model and return updated state chart
+        {Map.put(model, id, value), updated_state_chart}
 
-    # Store in model
-    Map.put(model, id, value)
-  end
-
-  defp initialize_variable(_data_element, model, _state_chart) do
-    # Skip data elements without valid id
-    model
-  end
-
-  defp evaluate_initial_expression(nil, _state_chart), do: nil
-  defp evaluate_initial_expression("", _state_chart), do: nil
-
-  defp evaluate_initial_expression(expr_string, state_chart) do
-    case Evaluator.compile_expression(expr_string) do
-      {:ok, compiled} ->
-        case Evaluator.evaluate_value(compiled, state_chart) do
-          {:ok, val} ->
-            val
-
-          {:error, reason} ->
-            # Log the error but continue with fallback
-            LogManager.debug(state_chart, "Failed to evaluate datamodel expression", %{
-              action_type: "datamodel_evaluation",
-              expr_string: expr_string,
-              error: inspect(reason)
-            })
-
-            # For now, default to the literal string if evaluation fails
-            # This handles cases like object literals that Predicator can't parse
-            expr_string
-        end
-
-      {:error, reason} ->
-        LogManager.debug(state_chart, "Failed to compile datamodel expression", %{
-          action_type: "datamodel_compilation",
-          expr_string: expr_string,
+      {:error, reason, updated_state_chart} ->
+        # Per SCXML spec: create empty variable and generate error.execution event
+        LogManager.debug(updated_state_chart, "Data element initialization failed", %{
+          action_type: "datamodel_error",
+          data_id: id,
           error: inspect(reason)
         })
 
-        # Default to literal string if compilation fails
-        expr_string
+        # Create error.execution event
+        error_event = %Event{
+          name: "error.execution",
+          data: %{"reason" => reason, "type" => "datamodel.initialization", "data_id" => id},
+          origin: :internal
+        }
+
+        # Add event to internal queue and create empty variable
+        final_state_chart = StateChart.enqueue_event(updated_state_chart, error_event)
+        {Map.put(model, id, nil), final_state_chart}
+    end
+  end
+
+  defp initialize_variable(state_chart, _data_element, model) do
+    # Skip data elements without valid id
+    {model, state_chart}
+  end
+
+  # Implement SCXML data value precedence: expr attribute > child content > src attribute
+  defp determine_data_value(state_chart, %{expr: expr, child_content: child_content, src: src}) do
+    cond do
+      # 1. expr attribute has highest precedence
+      expr && expr != "" ->
+        evaluate_initial_expression_with_errors(state_chart, expr)
+
+      # 2. child content has second precedence
+      child_content && child_content != "" ->
+        evaluate_child_content_with_errors(state_chart, child_content)
+
+      # 3. src attribute has lowest precedence (not implemented yet)
+      src && src != "" ->
+        # NOTE: src loading planned for future implementation phase
+        LogManager.debug(state_chart, "src attribute not yet supported for data elements", %{
+          action_type: "datamodel_src_loading",
+          src: src
+        })
+
+        {:ok, nil, state_chart}
+
+      # 4. Default to nil if no value source specified
+      true ->
+        {:ok, nil, state_chart}
+    end
+  end
+
+  # Error-aware version of evaluate_initial_expression for proper error event generation
+  defp evaluate_initial_expression_with_errors(state_chart, expr_string) do
+    case Evaluator.compile_expression(expr_string) do
+      {:ok, compiled} ->
+        case Evaluator.evaluate_value(compiled, state_chart) do
+          {:ok, value} ->
+            {:ok, value, state_chart}
+
+          {:error, reason} ->
+            # Expression evaluation failed - should generate error.execution
+            {:error, "Expression evaluation failed: #{inspect(reason)}", state_chart}
+        end
+
+      {:error, reason} ->
+        # Compilation failed - should generate error.execution
+        {:error, "Expression compilation failed: #{inspect(reason)}", state_chart}
+    end
+  end
+
+  # Error-aware version of evaluate_child_content using Predicator/Evaluator
+  defp evaluate_child_content_with_errors(state_chart, child_content) do
+    # Use Evaluator to handle all expression types including literals, arrays, objects
+    case Evaluator.compile_expression(child_content) do
+      {:ok, compiled} ->
+        case Evaluator.evaluate_value(compiled, state_chart) do
+          {:ok, value} ->
+            {:ok, value, state_chart}
+
+          {:error, reason} ->
+            # Expression evaluation failed - this is an error for child content
+            {:error, "Child content evaluation failed: #{inspect(reason)}", state_chart}
+        end
+
+      {:error, reason} ->
+        # Compilation failed - this is an error for child content
+        {:error, "Child content compilation failed: #{inspect(reason)}", state_chart}
     end
   end
 
