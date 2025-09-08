@@ -59,6 +59,7 @@ defmodule Statifier.Event do
 
   # Universal wildcard matches any event
   def matches?(%__MODULE__{name: _name}, "*"), do: true
+  def matches?(%__MODULE__{name: name}, name), do: true
 
   def matches?(%__MODULE__{name: name}, event_spec) when is_binary(event_spec) do
     # Split event descriptor into space-separated alternatives

@@ -109,17 +109,9 @@ defmodule Statifier.Evaluator do
   """
   @spec resolve_location(String.t()) :: {:ok, [String.t()]} | {:error, term()}
   def resolve_location(location_expr) when is_binary(location_expr) do
-    # Validate location expression doesn't have leading/trailing whitespace
-    # Per SCXML spec and test401 expectation, locations should be clean identifiers
-    trimmed = String.trim(location_expr)
-
-    if trimmed != location_expr do
-      {:error, "Location expression cannot have leading or trailing whitespace"}
-    else
-      case Predicator.context_location(location_expr) do
-        {:ok, path_components} -> {:ok, path_components}
-        {:error, reason} -> {:error, reason}
-      end
+    case Predicator.context_location(location_expr) do
+      {:ok, path_components} -> {:ok, path_components}
+      {:error, reason} -> {:error, reason}
     end
   rescue
     error -> {:error, error}
@@ -136,21 +128,13 @@ defmodule Statifier.Evaluator do
   @spec resolve_location(String.t(), Statifier.StateChart.t()) ::
           {:ok, [String.t()]} | {:error, term()}
   def resolve_location(location_expr, state_chart) when is_binary(location_expr) do
-    # Validate location expression doesn't have leading/trailing whitespace
-    # Per SCXML spec and test401 expectation, locations should be clean identifiers
-    trimmed = String.trim(location_expr)
+    # Build evaluation context for location resolution
+    context = Datamodel.build_evaluation_context(state_chart)
 
-    if trimmed != location_expr do
-      {:error, "Location expression cannot have leading or trailing whitespace"}
-    else
-      # Build evaluation context for location resolution
-      context = Datamodel.build_evaluation_context(state_chart)
-
-      # Note: context_location doesn't need functions parameter
-      case Predicator.context_location(location_expr, context) do
-        {:ok, path_components} -> {:ok, path_components}
-        {:error, reason} -> {:error, reason}
-      end
+    # Note: context_location doesn't need functions parameter
+    case Predicator.context_location(location_expr, context) do
+      {:ok, path_components} -> {:ok, path_components}
+      {:error, reason} -> {:error, reason}
     end
   rescue
     error -> {:error, error}
