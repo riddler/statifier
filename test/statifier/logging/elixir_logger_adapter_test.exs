@@ -104,6 +104,34 @@ defmodule Statifier.Logging.ElixirLoggerAdapterTest do
       # Clean up
       Process.delete(:test_pid)
     end
+
+    test "handles trace level with custom logger module" do
+      # Test the uncovered :trace branch for custom loggers
+      current_pid = self()
+
+      defmodule TraceLoggerModule do
+        @spec trace(String.t(), map()) :: :ok
+        def trace(message, metadata) do
+          case Process.get(:test_pid) do
+            nil -> :ok
+            pid -> send(pid, {:log, :trace, message, metadata})
+          end
+        end
+      end
+
+      Process.put(:test_pid, current_pid)
+
+      adapter = %ElixirLoggerAdapter{logger_module: TraceLoggerModule}
+      state_chart = %StateChart{}
+
+      result = Adapter.log(adapter, state_chart, :trace, "Trace message", %{})
+
+      # Verify trace was called on custom logger
+      assert_received {:log, :trace, "Trace message", %{}}
+      assert result == state_chart
+
+      Process.delete(:test_pid)
+    end
   end
 
   describe "enabled?/2" do
@@ -128,6 +156,37 @@ defmodule Statifier.Logging.ElixirLoggerAdapterTest do
       # Should default to true
       assert Adapter.enabled?(adapter, :info) == true
       assert Adapter.enabled?(adapter, :debug) == true
+    end
+
+    test "calls custom logger enabled? function when available" do
+      defmodule CustomLoggerWithEnabled do
+        @spec enabled?(atom()) :: boolean()
+        def enabled?(:debug), do: false
+        def enabled?(:info), do: true
+        def enabled?(_level), do: true
+
+        @spec info(String.t(), map()) :: :ok
+        def info(_message, _metadata), do: :ok
+      end
+
+      adapter = %ElixirLoggerAdapter{logger_module: CustomLoggerWithEnabled}
+
+      # Should call the custom enabled? function
+      assert Adapter.enabled?(adapter, :debug) == false
+      assert Adapter.enabled?(adapter, :info) == true
+      assert Adapter.enabled?(adapter, :warn) == true
+    end
+
+    test "maps trace and warn levels correctly for Elixir Logger" do
+      adapter = %ElixirLoggerAdapter{logger_module: Logger}
+
+      # These should not crash and should handle level mapping
+      # trace should be mapped to debug, warn should be mapped to warning
+      result_trace = Adapter.enabled?(adapter, :trace)
+      result_warn = Adapter.enabled?(adapter, :warn)
+
+      assert is_boolean(result_trace)
+      assert is_boolean(result_warn)
     end
   end
 

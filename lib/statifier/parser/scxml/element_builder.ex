@@ -39,12 +39,16 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
     version_location =
       LocationTracker.attribute_location(xml_string, "version", location)
 
+    binding_location =
+      LocationTracker.attribute_location(xml_string, "binding", location)
+
     %Statifier.Document{
       name: get_attr_value(attrs_map, "name"),
       initial: parse_initial_attribute(get_attr_value(attrs_map, "initial")),
       datamodel: get_attr_value(attrs_map, "datamodel"),
       version: get_attr_value(attrs_map, "version"),
       xmlns: get_attr_value(attrs_map, "xmlns"),
+      binding: get_attr_value(attrs_map, "binding"),
       states: [],
       datamodel_elements: [],
       document_order: document_order,
@@ -53,7 +57,8 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
       name_location: name_location,
       initial_location: initial_location,
       datamodel_location: datamodel_location,
-      version_location: version_location
+      version_location: version_location,
+      binding_location: binding_location
     }
   end
 
@@ -270,12 +275,14 @@ defmodule Statifier.Parser.SCXML.ElementBuilder do
       id: get_attr_value(attrs_map, "id"),
       expr: get_attr_value(attrs_map, "expr"),
       src: get_attr_value(attrs_map, "src"),
+      child_content: nil,
       document_order: document_order,
       # Location information
       source_location: location,
       id_location: id_location,
       expr_location: expr_location,
-      src_location: src_location
+      src_location: src_location,
+      child_content_location: nil
     }
   end
 

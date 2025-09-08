@@ -89,17 +89,13 @@ defmodule Statifier.Interpreter do
       |> Configuration.active_leaf_states()
       |> MapSet.to_list()
 
-    state_chart = StateChart.new(optimized_document, initial_config)
-
-    # Initialize data model from datamodel_elements
-    datamodel = Datamodel.initialize(optimized_document.datamodel_elements, state_chart)
-
-    # Extract invoke handlers from options
+    # Extract invoke handlers from options for pipelining
     invoke_handlers = Keyword.get(opts, :invoke_handlers, %{})
 
     state_chart =
-      state_chart
-      |> StateChart.update_datamodel(datamodel)
+      StateChart.new(optimized_document, initial_config)
+      # Initialize data model from datamodel_elements
+      |> Datamodel.initialize(optimized_document.datamodel_elements)
       # Configure invoke handlers
       |> Map.put(:invoke_handlers, invoke_handlers)
       # Configure logging based on options or defaults
@@ -108,17 +104,8 @@ defmodule Statifier.Interpreter do
       |> ActionExecutor.execute_onentry_actions(initial_leaf_states)
       # Execute microsteps (eventless transitions and internal events) after initialization
       |> execute_microsteps()
-
-    # Log warnings if any using proper logging infrastructure
-    state_chart =
-      if warnings != [] do
-        LogManager.warn(state_chart, "Document validation warnings", %{
-          warning_count: length(warnings),
-          warnings: warnings
-        })
-      else
-        state_chart
-      end
+      # Log warnings if any using proper logging infrastructure
+      |> log_validation_warnings(warnings)
 
     {:ok, state_chart}
   end
@@ -776,5 +763,15 @@ defmodule Statifier.Interpreter do
         target_state -> enter_state(target_state, state_chart)
       end
     end)
+  end
+
+  # Helper function to conditionally log validation warnings
+  defp log_validation_warnings(state_chart, []), do: state_chart
+
+  defp log_validation_warnings(state_chart, warnings) do
+    LogManager.warn(state_chart, "Document validation warnings", %{
+      warning_count: length(warnings),
+      warnings: warnings
+    })
   end
 end

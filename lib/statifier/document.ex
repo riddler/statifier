@@ -8,6 +8,7 @@ defmodule Statifier.Document do
     :datamodel,
     :version,
     :xmlns,
+    :binding,
     initial: [],
     states: [],
     datamodel_elements: [],
@@ -25,7 +26,8 @@ defmodule Statifier.Document do
     name_location: nil,
     initial_location: nil,
     datamodel_location: nil,
-    version_location: nil
+    version_location: nil,
+    binding_location: nil
   ]
 
   @type t :: %__MODULE__{
@@ -33,6 +35,7 @@ defmodule Statifier.Document do
           datamodel: String.t() | nil,
           version: String.t() | nil,
           xmlns: String.t() | nil,
+          binding: String.t() | nil,
           initial: [String.t()],
           states: [Statifier.State.t()],
           datamodel_elements: [Statifier.Data.t()],

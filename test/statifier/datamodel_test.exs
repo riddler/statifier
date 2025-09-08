@@ -223,7 +223,7 @@ defmodule Statifier.DatamodelTest do
       }
 
       datamodel = %{"counter" => 5, "name" => "test"}
-      context = Datamodel.build_evaluation_context(datamodel, state_chart)
+      context = Datamodel.build_evaluation_context(%{state_chart | datamodel: datamodel})
 
       # Should have datamodel variables
       assert context["counter"] == 5
@@ -289,14 +289,14 @@ defmodule Statifier.DatamodelTest do
       xml =
         create_scxml_with_datamodel("""
           <data id="valid" expr="42"/>
-          <data id="invalid" expr="this is not valid"/>
+          <data id="invalid" expr="return"/>
         """)
 
       {:ok, state_chart} = initialize_from_xml(xml)
 
       assert state_chart.datamodel["valid"] == 42
-      # Invalid expressions should fall back to the literal string
-      assert state_chart.datamodel["invalid"] == "this is not valid"
+      # Invalid expressions should create empty variable per SCXML spec
+      assert state_chart.datamodel["invalid"] == nil
     end
 
     test "handles data elements without valid id" do
@@ -311,10 +311,10 @@ defmodule Statifier.DatamodelTest do
       # Mock data element without id should be skipped
       mock_invalid_data = %{expr: "test"}
 
-      result_model = Datamodel.initialize([mock_invalid_data], state_chart)
+      result_state_chart = Datamodel.initialize(state_chart, [mock_invalid_data])
 
       # Should return empty datamodel since invalid data is skipped
-      assert result_model == %{}
+      assert result_state_chart.datamodel == %{}
     end
 
     test "handles empty expression strings" do
@@ -372,7 +372,7 @@ defmodule Statifier.DatamodelTest do
       }
 
       datamodel = %{"counter" => 5}
-      context = Datamodel.build_evaluation_context(datamodel, state_chart)
+      context = Datamodel.build_evaluation_context(%{state_chart | datamodel: datamodel})
 
       # Should have empty _event structure
       assert context["_event"]["name"] == ""
@@ -388,7 +388,7 @@ defmodule Statifier.DatamodelTest do
       }
 
       datamodel = %{"counter" => 5}
-      context = Datamodel.build_evaluation_context(datamodel, state_chart)
+      context = Datamodel.build_evaluation_context(%{state_chart | datamodel: datamodel})
 
       # Should handle nil data gracefully
       assert context["_event"]["name"] == "test"
@@ -404,7 +404,7 @@ defmodule Statifier.DatamodelTest do
       }
 
       datamodel = %{"counter" => 5}
-      context = Datamodel.build_evaluation_context(datamodel, state_chart)
+      context = Datamodel.build_evaluation_context(%{state_chart | datamodel: datamodel})
 
       # Should include non-map data in _event but not merge it
       assert context["_event"]["name"] == "test"
@@ -424,7 +424,7 @@ defmodule Statifier.DatamodelTest do
       }
 
       datamodel = %{}
-      context = Datamodel.build_evaluation_context(datamodel, state_chart)
+      context = Datamodel.build_evaluation_context(%{state_chart | datamodel: datamodel})
 
       # Should handle nil document
       assert context["_name"] == ""
@@ -440,7 +440,7 @@ defmodule Statifier.DatamodelTest do
       }
 
       datamodel = %{}
-      context = Datamodel.build_evaluation_context(datamodel, state_chart)
+      context = Datamodel.build_evaluation_context(%{state_chart | datamodel: datamodel})
 
       # Should handle nil document name
       assert context["_name"] == ""
@@ -461,8 +461,8 @@ defmodule Statifier.DatamodelTest do
         document: %Document{name: "test2"}
       }
 
-      context1 = Datamodel.build_evaluation_context(%{}, state_chart1)
-      context2 = Datamodel.build_evaluation_context(%{}, state_chart2)
+      context1 = Datamodel.build_evaluation_context(state_chart1)
+      context2 = Datamodel.build_evaluation_context(state_chart2)
 
       # Session IDs should be different
       assert context1["_sessionid"] != context2["_sessionid"]
