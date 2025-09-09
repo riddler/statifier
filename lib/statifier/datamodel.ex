@@ -102,13 +102,13 @@ defmodule Statifier.Datamodel do
   Set a value at a nested path in the datamodel.
 
   Takes a datamodel, a list of path components (keys), and a value.
-  Creates intermediate maps as needed for nested assignment.
+  Does not create intermediate maps as needed for nested assignment.
 
   ## Examples
 
       iex> datamodel = %{}
       iex> Statifier.Datamodel.put_in_path(datamodel, ["user", "name"], "John")
-      {:ok, %{"user" => %{"name" => "John"}}}
+      {:error, "Cannot assign to nested path: 'user' does not exist"}
 
       iex> datamodel = %{"user" => %{"age" => 30}}
       iex> Statifier.Datamodel.put_in_path(datamodel, ["user", "name"], "Jane")
