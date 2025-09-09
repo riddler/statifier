@@ -28,11 +28,11 @@ When verifying code changes, always follow this sequence (also automated via pre
 
 **Testing:**
 
-- `mix test` - Run all internal tests (excludes SCION/W3C by default) - 444 tests
+- `mix test` - Run all internal tests (excludes SCION/W3C by default) - 1045 tests
 - `mix test --include scion --include scxml_w3` - Run all tests including SCION and W3C tests
 - `mix test.regression` - Run regression tests that should always pass - 63 tests (critical functionality)
 - `mix test.baseline` - Check which tests are currently passing (for updating regression suite)
-- `mix test --cover` - Run all tests with coverage reporting (maintain 90%+ coverage - currently 92.3%)
+- `mix test --cover` - Run all tests with coverage reporting (maintain 90%+ coverage - currently 90.1%)
 - `mix coveralls` - Alternative coverage command
 - `mix coveralls.detail` - Run tests with detailed coverage report showing uncovered lines
 - `mix test test/statifier/location_test.exs` - Run location tracking tests
