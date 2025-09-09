@@ -7,6 +7,152 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] 2025-09-09
+
+### Added
+
+#### Enhanced Data Model Support
+
+- **`Statifier.active_leaf_states/1`**: Added public API function to retrieve only leaf states from active configuration
+  - **Leaf State Focus**: Returns only the leaf (atomic) states that are currently active, excluding ancestor states
+  - **MapSet Return**: Returns active leaf states as a MapSet for efficient membership testing and set operations
+  - **Public API**: Provides direct access to leaf state information for client applications
+  - **Documentation**: Comprehensive function documentation with clear usage examples
+
+#### Enhanced Event Processing Improvements
+
+- **SCXML-Compliant Event Matching**: Complete implementation of W3C SCXML event matching patterns
+  - **Universal Wildcard**: "*" matches any event name per SCXML specification
+  - **Prefix Matching**: "foo" matches "foo", "foo.bar", "foo.bar.baz" with dot-separated token logic
+  - **OR Pattern Support**: "foo bar" matches events that match "foo" OR "bar" (space-separated alternatives)
+  - **Wildcard Suffix**: "foo.*" matches "foo.bar", "foo.baz" but not "foo" (requires additional tokens)
+  - **Token-Based Logic**: Proper dot-separated token parsing for hierarchical event names
+
+- **Error Event Generation**: Comprehensive error.execution event generation per SCXML specification
+  - **Assign Action Errors**: Failed assignments now generate error.execution events with detailed context
+  - **Error Event Structure**: Events include reason, type, location, and expression information
+  - **Internal Event Queue**: Error events properly queued as internal events for processing
+  - **Graceful Error Handling**: State machine continues execution after logging errors
+
+#### Strict Nested Assignment Validation
+
+- **Enhanced Datamodel Validation**: Strict checking for nested map assignments to prevent auto-creation
+  - **Intermediate Structure Validation**: Assignments to nested paths require all intermediate structures to exist
+  - **Type Safety**: Prevents assignment to non-map intermediate values with clear error messages
+  - **SCXML Compliance**: Aligns with proper SCXML datamodel semantics for assignment operations
+  - **Error Reporting**: Detailed error messages indicating specific validation failures
+
+### Changed
+
+#### Test Infrastructure Improvements
+
+- **Updated Internal Tests**: Modified 9 internal tests to expect strict nested assignment behavior
+  - **Correct SCXML Behavior**: Tests now verify proper failure when attempting to assign to non-existent intermediate structures
+  - **Error Expectation**: Tests properly expect {:error, reason} responses for invalid assignments
+  - **Maintained Coverage**: All test updates preserve comprehensive test coverage
+
+#### Event Processing Updates
+
+- **Enhanced Event Module**: Improved event matching capabilities with comprehensive pattern support
+  - **Robust Pattern Matching**: Handles complex event patterns with proper token parsing
+  - **Performance Optimization**: Efficient string splitting and token comparison algorithms
+  - **Comprehensive Testing**: Full test coverage for all event matching scenarios
+
+### Fixed
+
+#### Code Quality Improvements  
+
+- **Removed Unnecessary Validation**: Eliminated whitespace validation from Evaluator resolve_location functions
+  - **Simplified Logic**: Removed redundant whitespace checking that wasn't addressing root issues
+  - **Cleaner Implementation**: Focus on core location resolution functionality without extra validation layers
+  - **Performance**: Reduced unnecessary string processing in location resolution
+
+#### Datamodel Assignment Fixes
+
+- **Strict Assignment Implementation**: Fixed auto-creation of intermediate map structures in nested assignments
+  - **Prevented Invalid Behavior**: No longer auto-creates intermediate maps when assigning to nested paths
+  - **Proper Error Handling**: Clear error messages when attempting to assign to non-existent intermediate structures
+  - **SCXML Compliance**: Aligns with W3C SCXML specification for datamodel assignment semantics
+
+### Technical Improvements
+
+#### Enhanced Test Coverage
+
+- **Comprehensive Event Testing**: Added extensive tests for SCXML event matching patterns
+  - **Universal Wildcard Tests**: Verification that "*" matches all event types
+  - **Prefix Pattern Tests**: Testing hierarchical event matching with dot notation
+  - **OR Logic Tests**: Validation of space-separated alternative event patterns
+  - **Wildcard Suffix Tests**: Complex wildcard pattern testing with proper token requirements
+  - **Coverage Achievement**: Improved test coverage to 90.1% (up from 89.7%)
+
+#### Developer Experience
+
+- **Enhanced Error Messages**: Improved error context and logging throughout assignment operations
+- **Structured Logging**: Comprehensive logging with metadata for debugging assignment failures
+- **Debug Support**: Enhanced debugging capabilities with elixir log adapter recommendations
+
+### Examples
+
+#### Event Matching Patterns
+
+```xml
+<!-- Universal wildcard - matches any event -->
+<transition event="*" target="catch_all"/>
+
+<!-- Prefix matching - matches "user", "user.login", "user.logout" -->
+<transition event="user" target="user_handler"/>
+
+<!-- OR patterns - matches "start" OR "begin" OR "init" -->
+<transition event="start begin init" target="startup"/>
+
+<!-- Wildcard suffix - matches "system.error", "system.warning" but not "system" -->
+<transition event="system.*" target="system_handler"/>
+```
+
+#### Error Event Handling
+
+```xml
+<state id="processing">
+  <onentry>
+    <!-- This will generate error.execution event if foo doesn't exist -->
+    <assign location="foo.bar" expr="'value'"/>
+  </onentry>
+  
+  <!-- Handle assignment errors -->
+  <transition event="error.execution" target="error_state">
+    <log expr="'Assignment failed: ' + _event.data.reason"/>
+  </transition>
+</state>
+```
+
+#### Strict Assignment Validation
+
+```elixir
+# This will now fail with proper error instead of auto-creating structures
+{:error, reason} = Datamodel.put_in_path(%{}, ["foo", "bar"], "value")
+# reason: "Cannot assign to nested path: 'foo' does not exist"
+
+# Proper usage requires intermediate structures to exist
+datamodel = %{"foo" => %{}}
+{:ok, updated} = Datamodel.put_in_path(datamodel, ["foo", "bar"], "value")
+# updated: %{"foo" => %{"bar" => "value"}}
+```
+
+### Migration Notes
+
+- **Event Matching**: Existing event patterns continue to work with enhanced capabilities
+- **Assignment Behavior**: Code relying on auto-creation of intermediate structures may need updates
+- **Error Handling**: New error.execution events provide better error visibility and handling
+- **Test Coverage**: Internal tests updated to reflect correct SCXML assignment behavior
+
+### Notes
+
+- **Enhanced SCXML Compliance**: Improved adherence to W3C SCXML specification for event processing and datamodel operations
+- **Better Error Handling**: Comprehensive error event generation and structured error reporting
+- **Robust Event Processing**: Full implementation of SCXML event matching patterns with proper token-based logic
+- **Strict Datamodel Semantics**: Proper validation of nested assignments prevents unexpected behavior
+- **Test Coverage Improvement**: Achieved 90.1% test coverage with comprehensive event matching tests
+
 ## [1.8.0] 2025-09-02
 
 ### Added
