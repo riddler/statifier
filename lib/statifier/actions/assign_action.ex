@@ -94,16 +94,13 @@ defmodule Statifier.Actions.AssignAction do
 
       {:error, reason} ->
         # Create error.execution event per SCXML specification
-        error_event = %Event{
-          name: "error.execution",
-          data: %{
+        error_event =
+          Event.internal("error.execution", %{
             "reason" => inspect(reason),
             "type" => "assign.execution",
             "location" => assign_action.location,
             "expr" => assign_action.expr
-          },
-          origin: :internal
-        }
+          })
 
         # Log the error and generate error.execution event per SCXML spec
         state_chart

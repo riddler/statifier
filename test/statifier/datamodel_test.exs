@@ -10,6 +10,8 @@ defmodule Statifier.DatamodelTest do
     StateChart
   }
 
+  doctest Statifier.Datamodel
+
   # Helper function to initialize a state chart from XML
   defp initialize_from_xml(xml) do
     {:ok, document, _warnings} = Statifier.parse(xml)
