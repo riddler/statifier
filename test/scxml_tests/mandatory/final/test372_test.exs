@@ -13,9 +13,11 @@ defmodule SCXMLTest.Final.Test372 do
          :log_elements,
          :onentry_actions,
          :onexit_actions,
+         :send_delay_expressions,
          :send_elements,
          :wildcard_events
        ]
+
   @tag conformance: "mandatory", spec: "final"
   test "test372" do
     xml = """

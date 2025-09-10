@@ -68,7 +68,6 @@ defmodule SCIONTest.AssignCurrentSmallStep.Test0Test do
 
         <state id="f"/>
 
-
     </scxml>
     """
 

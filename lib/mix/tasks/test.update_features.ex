@@ -171,13 +171,21 @@ defmodule Mix.Tasks.Test.UpdateFeatures do
         "  @tag required_features: []"
       else
         features_formatted = Enum.map_join(features_list, ", ", &inspect/1)
+        single_line_tag = "  @tag required_features: [#{features_formatted}]"
 
-        "  @tag required_features: [#{features_formatted}]"
+        # Use multiline format if the single line would be too long (>120 chars)
+        if String.length(single_line_tag) > 120 do
+          features_multiline = Enum.map_join(features_list, ",\n         ", &inspect/1)
+          "  @tag required_features: [\n         #{features_multiline}\n       ]"
+        else
+          single_line_tag
+        end
       end
 
     # Check if @required_features or @tag required_features: already exists
+    # Use multiline matching to handle multiline @tag required_features: blocks properly
     case Regex.run(
-           ~r/^(\s*)@(required_features\s+\[.*?\]|tag required_features:\s*\[.*?\])/m,
+           ~r/^(\s*)@(required_features\s+\[[^\]]*(?:\n[^\]]*)*\]|tag required_features:\s*\[[^\]]*(?:\n[^\]]*)*\])/m,
            content
          ) do
       [existing_line, _indent, _match_group] ->

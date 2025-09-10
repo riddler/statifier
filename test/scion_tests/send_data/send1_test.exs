@@ -1,5 +1,7 @@
 defmodule SCIONTest.SendData.Send1Test do
   use Statifier.Case
+
+  alias Statifier.StateMachine
   @tag :scion
   @tag required_features: [
          :basic_states,
@@ -68,7 +70,6 @@ defmodule SCIONTest.SendData.Send1Test do
             <transition event="s1" target="f"/>
         </state>
 
-
         <state id="c">
             <transition event="s2" target="d"
                 cond="_event.data === 'More content.'">
@@ -81,7 +82,6 @@ defmodule SCIONTest.SendData.Send1Test do
                 <log label="_event" expr="_event"/>
             </transition>
         </state>
-
 
         <state id="d">
             <transition event="s3" target="e"
@@ -98,6 +98,22 @@ defmodule SCIONTest.SendData.Send1Test do
     </scxml>
     """
 
-    test_scxml(xml, "", ["a"], [{%{"name" => "t"}, ["b"]}, {%{"name" => "t2"}, ["e"]}])
+    # Use StateMachine for delay support - this test has multiple cascading delayed events
+    pid = start_test_state_machine(xml)
+
+    # Initial state
+    assert StateMachine.active_states(pid) == MapSet.new(["a"])
+
+    # Send t - should move to b and schedule delayed s1
+    StateMachine.send_event(pid, "t", %{})
+    assert StateMachine.active_states(pid) == MapSet.new(["b"])
+
+    # Wait for the cascade of delayed events: s1 -> c -> s2 -> d -> s3 -> e
+    # This may take multiple delay periods as events cascade
+    wait_for_delayed_sends(pid, ["e"], 1000)
+
+    # The test expects us to be in state "e" after all delayed events process
+    # Original test would send "t2" but our test should already be in "e"
+    assert StateMachine.active_states(pid) == MapSet.new(["e"])
   end
 end

@@ -14,10 +14,12 @@ defmodule SCXMLTest.Final.Test570 do
          :onentry_actions,
          :parallel_states,
          :raise_elements,
+         :send_delay_expressions,
          :send_elements,
          :targetless_transitions,
          :wildcard_events
        ]
+
   @tag conformance: "mandatory", spec: "final"
   test "test570" do
     xml = """

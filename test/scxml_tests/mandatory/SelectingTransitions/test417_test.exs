@@ -9,8 +9,10 @@ defmodule SCXMLTest.SelectingTransitions.Test417 do
          :log_elements,
          :onentry_actions,
          :parallel_states,
+         :send_delay_expressions,
          :send_elements
        ]
+
   @tag conformance: "mandatory", spec: "SelectingTransitions"
   test "test417" do
     xml = """

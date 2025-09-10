@@ -10,9 +10,11 @@ defmodule SCXMLTest.Events.Test402 do
          :log_elements,
          :onentry_actions,
          :raise_elements,
+         :send_delay_expressions,
          :send_elements,
          :wildcard_events
        ]
+
   @tag conformance: "mandatory", spec: "events"
   test "test402" do
     xml = """

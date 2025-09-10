@@ -69,13 +69,20 @@ defmodule Statifier.StateMachine do
 
   @type init_arg :: String.t() | StateChart.t()
 
-  defstruct [:state_chart, :callback_module, :snapshot_interval, :snapshot_timer]
+  defstruct [
+    :state_chart,
+    :callback_module,
+    :snapshot_interval,
+    :snapshot_timer,
+    delayed_sends: %{}
+  ]
 
   @type t :: %__MODULE__{
           state_chart: StateChart.t(),
           callback_module: module() | nil,
           snapshot_interval: non_neg_integer() | nil,
-          snapshot_timer: reference() | nil
+          snapshot_timer: reference() | nil,
+          delayed_sends: %{String.t() => reference()}
         }
 
   @doc """
@@ -271,9 +278,12 @@ defmodule Statifier.StateMachine do
 
     case initialize_state_chart(actual_init_arg, interpreter_opts) do
       {:ok, state_chart} ->
+        # Set StateMachine PID in StateChart for delayed send context
+        state_chart_with_pid = %{state_chart | state_machine_pid: self()}
+
         # Initialize state
         state = %__MODULE__{
-          state_chart: state_chart,
+          state_chart: state_chart_with_pid,
           callback_module: callback_module,
           snapshot_interval: snapshot_interval
         }
@@ -324,6 +334,18 @@ defmodule Statifier.StateMachine do
   end
 
   @impl GenServer
+  def handle_cast({:schedule_delayed_send, send_id, event, delay_ms}, state) do
+    # Schedule the delayed event
+    timer_ref = Process.send_after(self(), {:delayed_send, send_id, event}, delay_ms)
+
+    # Store the timer reference for potential cancellation
+    new_delayed_sends = Map.put(state.delayed_sends, send_id, timer_ref)
+    new_state = %{state | delayed_sends: new_delayed_sends}
+
+    {:noreply, new_state}
+  end
+
+  @impl GenServer
   def handle_call(:active_states, _from, state) do
     active = Configuration.active_leaf_states(state.state_chart.configuration)
     {:reply, active, state}
@@ -335,10 +357,39 @@ defmodule Statifier.StateMachine do
   end
 
   @impl GenServer
+  def handle_call({:cancel_delayed_send, send_id}, _from, state) do
+    case Map.pop(state.delayed_sends, send_id) do
+      {timer_ref, new_delayed_sends} when not is_nil(timer_ref) ->
+        Process.cancel_timer(timer_ref)
+        new_state = %{state | delayed_sends: new_delayed_sends}
+        {:reply, :ok, new_state}
+
+      {nil, _delayed_sends} ->
+        {:reply, {:error, :not_found}, state}
+    end
+  end
+
+  @impl GenServer
   def handle_info(:snapshot_timer, state) do
     call_callback(state, :handle_snapshot, [state.state_chart, %{}])
     new_state = maybe_schedule_snapshot(state)
     {:noreply, new_state}
+  end
+
+  @impl GenServer
+  def handle_info({:delayed_send, send_id, event}, state) do
+    # Remove the timer reference from delayed_sends
+    {_timer_ref, new_delayed_sends} = Map.pop(state.delayed_sends, send_id)
+
+    # Send the delayed event to the state chart
+    {:ok, new_state_chart} = Interpreter.send_event(state.state_chart, event)
+
+    # Update state and call callbacks
+    updated_state = %{state | state_chart: new_state_chart, delayed_sends: new_delayed_sends}
+
+    call_callback(updated_state, :handle_delayed_send, [send_id, event, new_state_chart, %{}])
+
+    {:noreply, updated_state}
   end
 
   ## Private Implementation

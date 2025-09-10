@@ -237,8 +237,45 @@ defmodule Statifier.FeatureDetectorTest do
       assert registry[:datamodel] == :supported
       assert registry[:data_elements] == :supported
 
+      # Recently implemented send features
+      assert registry[:send_delay_expressions] == :supported
+
       # Still unsupported features
       assert registry[:send_idlocation] == :unsupported
+    end
+
+    test "detects send delay expressions feature" do
+      # Test both delay and delayexpr attributes
+      xml_with_delay = """
+      <scxml initial="s1">
+        <state id="s1">
+          <onentry>
+            <send event="delayed" target="#_internal" delay="100ms"/>
+          </onentry>
+        </state>
+      </scxml>
+      """
+
+      xml_with_delayexpr = """
+      <scxml initial="s1" datamodel="ecmascript">
+        <datamodel>
+          <data id="timeout" expr="'200ms'"/>
+        </datamodel>
+        <state id="s1">
+          <onentry>
+            <send event="delayed" target="#_internal" delayexpr="timeout"/>
+          </onentry>
+        </state>
+      </scxml>
+      """
+
+      features_delay = FeatureDetector.detect_features(xml_with_delay)
+      features_delayexpr = FeatureDetector.detect_features(xml_with_delayexpr)
+
+      assert MapSet.member?(features_delay, :send_delay_expressions)
+      assert MapSet.member?(features_delayexpr, :send_delay_expressions)
+      assert MapSet.member?(features_delay, :send_elements)
+      assert MapSet.member?(features_delayexpr, :send_elements)
     end
 
     test "registry contains expected number of features" do

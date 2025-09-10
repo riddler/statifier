@@ -67,7 +67,6 @@ defmodule SCIONTest.SendInternal.Test0Test do
             <transition event="s1" target="f"/>
         </state>
 
-
         <state id="c">
             <transition event="s2" target="d"
                 cond="_event.data === 'More content.'"/>

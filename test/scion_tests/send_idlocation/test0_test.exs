@@ -10,9 +10,11 @@ defmodule SCIONTest.SendIdlocation.Test0Test do
          :final_states,
          :log_elements,
          :onentry_actions,
+         :send_delay_expressions,
          :send_elements,
          :send_idlocation
        ]
+
   @tag spec: "send_idlocation"
   test "test0" do
     xml = """
@@ -23,7 +25,6 @@ defmodule SCIONTest.SendIdlocation.Test0Test do
       <datamodel>
         <data id="httpid" expr="'foo'"/>
       </datamodel>
-
 
       <state id="uber">
 

@@ -11,8 +11,10 @@ defmodule SCXMLTest.State.Test364 do
          :onentry_actions,
          :parallel_states,
          :raise_elements,
+         :send_delay_expressions,
          :send_elements
        ]
+
   @tag conformance: "mandatory", spec: "state"
   test "test364" do
     xml = """

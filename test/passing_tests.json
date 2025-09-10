@@ -5,7 +5,7 @@
     "test/statifier/**/*_test.exs",
     "test/mix/**/*_test.exs"
   ],
-  "last_updated": "2025-09-08",
+  "last_updated": "2025-09-10",
   "scion_tests": [
     "test/scion_tests/actionSend/send1_test.exs",
     "test/scion_tests/actionSend/send2_test.exs",
@@ -34,6 +34,9 @@
     "test/scion_tests/data/data_obj_literal_test.exs",
     "test/scion_tests/default_initial_state/initial1_test.exs",
     "test/scion_tests/default_initial_state/initial2_test.exs",
+    "test/scion_tests/delayedSend/send1_test.exs",
+    "test/scion_tests/delayedSend/send2_test.exs",
+    "test/scion_tests/delayedSend/send3_test.exs",
     "test/scion_tests/documentOrder/documentOrder0_test.exs",
     "test/scion_tests/foreach/test1_test.exs",
     "test/scion_tests/hierarchy/hier0_test.exs",
@@ -91,6 +94,7 @@
     "test/scion_tests/scxml_prefix_event_name_matching/star0_test.exs",
     "test/scion_tests/scxml_prefix_event_name_matching/test0_test.exs",
     "test/scion_tests/scxml_prefix_event_name_matching/test1_test.exs",
+    "test/scion_tests/send_data/send1_test.exs",
     "test/scion_tests/send_internal/test0_test.exs",
     "test/scion_tests/targetless_transition/test0_test.exs"
   ],

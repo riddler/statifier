@@ -36,7 +36,6 @@ defmodule SCIONTest.History.History4bTest do
         version="1.0"
         initial="a">
 
-
         <state id="a">
             <transition target="p" event="t1"/>
             <transition target="hb hc" event="t6"/>

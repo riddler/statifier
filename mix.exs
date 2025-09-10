@@ -17,8 +17,9 @@ defmodule Statifier.MixProject do
 
     # Runtime
     {:jason, "~> 1.4"},
-    {:predicator, "~> 3.3"},
-    {:saxy, "~> 1.6"}
+    {:predicator, "~> 3.5"},
+    {:saxy, "~> 1.6"},
+    {:uxid, "~> 2.1"}
   ]
 
   def project do

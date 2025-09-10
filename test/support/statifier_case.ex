@@ -19,10 +19,13 @@ defmodule Statifier.Case do
     Event,
     FeatureDetector,
     Interpreter,
-    StateChart
+    StateChart,
+    StateMachine
   }
 
   alias Statifier.Logging.LogManager
+
+  alias ExUnit.{Assertions, Callbacks}
 
   using do
     quote do
@@ -44,6 +47,13 @@ defmodule Statifier.Case do
   @spec test_scxml(String.t(), String.t(), list(String.t()), list({map(), list(String.t())})) ::
           :ok
   def test_scxml(xml, description, expected_initial_config, events) do
+    validate_features_and_run(xml, description, fn ->
+      run_scxml_test(xml, description, expected_initial_config, events)
+    end)
+  end
+
+  # Helper function to validate features and run test function
+  defp validate_features_and_run(xml, description, test_function) do
     # Detect features used in the SCXML document
     detected_features = FeatureDetector.detect_features(xml)
 
@@ -51,7 +61,7 @@ defmodule Statifier.Case do
     case FeatureDetector.validate_features(detected_features) do
       {:ok, _supported_features} ->
         # All features are supported, proceed with test
-        run_scxml_test(xml, description, expected_initial_config, events)
+        test_function.()
 
       {:error, unsupported_features} ->
         # Test uses unsupported features - fail with descriptive message
@@ -202,5 +212,131 @@ defmodule Statifier.Case do
       end)
 
     :ok
+  end
+
+  @doc """
+  Test SCXML state machine behavior using StateMachine for delay support.
+
+  Similar to test_scxml/4 but uses StateMachine GenServer for proper delay processing.
+  This is essential for testing <send> elements with delay attributes.
+
+  - xml: SCXML document string
+  - description: Test description (for debugging)
+  - expected_initial_config: List of expected initial active state IDs
+  - events_and_delays: List of {event_map, expected_states, optional_delay_ms} tuples
+  """
+  @spec test_scxml_with_state_machine(
+          String.t(),
+          String.t(),
+          list(String.t()),
+          list({map(), list(String.t())} | {map(), list(String.t()), non_neg_integer()})
+        ) :: :ok
+  def test_scxml_with_state_machine(xml, description, expected_initial_config, events_and_delays) do
+    validate_features_and_run(xml, description, fn ->
+      run_scxml_state_machine_test(xml, description, expected_initial_config, events_and_delays)
+    end)
+  end
+
+  defp run_scxml_state_machine_test(xml, _description, expected_initial_config, events_and_delays) do
+    # Start StateMachine
+    {:ok, pid} = StateMachine.start_link(xml)
+
+    try do
+      # Verify initial configuration
+      initial_states = StateMachine.active_states(pid)
+      expected_initial = MapSet.new(expected_initial_config)
+
+      assert initial_states == expected_initial,
+             "Expected initial states #{inspect(MapSet.to_list(expected_initial))}, but got #{inspect(MapSet.to_list(initial_states))}"
+
+      # Process events with delays
+      Enum.each(events_and_delays, fn
+        {event_map, expected_states} ->
+          # Send event synchronously and verify immediately
+          StateMachine.send_event(pid, event_map["name"], event_map)
+          verify_state_machine_configuration(pid, expected_states)
+
+        {event_map, expected_states, delay_ms} ->
+          # Send event and wait for delay before verification
+          StateMachine.send_event(pid, event_map["name"], event_map)
+          # Add small buffer for processing
+          Process.sleep(delay_ms + 50)
+          verify_state_machine_configuration(pid, expected_states)
+      end)
+    after
+      # Clean up StateMachine
+      if Process.alive?(pid) do
+        GenServer.stop(pid, :normal, 1000)
+      end
+    end
+
+    :ok
+  end
+
+  defp verify_state_machine_configuration(pid, expected_state_ids) do
+    expected = MapSet.new(expected_state_ids)
+    actual = StateMachine.active_states(pid)
+
+    # Convert to sorted lists for better error messages
+    expected_list = expected |> Enum.sort()
+    actual_list = actual |> Enum.sort()
+
+    assert expected == actual,
+           "Expected active states #{inspect(expected_list)}, but got #{inspect(actual_list)}"
+  end
+
+  @doc """
+  Start a StateMachine for testing and return the pid.
+
+  This helper manages StateMachine lifecycle for tests and ensures cleanup.
+  Use with Callbacks.on_exit/1 for proper cleanup.
+  """
+  @spec start_test_state_machine(String.t(), keyword()) :: pid()
+  def start_test_state_machine(xml, opts \\ []) do
+    {:ok, pid} = StateMachine.start_link(xml, opts)
+
+    # Register cleanup
+    Callbacks.on_exit(fn ->
+      if Process.alive?(pid) do
+        GenServer.stop(pid, :normal, 1000)
+      end
+    end)
+
+    pid
+  end
+
+  @doc """
+  Wait for delayed sends to complete and verify final state.
+
+  Useful for testing delayed <send> elements by waiting for all timers to fire.
+  """
+  @spec wait_for_delayed_sends(pid(), list(String.t()), non_neg_integer()) :: :ok
+  def wait_for_delayed_sends(pid, expected_final_states, max_wait_ms \\ 5000) do
+    end_time = System.monotonic_time(:millisecond) + max_wait_ms
+    expected = MapSet.new(expected_final_states)
+
+    wait_for_states(pid, expected, end_time)
+  end
+
+  defp wait_for_states(pid, expected_states, end_time) do
+    current_time = System.monotonic_time(:millisecond)
+
+    if current_time > end_time do
+      actual = StateMachine.active_states(pid)
+
+      Assertions.flunk(
+        "Timeout waiting for states #{inspect(MapSet.to_list(expected_states))}, got #{inspect(MapSet.to_list(actual))}"
+      )
+    end
+
+    actual = StateMachine.active_states(pid)
+
+    if actual == expected_states do
+      :ok
+    else
+      # Brief pause before retry
+      Process.sleep(50)
+      wait_for_states(pid, expected_states, end_time)
+    end
   end
 end
