@@ -70,7 +70,6 @@ defmodule SCIONTest.Script.Test2Test do
             </transition>
         </state>
 
-
         <state id="d">
             <transition target="e" cond="x === 200"/>
             <transition target="f"/>

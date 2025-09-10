@@ -94,10 +94,10 @@ defmodule Statifier.FeatureDetector do
       finalize_elements: :unsupported,
       cancel_elements: :unsupported,
 
-      # Advanced send features (unsupported)
+      # Advanced send features (supported)
       send_content_elements: :supported,
       send_param_elements: :supported,
-      send_delay_expressions: :partial,
+      send_delay_expressions: :supported,
 
       # State machine lifecycle (unsupported)
       donedata_elements: :unsupported
@@ -179,6 +179,7 @@ defmodule Statifier.FeatureDetector do
     |> add_if_present(xml, ~r/type\s*=\s*["']internal["']/, :internal_transitions)
     |> add_if_present(xml, ~r/event\s*=\s*["']\*["']/, :wildcard_events)
     |> add_if_present(xml, ~r/delayexpr\s*=/, :send_delay_expressions)
+    |> add_if_present(xml, ~r/delay\s*=/, :send_delay_expressions)
     |> detect_compound_states(xml)
     |> detect_targetless_transitions(xml)
   end

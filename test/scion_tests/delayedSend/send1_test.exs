@@ -1,7 +1,14 @@
 defmodule SCIONTest.DelayedSend.Send1Test do
   use Statifier.Case
+
+  alias Statifier.StateMachine
   @tag :scion
-  @tag required_features: [:basic_states, :event_transitions, :send_elements]
+  @tag required_features: [
+         :basic_states,
+         :event_transitions,
+         :send_delay_expressions,
+         :send_elements
+       ]
   @tag spec: "delayed_send"
   test "send1" do
     xml = """
@@ -45,6 +52,21 @@ defmodule SCIONTest.DelayedSend.Send1Test do
     </scxml>
     """
 
-    test_scxml(xml, "", ["a"], [{%{"name" => "t1"}, ["b"]}, {%{"name" => "t2"}, ["d"]}])
+    # Use StateMachine for delay support
+    pid = start_test_state_machine(xml)
+
+    # Initial state
+    assert StateMachine.active_states(pid) == MapSet.new(["a"])
+
+    # Send t1 - should move to b and schedule delayed s
+    StateMachine.send_event(pid, "t1", %{})
+    assert StateMachine.active_states(pid) == MapSet.new(["b"])
+
+    # Wait for delayed s event to move to c
+    wait_for_delayed_sends(pid, ["c"], 500)
+
+    # Send t2 to move to final state d
+    StateMachine.send_event(pid, "t2", %{})
+    assert StateMachine.active_states(pid) == MapSet.new(["d"])
   end
 end

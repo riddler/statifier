@@ -56,7 +56,6 @@ defmodule SCIONTest.ScriptSrc.Test3Test do
 
         <state id="f"/>
 
-
     </scxml>
     """
 

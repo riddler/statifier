@@ -15,8 +15,10 @@ defmodule SCXMLTest.History.Test580 do
          :onentry_actions,
          :onexit_actions,
          :parallel_states,
+         :send_delay_expressions,
          :send_elements
        ]
+
   @tag conformance: "mandatory", spec: "history"
   test "test580" do
     xml = """

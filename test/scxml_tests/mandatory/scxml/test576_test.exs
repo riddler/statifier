@@ -10,8 +10,10 @@ defmodule SCXMLTest.Scxml.Test576 do
          :onentry_actions,
          :parallel_states,
          :raise_elements,
+         :send_delay_expressions,
          :send_elements
        ]
+
   @tag conformance: "mandatory", spec: "scxml"
   test "test576" do
     xml = """

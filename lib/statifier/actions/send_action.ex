@@ -10,6 +10,7 @@ defmodule Statifier.Actions.SendAction do
   - Interface with external systems via Event I/O Processors
   """
 
+  alias Predicator.Duration
   alias Statifier.{Evaluator, Event, StateChart}
   alias Statifier.Logging.LogManager
   require LogManager
@@ -80,18 +81,25 @@ defmodule Statifier.Actions.SendAction do
   """
   @spec execute(Statifier.StateChart.t(), t()) :: Statifier.StateChart.t()
   def execute(state_chart, %__MODULE__{} = send_action) do
-    # Phase 1: Only support immediate internal sends
-    {:ok, event_name, target_uri, _delay} = evaluate_send_parameters(send_action, state_chart)
+    {:ok, event_name, target_uri, delay_ms} = evaluate_send_parameters(send_action, state_chart)
 
-    if target_uri == "#_internal" do
-      execute_internal_send(event_name, send_action, state_chart)
-    else
-      # Phase 1: Log unsupported external targets
-      LogManager.info(state_chart, "External send targets not yet supported", %{
-        action_type: "send_action",
-        target: target_uri,
-        event_name: event_name
-      })
+    cond do
+      target_uri == "#_internal" and delay_ms == 0 ->
+        # Immediate internal send - execute now
+        execute_internal_send(event_name, send_action, state_chart)
+
+      target_uri == "#_internal" and delay_ms > 0 ->
+        # Delayed internal send - requires StateMachine context
+        execute_delayed_send(event_name, send_action, state_chart, delay_ms)
+
+      true ->
+        # External targets not yet supported
+        LogManager.info(state_chart, "External send targets not yet supported", %{
+          action_type: "send_action",
+          target: target_uri,
+          event_name: event_name,
+          delay_ms: delay_ms
+        })
     end
   end
 
@@ -131,13 +139,55 @@ defmodule Statifier.Actions.SendAction do
   end
 
   defp evaluate_delay(send_action, state_chart) do
-    state_chart
-    |> evaluate_attribute_with_expr(
-      send_action.delay,
-      send_action.compiled_delay_expr,
-      send_action.delay_expr,
-      "0s"
-    )
+    delay_string =
+      state_chart
+      |> evaluate_attribute_with_expr(
+        send_action.delay,
+        send_action.compiled_delay_expr,
+        send_action.delay_expr,
+        "0s"
+      )
+
+    # Parse delay string to milliseconds using Predicator's duration parsing
+    case parse_delay_to_milliseconds(delay_string) do
+      {:ok, milliseconds} ->
+        milliseconds
+
+      {:error, reason} ->
+        LogManager.warn(state_chart, "Invalid delay expression, defaulting to 0ms", %{
+          action_type: "send_action",
+          delay_string: delay_string,
+          error: inspect(reason)
+        })
+
+        0
+    end
+  end
+
+  # Parse delay string to milliseconds using Predicator's duration support
+  defp parse_delay_to_milliseconds(delay_string) when is_binary(delay_string) do
+    case Predicator.evaluate(delay_string) do
+      {:ok, %{} = duration_map} ->
+        # Duration map returned - convert to milliseconds
+        {:ok, Duration.to_milliseconds(duration_map)}
+
+      {:ok, numeric_value} when is_number(numeric_value) ->
+        # Numeric value - assume milliseconds
+        {:ok, round(numeric_value)}
+
+      {:ok, string_value} when is_binary(string_value) ->
+        # Try evaluating as duration string again (might be nested evaluation)
+        case Predicator.evaluate(string_value) do
+          {:ok, %{} = duration_map} -> {:ok, Duration.to_milliseconds(duration_map)}
+          {:ok, numeric_value} when is_number(numeric_value) -> {:ok, round(numeric_value)}
+          error -> error
+        end
+
+      error ->
+        error
+    end
+  rescue
+    error -> {:error, error}
   end
 
   # Common helper for evaluating attributes that can be static or expressions
@@ -171,6 +221,60 @@ defmodule Statifier.Actions.SendAction do
       {:ok, value} -> to_string(value)
       {:error, _reason} -> default_value
     end
+  end
+
+  # Execute delayed send - requires StateMachine context
+  defp execute_delayed_send(event_name, send_action, state_chart, delay_ms) do
+    # Check if we're running in StateMachine context via StateChart field
+    case state_chart.state_machine_pid do
+      pid when is_pid(pid) ->
+        # Generate send ID for tracking
+        send_id = generate_send_id(send_action)
+
+        # Build event data
+        event_data = build_event_data(send_action, state_chart)
+
+        # Create the delayed event
+        delayed_event = %Event{
+          name: event_name,
+          data: event_data,
+          origin: :internal
+        }
+
+        # Schedule the delayed send through StateMachine (async to avoid deadlock)
+        GenServer.cast(pid, {:schedule_delayed_send, send_id, delayed_event, delay_ms})
+
+        LogManager.info(state_chart, "Scheduled delayed send", %{
+          action_type: "send_action",
+          event_name: event_name,
+          delay_ms: delay_ms,
+          send_id: send_id
+        })
+
+        state_chart
+
+      nil ->
+        # Not in StateMachine context - warn and execute immediately
+        warned_state_chart =
+          LogManager.warn(
+            state_chart,
+            "Delayed send requires StateMachine context, executing immediately",
+            %{
+              action_type: "send_action",
+              event_name: event_name,
+              delay_ms: delay_ms
+            }
+          )
+
+        execute_internal_send(event_name, send_action, warned_state_chart)
+    end
+  end
+
+  # Generate unique send ID using UXID or use provided ID
+  defp generate_send_id(%__MODULE__{id: id}) when not is_nil(id), do: id
+
+  defp generate_send_id(%__MODULE__{}) do
+    UXID.generate!(prefix: "send", size: :s)
   end
 
   defp execute_internal_send(event_name, send_action, state_chart) do

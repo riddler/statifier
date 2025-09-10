@@ -76,7 +76,6 @@ defmodule SCIONTest.AssignCurrentSmallStep.Test3Test do
             <transition event="t3" target="f"/>
         </parallel>
 
-
         <state id="d"/>
 
         <state id="f"/>
