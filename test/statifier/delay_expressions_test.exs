@@ -179,9 +179,23 @@ defmodule Statifier.DelayExpressionsTest do
 
       pid = start_test_state_machine(xml)
 
-      # Should process immediately due to invalid delay defaulting to 0
-      # so we should already be in the "immediate" state
-      assert StateMachine.active_states(pid) == MapSet.new(["immediate"])
+      try do
+        # Give the invalid delay processing a moment to complete
+        # since it defaults to 0ms (immediate) but may need event loop processing
+        Process.sleep(100)
+
+        # Verify the process is still alive before checking state
+        if Process.alive?(pid) do
+          assert StateMachine.active_states(pid) == MapSet.new(["immediate"])
+        else
+          flunk("StateMachine process died unexpectedly during invalid delay processing")
+        end
+      after
+        # Ensure cleanup even if test fails
+        if Process.alive?(pid) do
+          GenServer.stop(pid, :normal, 100)
+        end
+      end
     end
 
     test "delay expressions work with sync API (warning logged)" do
