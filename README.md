@@ -5,8 +5,9 @@
 [![Hex.pm Version](https://img.shields.io/hexpm/v/statifier.svg)](https://hex.pm/packages/statifier)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/statifier/)
 
-> ⚠️ **Active Development Notice**  
-> This project is still under active development and things may change even though it is passed version 1. APIs, features, and behaviors may evolve as we continue improving SCXML compliance and functionality.
+> 📦 **This repository is archived. Development has moved to [riddler/statifier-ex](https://github.com/riddler/statifier-ex).**  
+> statifier-ex is a ground-up rewrite of this engine and will publish as `statifier` 2.0 on Hex.  
+> This repository stays here, read-only, as the v1 history. **The 1.9.x releases remain on Hex and are usable as-is** - `{:statifier, "~> 1.9"}` keeps working exactly as it does today, but 1.x will not see further development.
 
 An Elixir implementation of SCXML (State Chart XML) state charts with a focus on W3C compliance.
 
